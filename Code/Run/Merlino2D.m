@@ -1,0 +1,306 @@
+function [out] = Merlino2D(opts,extra)
+%Merlino2D solves time-dependent drift-diffusion-reaction equations
+%   on a 2D unstructured triangular mesh
+
+arguments
+    opts (1,1) struct
+    extra.MSH
+    extra.MSH_PARAMETERS
+    extra.EPSR_VAL
+    extra.BCEL_FLAG
+    extra.BCEL_VAL
+    extra.V_APPLIED
+    extra.BC_FLAG
+    extra.BC_VAL
+    extra.TIME_INSTANTS
+    extra.INITIAL_CONDITION
+    extra.S_NAMES
+    extra.NS
+    extra.QS
+    extra.MASS
+    extra.MU
+    extra.D
+    extra.V_TH_COEFF
+    extra.CONST_OMEGA
+    extra.CHEMICAL_MODEL
+    extra.ELECTRON_TEMPERATURE
+    extra.TEMPERATURE
+    extra.PRESSURE
+    extra.ELECTRON_REF_COEFF
+    extra.GAMMA_II
+    extra.SURF_CHARGE_COEFF
+    extra.GAMMA_II_DIEL
+    extra.ODE_TYPE
+    extra.OPEN_GMSH
+    extra.REORDERING
+    extra.OUTPUT_FUNCTION
+    extra.BAR_SCALE
+    extra.STEADY_STATE_THRESHOLD
+    extra.T_START_STEADY_STATE
+    extra.ABS_TOL
+    extra.REL_TOL
+end
+
+% setting all parameters to default values
+p = DefaultMerlino2Dinput(); 
+
+% replacing default parameters with the one specified in input structure
+for name = fieldnames(opts)'
+    p.(name{1}) = opts.(name{1});
+end
+
+% if extra parameters have been provided, replace with them
+for name = fieldnames(extra)'
+    p.(name{1}) = extra.(name{1});
+end
+
+% Generating Mesh ---------------------------------------------------------
+geo_file = GetPath("geo") + "/" + p.MSH + ".geo";
+cmd_argumets = CreateCmdMshParameters(p.MSH_PARAMETERS);
+if p.OPEN_GMSH == 1
+    system(GetPath("gmsh") + " " + geo_file + cmd_argumets);
+elseif p.OPEN_GMSH == 0
+    [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_argumets + " -parse_and_exit");
+end
+msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "remove_dielectric","yes");
+geo_file_content = readlines(geo_file);
+fprintf("%s\n","Generated Mesh");
+
+% Compute Ngas ------------------------------------------------------------
+Ngas = p.PRESSURE/(p.TEMPERATURE*kB); % p V = m * R * T
+
+% Setting Electron Temperature --------------------------------------------
+% ELECTRON_TEMPERATURE can be se to
+% a look up table
+% a uniform and costant value (in eV)
+if isstring(p.ELECTRON_TEMPERATURE)
+    LUT_Te = load(GetPath("data")+"/"+p.ELECTRON_TEMPERATURE+".csv");
+    fTe = griddedInterpolant(LUT_Te(:,1),LUT_Te(:,2),"linear","nearest");
+else
+    fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
+end
+
+% Setting Chemical Model --------------------------------------------------
+if lower(p.CHEMICAL_MODEL) == "off"
+    M = zeros(2,msh.Nc);
+    Mindices = [];
+    Nindices = [];
+    stoichiometric_matrix = zeros(1,p.NS);
+    reactions = {"","-1"};
+else
+    run(GetPath("kin")+"/"+p.CHEMICAL_MODEL+".m")
+    [reactants,products] = GetReactantsProducts(species,[reactions{:,1}]); %#ok<NODEF>
+    [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, const_species, const_vals, msh.Nc); 
+end
+
+[fMu,fD,fKr] = GetFcomputeMuDKr(p.MU,p.D,reactions(:,2),msh.Nc,msh.Nf);
+
+BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
+fBfval = @(t) reshape(BCval2Bfval * p.BC_VAL(t)',[],1);
+
+full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "remove_dielectric","no");
+[Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, ...
+ phi2Ex, phi2Ey, aux2Ex, aux2Ey, phi2En, ~, ...
+ inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, p.BCEL_FLAG, p.EPSR_VAL);
+
+Kelet_d = decomposition(Kelet);
+
+dNdz = [1,0;0,1;-1,-1]; % 2D triangles 1st order shape functions
+[Phi2Ex_c, Phi2Ey_c] = CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);
+
+weights = 1./sqrt((msh.xf(msh.fs_from_c) - msh.xc).^2 + (msh.yf(msh.fs_from_c) - msh.yc).^2);
+normalized_weights = weights ./ sum(weights,2);
+Eint2Ec = sparse(repmat(1:msh.Nc,1,3), msh.fs_from_c(:), normalized_weights(:), msh.Nc, msh.Nf);
+
+[I_s, Ex_1, Ey_1, g2Is] = ComputeStaticSato(p.TIME_INSTANTS(1), p.TIME_INSTANTS(end), p.BCEL_VAL, p.V_APPLIED, p.EPSR_VAL,...
+    M_get_aux_BC_el, Kelet_d, aux2RHS,...
+    Dirichlet_nodes_indices, non_Dirichlet_nodes_indices, Phi2Ex_c, Phi2Ey_c,...
+    phi2Ex, phi2Ey, aux2Ex, aux2Ey, full_msh.cID_from_c, full_msh.vol, eps0, e, Eint2Ec, msh.vol);
+
+Flux2N = CreateMultiFlux2N(msh, p.NS);
+
+[i_upwind,i_n_left,i_n_right] = CreateMultiUpwind(msh,p.NS);
+
+indices = CreateIndicesBCspecies(msh, p.BC_FLAG', p.NS);
+
+[A,B] = CreateMultiInterpToNodes(msh, indices, p.NS);
+
+nx_matrix = spdiags(repmat(msh.sn(:,1),p.NS), 0, p.NS*msh.Nf, p.NS*msh.Nf);
+ny_matrix = spdiags(repmat(msh.sn(:,2),p.NS), 0, p.NS*msh.Nf, p.NS*msh.Nf);
+
+[Gx, Gy] = CreateGradNoTang(msh, p.NS);
+
+[Xmu] = CreateMultiXmu(msh, indices, p.NS); % for drift in Dirichlet BC
+[XF] = CreateMultiXF(msh, indices, p.NS); % for flux BC
+
+XFx = nx_matrix * XF;
+XFy = ny_matrix * XF;
+
+[multi_indices_diel_interfaces, multi_indices_diel_cells, sum_diel_interfaces_fluxes_matrix, surf_charge_accum_flux_coeff] ...
+    = BuildUpSurfaceCharge(msh, p.SURF_CHARGE_COEFF, p.NS, p.QS, e, p.GAMMA_II_DIEL);
+
+% Other BC ----------------------------------------------------------------
+v_th_single = sqrt(8*kB*p.TEMPERATURE./(pi*p.MASS)); % single row, with as many elements as species
+v_th_single(1) = v_th_single(1) * sqrt(11600/p.TEMPERATURE);
+v_th_single = v_th_single .* p.V_TH_COEFF;
+
+[GetBfaces, GetBcells] = CreateGetBfacesBcells(msh);
+
+[indices_faces_Gorin, indices_cells_Gorin,...
+    indices_faces_Gorin_electrons, indices_faces_Gorin_positive_ions,...
+    v_th_x, v_th_y] = GorinBC(GetBfaces, GetBcells, p.BC_FLAG', p.QS, v_th_single, msh.sn);
+
+[indices_faces_Absorbent, indices_cells_Absorbent] = AbsorbentBC(GetBfaces, GetBcells, p.BC_FLAG');
+
+% Setting Initial Condition -----------------------------------------------
+% InitialCondition can be a string, a struct or an array
+if isstring(p.INITIAL_CONDITION)
+    % string - loading previous result
+    load(p.INITIAL_CONDITION,"y_end");
+    N0 = y_end(1:p.NS*msh.Nc);
+    sigma0 = y_end(p.NS*msh.Nc+1:p.NS*msh.Nc+msh.Nd);
+    fprintf("%s\n","Loaded from previous save: "+p.INITIAL_CONDITION);
+elseif isstruct(p.INITIAL_CONDITION)
+    % struct - generating a Gaussian
+    N0 = p.INITIAL_CONDITION.A .* exp(-(...
+        ((msh.xc - p.INITIAL_CONDITION.x0).^2)/p.INITIAL_CONDITION.sigma_x + ((msh.yc - p.INITIAL_CONDITION.y0).^2)/p.INITIAL_CONDITION.sigma_y ...
+        )) + p.INITIAL_CONDITION.B;
+    sigma0 = zeros(msh.Nd,1);
+else
+    % array - setting uniform number density
+    N0 = ones(msh.Nc,p.NS) .* p.INITIAL_CONDITION;
+    sigma0 = zeros(msh.Nd,1);
+end
+
+% Compute charge density
+n_matrix = reshape(N0,[],p.NS);
+rho0 = e * sum(n_matrix.*p.QS, 2);
+rho_sigma_eps = [rho0; sigma0] / eps0;
+aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * p.V_APPLIED(p.TIME_INSTANTS(1));
+phi0 = Kelet_d \ (rho2RHS * rho_sigma_eps + aux2RHS * aux_BC_el);
+y0 = [N0(:); sigma0; phi0];
+
+% Setting Jacobian and Mass Matrix ----------------------------------------
+% solver will always be DAE, and it will always use FEM Poisson 
+ode_dim = p.NS*msh.Nc+msh.Nd;
+dae_dim = size(non_Dirichlet_nodes_indices,1);
+
+ode_options = odeset();
+ode_options.JPattern = CreateJpattern(msh, p.QS, Kelet, Flux2N, phi2En, rho2RHS);
+dim_Jac = size(ode_options.JPattern,1);
+
+ode_options.MassSingular = "yes";
+ode_options.Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), ode_dim+dae_dim, ode_dim+dae_dim);
+
+% Reordering --------------------------------------------------------------
+if p.REORDERING == 1
+    % create permutation to make Jacobian close to diagonal
+    ppp = symrcm(ode_options.JPattern)';
+    inv_ppp = InversePermutation(ppp);
+elseif p.REORDERING == 0
+    ppp = (1:dim_Jac)';
+    inv_ppp = (1:dim_Jac)';
+end
+ode_options.JPattern = ode_options.JPattern(ppp,ppp);
+ode_options.Mass = ode_options.Mass(ppp,ppp);
+y0 = y0(ppp);
+
+% Creating Ode Function ---------------------------------------------------
+odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
+    multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
+    Kelet,rho2RHS,aux2RHS,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
+    phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,p.TEMPERATURE,p.QS,p.BCEL_VAL,p.V_APPLIED,...
+    fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,p.CONST_OMEGA,p.NS,...
+    indices_faces_Absorbent,indices_cells_Absorbent,...
+    indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
+    surf_charge_accum_flux_coeff, perm, inv_perm,...
+    Gx, Gy, nx_matrix, ny_matrix,...
+    Ex_1, Ey_1, g2Is, p.ELECTRON_REF_COEFF);
+odefun_mixed = @(t,y) odefun_perm(t,y,ppp,inv_ppp); % this is the one considering reordering
+odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
+ 
+% Setting Output Function -------------------------------------------------
+if p.OUTPUT_FUNCTION == "bar"
+    ode_options.OutputFcn = @(t,y,flag)OdeProgressBar(t,y,flag,p.BAR_SCALE);
+elseif p.OUTPUT_FUNCTION == "current"
+    indices_emitter = msh.f_from_b(msh.bs_from_bID{1}); % 1 corresponds to emitter
+    ode_options.OutputFcn = @(t,y,flag)OutputCurrent(t,y,flag,odefun_mixed,e,msh.sn,indices_emitter,msh.areaf(indices_emitter),p.T_START_STEADY_STATE);
+elseif p.OUTPUT_FUNCTION == "none"
+    % not using any output function
+end
+
+% Setting Event Function --------------------------------------------------
+clear SteadyStateHalt
+if p.STEADY_STATE_THRESHOLD ~= -1
+    ode_options.Events = @(t,y)SteadyStateHalt(t,y,p.STEADY_STATE_THRESHOLD);
+end
+if p.OUTPUT_FUNCTION == "bar"
+    ode_options.Events = @(t,y) OdeAbort(t,y);
+end
+
+fprintf("%s\n","Initialization finished");
+
+% Solving with DAE --------------------------------------------------------
+clear DaeFunc2D % clear persistent variables
+clear fComputeKr % clear persistent variables
+clear fComputeMuD % clear persistent variables
+if p.ODE_TYPE == "idas"
+    F = ode;
+    F.InitialValue = y0;
+    F.ODEFcn = odefun_mixed;
+    F.MassMatrix = odeMassMatrix(MassMatrix=ode_options.Mass,Singular="yes");
+    F.Jacobian = odeJacobian(SparsityPattern=ode_options.JPattern); 
+    F.Solver = "idas";
+    F.AbsoluteTolerance = p.ABS_TOL;
+    F.RelativeTolerance = p.REL_TOL;
+    start_time_computation = tic();
+    if numel(p.TIME_INSTANTS) > 2
+        S = solve(F,p.TIME_INSTANTS);
+    else
+        S = solve(F,p.TIME_INSTANTS(1),p.TIME_INSTANTS(2));
+    end
+    wall_clock_time = toc(start_time_computation);
+
+    statsout = [-1,-1,-1,-1,-1,-1];
+    tout = S.Time;
+    yout = S.Solution;
+elseif p.ODE_TYPE == "ode15s"
+    ode_options.AbsTol = p.ABS_TOL;
+    ode_options.RelTol = p.REL_TOL;
+    start_time_computation = tic();
+    if isempty(ode_options.Events)
+        [tout,yout,statsout] = ode15s(odefun_mixed,p.TIME_INSTANTS,y0,ode_options);
+    else
+        [tout,yout,~,~,~,statsout] = ode15s(odefun_mixed,p.TIME_INSTANTS,y0,ode_options);
+    end
+    wall_clock_time = toc(start_time_computation);
+
+    tout = tout';
+    yout = yout';
+end
+
+fprintf("%s\n","Simulation finished");
+
+yout = yout(inv_ppp,:);
+
+% Creating Output Structure -----------------------------------------------
+out.tout = tout;
+out.yout = yout;
+out.statsout = statsout;
+out.odefun = odefun;
+out.wall_clock_time = wall_clock_time;
+out.A = A;
+out.B = B;
+out.p = p;
+out.Dirichlet_nodes_indices = Dirichlet_nodes_indices;
+out.non_Dirichlet_nodes_indices = non_Dirichlet_nodes_indices;
+out.inv_mapping = inv_mapping;
+out.s_names = p.S_NAMES;
+out.I_s = I_s(tout);
+out.Phi2Ex_c = Phi2Ex_c(1:msh.Nc,:);
+out.Phi2Ey_c = Phi2Ey_c(1:msh.Nc,:);
+out.msh = msh;
+
+out.geo_file_content = geo_file_content;
+
+end
