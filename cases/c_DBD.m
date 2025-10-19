@@ -26,7 +26,9 @@ opts.D = {
     "mu3*T/11600"};
 opts.V_TH_COEFF = [0,1,1];
 opts.CONST_OMEGA = [1e15, 1e15, 1e5];
-opts.CHEMICAL_MODEL = "s_Townsend";
+opts.CHEMICAL_MODEL = "s_LokiTownsend";
+opts.LOKI_INPUT = "Air.in";
+opts.SAVE_LOKI = "Air_saved";
 opts.ELECTRON_TEMPERATURE = "Te_Air";
 opts.GAMMA_II = 5e-2;
 opts.SURF_CHARGE_COEFF = [0.1, 0.1, 0.1];

@@ -23,6 +23,8 @@ arguments
     extra.V_TH_COEFF
     extra.CONST_OMEGA
     extra.CHEMICAL_MODEL
+    extra.LOKI_INPUT
+    extra.SAVE_LOKI
     extra.ELECTRON_TEMPERATURE
     extra.TEMPERATURE
     extra.PRESSURE
@@ -43,10 +45,14 @@ end
 
 % setting all parameters to default values
 p = DefaultMerlino2Dinput(); 
+number_of_parameters = numel(fieldnames(p));
 
 % replacing default parameters with the one specified in input structure
 for name = fieldnames(opts)'
     p.(name{1}) = opts.(name{1});
+end
+if numel(fieldnames(p)) ~= number_of_parameters
+    error("The name of one of the input parameters in invalid")
 end
 
 % if extra parameters have been provided, replace with them
@@ -69,19 +75,8 @@ fprintf("%s\n","Generated Mesh");
 % Compute Ngas ------------------------------------------------------------
 Ngas = p.PRESSURE/(p.TEMPERATURE*kB); % p V = m * R * T
 
-% Setting Electron Temperature --------------------------------------------
-% ELECTRON_TEMPERATURE can be se to
-% a look up table
-% a uniform and costant value (in eV)
-if isstring(p.ELECTRON_TEMPERATURE)
-    LUT_Te = load(GetPath("data")+"/"+p.ELECTRON_TEMPERATURE+".csv");
-    fTe = griddedInterpolant(LUT_Te(:,1),LUT_Te(:,2),"linear","nearest");
-else
-    fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
-end
-
 % Setting Chemical Model --------------------------------------------------
-if lower(p.CHEMICAL_MODEL) == "off"
+if upper(p.CHEMICAL_MODEL) == "OFF"
     M = zeros(2,msh.Nc);
     Mindices = [];
     Nindices = [];
@@ -93,7 +88,27 @@ else
     [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, const_species, const_vals, msh.Nc); 
 end
 
-[fMu,fD,fKr] = GetFcomputeMuDKr(p.MU,p.D,reactions(:,2),msh.Nc,msh.Nf);
+Loki = GetLoki(p.LOKI_INPUT,p.SAVE_LOKI,reactions);
+
+% Setting Electron Temperature --------------------------------------------
+% ELECTRON_TEMPERATURE can be se to
+% a look up table
+% a uniform and costant value (in eV)
+if isstring(p.ELECTRON_TEMPERATURE)
+    if upper(p.ELECTRON_TEMPERATURE) == "LOKI"
+        if isempty(Loki)
+            error("You need to provide a LOKI_INPUT if you set ELECTRON_TEMPERATURE to LoKI")
+        end
+        fTe = griddedInterpolant(Loki.E,2/3*cell2mat({Loki.swarmParam.meanEnergy}),'pchip','nearest');
+    else
+        LUT_Te = load(GetPath("data")+"/"+p.ELECTRON_TEMPERATURE+".csv");
+        fTe = griddedInterpolant(LUT_Te(:,1),LUT_Te(:,2),"pchip","nearest");
+    end
+else
+    fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
+end
+
+[fMu,fD,fKr] = GetFcomputeMuDKr(p.MU,p.D,reactions(:,2),msh.Nc,msh.Nf,Loki);
 
 BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
 fBfval = @(t) reshape(BCval2Bfval * p.BC_VAL(t)',[],1);
@@ -242,8 +257,6 @@ fprintf("%s\n","Initialization finished");
 
 % Solving with DAE --------------------------------------------------------
 clear DaeFunc2D % clear persistent variables
-clear fComputeKr % clear persistent variables
-clear fComputeMuD % clear persistent variables
 if p.ODE_TYPE == "idas"
     F = ode;
     F.InitialValue = y0;

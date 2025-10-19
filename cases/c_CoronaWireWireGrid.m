@@ -18,13 +18,13 @@ opts.NS = 4;
 opts.QS = [-1,+1,+1,-1];
 opts.MASS = [me, 0.028/Na-me, 0.032/Na-me, 0.032/Na+me];
 opts.MU = {
-    "(1/Ngas) * 3.74e19 * exp(33.5 * (log(Te*11600))^(-0.5))";         
+    "Loki_mu(E)/Ngas";         
     "(1/Ngas) * min(0.75e23 * (T)^(-0.5), 2.03e12 * (E/1e21)^(-0.5))";
     "(1/Ngas) * min(1.18e23 * (T)^(-0.5), 3.61e12 * (E/1e21)^(-0.5))";
     "(1/Ngas) * min(0.97e23 * (T)^(-0.5), 3.56e19 * (E/1e21)^(-0.1))"
     };
 opts.D = {
-    "mu1*Te";
+    "Loki_D(E)/Ngas";
     "mu2*T/11600";
     "mu3*T/11600";
     "mu4*T/11600";
@@ -32,7 +32,9 @@ opts.D = {
 opts.V_TH_COEFF = [1, 1, 1, 1];
 opts.CONST_OMEGA = [1e15,0.5e15,0.5e15,1e5];
 opts.CHEMICAL_MODEL = "s_ParentConst";
-opts.ELECTRON_TEMPERATURE = "Te_Air";
+opts.LOKI_INPUT = "Air.in";
+opts.SAVE_LOKI = "Air_saved";
+opts.ELECTRON_TEMPERATURE = "LoKI";
 opts.GAMMA_II = 1e-2;
 
 out = Merlino2D(opts,"OUTPUT_FUNCTION","bar","BAR_SCALE","log");

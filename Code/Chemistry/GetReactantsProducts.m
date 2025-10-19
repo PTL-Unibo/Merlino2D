@@ -10,6 +10,10 @@ str_unrolled = arrayfun(@(x)UnRoll(x), str_standard);
 members = split(str_unrolled,"->");
 molecules = arrayfun(@(x) split(x,"++"), members, 'UniformOutput', false);
 
+if numel(unique(vertcat(molecules{:}))) ~= numel(species)
+    error("The species provided do not match the reaction set")
+end
+
 mol = cellfun(@(x)Cell2SpeciesArray(x,arrayfun(@(x)" "+x+" ", species)), molecules, 'UniformOutput', false);
 
 reactants = vertcat(mol{:,1});

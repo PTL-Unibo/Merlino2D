@@ -10,8 +10,13 @@
 *.zip
 *.png
 *.pdf
-!UserManual.pdf
+!doc/*.pdf
 *.fig
 *.vtu
 *.pvd
 *.pvsm
+*.gz
+*.toc
+*.aux
+*.log
+*.out
