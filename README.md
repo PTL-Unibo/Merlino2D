@@ -1,14 +1,15 @@
 # Merlino 2D
 
 ## Structure
-The main folder contains 5 sub-folders:
-- Code/
+The main folder contains 6 sub-folders:
+- code/
 - geo/
 - data/
 - cases/
 - kinetic/
+- doc/
 
-**Code/** contains all the functions that compose **Merlino2D**, organized in sub-folders. It also contains the script **Merlino2D_startup.m**, that needs to be run only the first time the code is used.
+**code/** contains all the functions that compose **Merlino2D**, organized in sub-folders. It also contains the script **Merlino2D_startup.m**, that needs to be run only the first time the code is used.
 
 **geo/** contains the **.geo** mesh files that are generated with the Gmsh program. Some files are already present inside this folder and are used to run the example cases. New mesh files created by the user must be placed inside this directory.
 
@@ -19,28 +20,30 @@ The folder also contains the experimental results obtained by [Kiousis et al.](h
 
 **kinetic/** contains the definition of the kinetic schemes. Some kinetic schemes for air have already been provided and are used to run the examples. New kinetic schemes defined by the user must be placed inside this folder.
 
-In addition, the main folder contains also the script **init.m**, that always needs to be run before using the code.
+**doc/** contains the user manual of the code. 
+
+In addition, the main folder contains also the script **init.m**, that always needs to be run before using the code, and the LoKI-B input file **Air.in**, that you should place inside the **Input/** folder of the LoKI-B directory contained inside **Merlino0D** distribution (in case you want to use the Boltzmann solver capabilities). 
 
 ## Installation
 To use Merlino2D you need MATLAB installed on your computer.
 You also need to install Gmsh for mesh generation.
+If you wish to use the functionalities of the LoKI-B Boltzmann solver, you should also have available on your computer [Merlino0D](https://github.com/apopoli/Merlino).
 
 The first time using Merlino2D it is necessary to run the script **Merlino2D_startup.m**
-that is inside the **Code/** folder.
-By running this script, you will be asked to select the **gmsh.exe** executable, that you should have previously installed.
+that is inside the **code/** folder.
+By running this script, you will be asked to select the **gmsh.exe** executable (that you should have previously installed), and the LoKI-B folder (that is contained inside Merlino0D main directory).
 
 If the folder containing the project is moved to another location, you need to run **Merlino2D_startup.m** again.
 
-## Setup
+## Workflow
 Every time you open MATLAB, to use the code you have to run the script **init.m** 
 that is inside the main folder. You can do it by selecting the file and pressing **F9**, or typing in the Command Window
 ```
 init
 ```
-This will add to the MATLAB path the folder **Code/** that contains the code.
+This will add to the MATLAB path the folder **code/** that contains the code.
 
 
-## Workflow
 The core of the code is the function `Merlino2D`, the syntax is
 
 ```
