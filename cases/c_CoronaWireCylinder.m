@@ -13,10 +13,7 @@ opts.BC_VAL = @(t) [NaN, NaN, 0, 0, 0, 0;
                     NaN, NaN, 0, 0, 0, 0];
 opts.TIME_INSTANTS = [0, time_instants];
 opts.INITIAL_CONDITION = [0.001e13, 0.8e13, 0.2e13, 0.999e13];
-opts.S_NAMES = ["e","N2+","O2+","O2-"];
-opts.NS = 4;
-opts.QS = [-1,+1,+1,-1];
-opts.MASS = [me, 0.028/Na-me, 0.032/Na-me, 0.032/Na+me];
+opts.INPUT_SPECIES_ORDER = {'e','N2+','O2+','O2-'};
 opts.MU = {
     "(1/Ngas) * 3.74e19 * exp(33.5 * (log(Te*11600))^(-0.5))";         
     "(1/Ngas) * min(0.75e23 * (T)^(-0.5), 2.03e12 * (E/1e21)^(-0.5))";

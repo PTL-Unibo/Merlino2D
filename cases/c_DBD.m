@@ -12,10 +12,7 @@ opts.BC_VAL = @(t) [NaN, NaN, 0, 0, 0;
                     NaN, NaN, 0, 0, 0];
 opts.TIME_INSTANTS = linspace(0,0.25/100e3,2501);
 opts.INITIAL_CONDITION = [0.001e13, 1e13, 0.999e13];
-opts.S_NAMES = ["e","+","-"];
-opts.NS = 3;
-opts.QS = [-1,+1,-1];
-opts.MASS = [me, 0.03/Na-me, 0.032/Na+me];
+opts.INPUT_SPECIES_ORDER = ['e','I+','I-'];
 opts.MU = {
     "mu_Air(E)/Ngas";
     "(1/Ngas) * (min(0.84e23 * (T)^(-0.5), 2.35e12 * (E/1e21)^(-0.5)))";
@@ -27,7 +24,7 @@ opts.D = {
 opts.V_TH_COEFF = [0,1,1];
 opts.CONST_OMEGA = [1e15, 1e15, 1e5];
 opts.CHEMICAL_MODEL = "s_LokiTownsend";
-opts.LOKI_INPUT = "Air.in";
+opts.LOKI_INPUT = "Air_saved.mat";
 opts.SAVE_LOKI = "Air_saved";
 opts.ELECTRON_TEMPERATURE = "Te_Air";
 opts.GAMMA_II = 5e-2;
@@ -36,9 +33,9 @@ opts.GAMMA_II_DIEL = 1e-2;
 
 out = Merlino2D(opts,"ODE_TYPE","idas");
 out_pp = PostProcessing(out);
-Save(out_pp,"DBD.mat")
+% Save(out_pp,"DBD.mat")
 
 %%
-out_pp = Load("DBD.mat");
+% out_pp = Load("DBD.mat");
 Plot(out_pp,"type","t-iv");
-ExportVTU(out_pp,"DBD")
+% ExportVTU(out_pp,"DBD")

@@ -14,10 +14,7 @@ arguments
     extra.BC_VAL
     extra.TIME_INSTANTS
     extra.INITIAL_CONDITION
-    extra.S_NAMES
-    extra.NS
-    extra.QS
-    extra.MASS
+    extra.INPUT_SPECIES_ORDER
     extra.MU
     extra.D
     extra.V_TH_COEFF
@@ -52,13 +49,15 @@ for name = fieldnames(opts)'
     p.(name{1}) = opts.(name{1});
 end
 if numel(fieldnames(p)) ~= number_of_parameters
-    error("The name of one of the input parameters in invalid")
+    error("The name of one of the input parameters is invalid")
 end
 
 % if extra parameters have been provided, replace with them
 for name = fieldnames(extra)'
     p.(name{1}) = extra.(name{1});
 end
+
+p.INPUT_SPECIES_ORDER = strtrim(string(p.INPUT_SPECIES_ORDER(:))); % convert to column string array
 
 % Generating Mesh ---------------------------------------------------------
 geo_file = GetPath("geo") + "/" + p.MSH + ".geo";
@@ -80,13 +79,38 @@ if upper(p.CHEMICAL_MODEL) == "OFF"
     M = zeros(2,msh.Nc);
     Mindices = [];
     Nindices = [];
-    stoichiometric_matrix = zeros(1,p.NS);
     reactions = {"","-1"};
+    species = p.INPUT_SPECIES_ORDER;
+    ns = numel(species);
+    stoichiometric_matrix = zeros(1,ns);
 else
+    const_species = {"", []};
     run(GetPath("kin")+"/"+p.CHEMICAL_MODEL+".m")
-    [reactants,products] = GetReactantsProducts(species,[reactions{:,1}]); %#ok<NODEF>
-    [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, const_species, const_vals, msh.Nc); 
+    [species,reactants,products,indices_const_species] = GetReactantsProducts(string(vertcat(reactions(:,1))), string(vertcat(const_species(:,1)))); %#ok<NODEF>
+    ns = numel(species);
+    [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), msh.Nc); 
 end
+
+% changing input parameters to match the order of "species" ---------------
+if sum(unique(p.INPUT_SPECIES_ORDER)==unique(species)) ~= ns
+    error("The input species and the species from the chemical model do not match")
+end
+[~,species_mapping] = ismember(species,p.INPUT_SPECIES_ORDER);
+inverse_species_mapping = sortrows([species_mapping,(1:ns)']);
+inverse_species_mapping = inverse_species_mapping(:,2);
+p.BC_FLAG = p.BC_FLAG(species_mapping,:);
+p.BC_VAL = eval(ReorderFunctionHandle(func2str(p.BC_VAL),species_mapping));
+p.INITIAL_CONDITION = p.INITIAL_CONDITION(species_mapping);
+p.MU = p.MU(species_mapping);
+p.D = p.D(species_mapping);
+p.V_TH_COEFF = p.V_TH_COEFF(species_mapping);
+p.CONST_OMEGA = p.CONST_OMEGA(species_mapping);
+
+% Getting species info ----------------------------------------------------
+species_info_table = readtable(GetPath("data")+"/species_database.csv");
+[~,indices_table] = ismember(species,table2array(species_info_table(:,1)));
+ms = table2array(species_info_table(indices_table,2))';
+qs = table2array(species_info_table(indices_table,3))';
 
 Loki = GetLoki(p.LOKI_INPUT,p.SAVE_LOKI,reactions);
 
@@ -108,7 +132,7 @@ else
     fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
 end
 
-[fMu,fD,fKr] = GetFcomputeMuDKr(p.MU,p.D,reactions(:,2),msh.Nc,msh.Nf,Loki);
+[fMu,fD,fKr] = GetFcomputeMuDKr(p.MU,p.D,reactions(:,2),msh.Nc,msh.Nf,Loki,inverse_species_mapping);
 
 BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
 fBfval = @(t) reshape(BCval2Bfval * p.BC_VAL(t)',[],1);
@@ -132,30 +156,30 @@ Eint2Ec = sparse(repmat(1:msh.Nc,1,3), msh.fs_from_c(:), normalized_weights(:), 
     Dirichlet_nodes_indices, non_Dirichlet_nodes_indices, Phi2Ex_c, Phi2Ey_c,...
     phi2Ex, phi2Ey, aux2Ex, aux2Ey, full_msh.cID_from_c, full_msh.vol, eps0, e, Eint2Ec, msh.vol);
 
-Flux2N = CreateMultiFlux2N(msh, p.NS);
+Flux2N = CreateMultiFlux2N(msh, ns);
 
-[i_upwind,i_n_left,i_n_right] = CreateMultiUpwind(msh,p.NS);
+[i_upwind,i_n_left,i_n_right] = CreateMultiUpwind(msh,ns);
 
-indices = CreateIndicesBCspecies(msh, p.BC_FLAG', p.NS);
+indices = CreateIndicesBCspecies(msh, p.BC_FLAG', ns);
 
-[A,B] = CreateMultiInterpToNodes(msh, indices, p.NS);
+[A,B] = CreateMultiInterpToNodes(msh, indices, ns);
 
-nx_matrix = spdiags(repmat(msh.sn(:,1),p.NS), 0, p.NS*msh.Nf, p.NS*msh.Nf);
-ny_matrix = spdiags(repmat(msh.sn(:,2),p.NS), 0, p.NS*msh.Nf, p.NS*msh.Nf);
+nx_matrix = spdiags(repmat(msh.sn(:,1),ns), 0, ns*msh.Nf, ns*msh.Nf);
+ny_matrix = spdiags(repmat(msh.sn(:,2),ns), 0, ns*msh.Nf, ns*msh.Nf);
 
-[Gx, Gy] = CreateGradNoTang(msh, p.NS);
+[Gx, Gy] = CreateGradNoTang(msh, ns);
 
-[Xmu] = CreateMultiXmu(msh, indices, p.NS); % for drift in Dirichlet BC
-[XF] = CreateMultiXF(msh, indices, p.NS); % for flux BC
+[Xmu] = CreateMultiXmu(msh, indices, ns); % for drift in Dirichlet BC
+[XF] = CreateMultiXF(msh, indices, ns); % for flux BC
 
 XFx = nx_matrix * XF;
 XFy = ny_matrix * XF;
 
 [multi_indices_diel_interfaces, multi_indices_diel_cells, sum_diel_interfaces_fluxes_matrix, surf_charge_accum_flux_coeff] ...
-    = BuildUpSurfaceCharge(msh, p.SURF_CHARGE_COEFF, p.NS, p.QS, e, p.GAMMA_II_DIEL);
+    = BuildUpSurfaceCharge(msh, p.SURF_CHARGE_COEFF, ns, qs, e, p.GAMMA_II_DIEL);
 
 % Other BC ----------------------------------------------------------------
-v_th_single = sqrt(8*kB*p.TEMPERATURE./(pi*p.MASS)); % single row, with as many elements as species
+v_th_single = sqrt(8*kB*p.TEMPERATURE./(pi*ms)); % single row, with as many elements as species
 v_th_single(1) = v_th_single(1) * sqrt(11600/p.TEMPERATURE);
 v_th_single = v_th_single .* p.V_TH_COEFF;
 
@@ -163,7 +187,7 @@ v_th_single = v_th_single .* p.V_TH_COEFF;
 
 [indices_faces_Gorin, indices_cells_Gorin,...
     indices_faces_Gorin_electrons, indices_faces_Gorin_positive_ions,...
-    v_th_x, v_th_y] = GorinBC(GetBfaces, GetBcells, p.BC_FLAG', p.QS, v_th_single, msh.sn);
+    v_th_x, v_th_y] = GorinBC(GetBfaces, GetBcells, p.BC_FLAG', qs, v_th_single, msh.sn);
 
 [indices_faces_Absorbent, indices_cells_Absorbent] = AbsorbentBC(GetBfaces, GetBcells, p.BC_FLAG');
 
@@ -172,8 +196,8 @@ v_th_single = v_th_single .* p.V_TH_COEFF;
 if isstring(p.INITIAL_CONDITION)
     % string - loading previous result
     load(p.INITIAL_CONDITION,"y_end");
-    N0 = y_end(1:p.NS*msh.Nc);
-    sigma0 = y_end(p.NS*msh.Nc+1:p.NS*msh.Nc+msh.Nd);
+    N0 = y_end(1:ns*msh.Nc);
+    sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
     fprintf("%s\n","Loaded from previous save: "+p.INITIAL_CONDITION);
 elseif isstruct(p.INITIAL_CONDITION)
     % struct - generating a Gaussian
@@ -183,13 +207,13 @@ elseif isstruct(p.INITIAL_CONDITION)
     sigma0 = zeros(msh.Nd,1);
 else
     % array - setting uniform number density
-    N0 = ones(msh.Nc,p.NS) .* p.INITIAL_CONDITION;
+    N0 = ones(msh.Nc,ns) .* p.INITIAL_CONDITION;
     sigma0 = zeros(msh.Nd,1);
 end
 
 % Compute charge density
-n_matrix = reshape(N0,[],p.NS);
-rho0 = e * sum(n_matrix.*p.QS, 2);
+n_matrix = reshape(N0,[],ns);
+rho0 = e * sum(n_matrix.*qs, 2);
 rho_sigma_eps = [rho0; sigma0] / eps0;
 aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * p.V_APPLIED(p.TIME_INSTANTS(1));
 phi0 = Kelet_d \ (rho2RHS * rho_sigma_eps + aux2RHS * aux_BC_el);
@@ -197,11 +221,11 @@ y0 = [N0(:); sigma0; phi0];
 
 % Setting Jacobian and Mass Matrix ----------------------------------------
 % solver will always be DAE, and it will always use FEM Poisson 
-ode_dim = p.NS*msh.Nc+msh.Nd;
+ode_dim = ns*msh.Nc+msh.Nd;
 dae_dim = size(non_Dirichlet_nodes_indices,1);
 
 ode_options = odeset();
-ode_options.JPattern = CreateJpattern(msh, p.QS, Kelet, Flux2N, phi2En, rho2RHS);
+ode_options.JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS);
 dim_Jac = size(ode_options.JPattern,1);
 
 ode_options.MassSingular = "yes";
@@ -224,8 +248,8 @@ y0 = y0(ppp);
 odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
     Kelet,rho2RHS,aux2RHS,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
-    phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,p.TEMPERATURE,p.QS,p.BCEL_VAL,p.V_APPLIED,...
-    fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,p.CONST_OMEGA,p.NS,...
+    phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,p.TEMPERATURE,qs,p.BCEL_VAL,p.V_APPLIED,...
+    fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,p.CONST_OMEGA,ns,...
     indices_faces_Absorbent,indices_cells_Absorbent,...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
     surf_charge_accum_flux_coeff, perm, inv_perm,...
@@ -305,10 +329,12 @@ out.wall_clock_time = wall_clock_time;
 out.A = A;
 out.B = B;
 out.p = p;
+out.ns = ns;
+out.qs = qs;
 out.Dirichlet_nodes_indices = Dirichlet_nodes_indices;
 out.non_Dirichlet_nodes_indices = non_Dirichlet_nodes_indices;
 out.inv_mapping = inv_mapping;
-out.s_names = p.S_NAMES;
+out.s_names = species;
 out.I_s = I_s(tout);
 out.Phi2Ex_c = Phi2Ex_c(1:msh.Nc,:);
 out.Phi2Ey_c = Phi2Ey_c(1:msh.Nc,:);

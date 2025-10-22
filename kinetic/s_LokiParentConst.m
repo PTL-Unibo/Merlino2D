@@ -1,4 +1,3 @@
-species = ["e","N2","O2","N2+","O2+","O2-"];
 reactions = {
        "e + N2 -> 2e + N2+",                "e + N2(X) -> e + e + N2(+,X), Ionization"; 
        "e + O2 -> 2e + O2+",                "e + O2(X) -> e + e + O2(+,X), Ionization";
@@ -14,5 +13,7 @@ reactions = {
        "e + O2 + N2 -> O2- + N2",           "1.07e-31*(300/(Te*11600))^2*exp(-70/T)*exp(1500*((Te*11600)-T)/((Te*11600)*T)) * 1e-12";
        "O2- + O2 -> e + 2O2",               "8.6e-10*exp(-6030/T)*(1-exp(-1570/T)) * 1e-6";
        };
-const_species = [2,3];
-const_vals = [0.7884*Ngas, 0.2116*Ngas];
+const_species = {
+    "N2", 0.7884*Ngas;
+    "O2", 0.2116*Ngas;
+    };

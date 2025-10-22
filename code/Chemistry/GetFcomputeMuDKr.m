@@ -1,4 +1,4 @@
-function [fComputeMu,fComputeD,fComputeKr] = GetFcomputeMuDKr(Mu,D,Kr,Nc,Nf,Loki)
+function [fComputeMu,fComputeD,fComputeKr] = GetFcomputeMuDKr(Mu,D,Kr,Nc,Nf,Loki,inverse_mapping)
 
 flag_loki = 0;
 if ~isempty(Loki)
@@ -31,7 +31,10 @@ end
 
 strMu = AddDot(strMu);
 strD = AddDot(strD);
-strD = regexprep(strD, 'mu(\d+)', 'mu(:,$1)'); % replace mu123 with mu(:,123)
+for i = 1:numel(inverse_mapping)
+    strD = strrep(strD,"mu"+i,"muxx"+inverse_mapping(i));
+end
+strD = regexprep(strD, 'muxx(\d+)', 'mu(:,$1)'); % replace mu123 with mu(:,123)
 strKr = AddDot(strKr);
 
 % creating griddedInterpolants --------------------------------------------

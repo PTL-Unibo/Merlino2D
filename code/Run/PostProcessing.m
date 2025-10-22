@@ -9,10 +9,10 @@ if type == "full"
     A = out.A;
     B = out.B;
 end
-ns = out.p.NS;
+ns = out.ns;
 Dirichlet_nodes_indices = out.Dirichlet_nodes_indices;
 non_Dirichlet_nodes_indices = out.non_Dirichlet_nodes_indices;
-qs = out.p.QS;
+qs = out.qs;
 I_s = out.I_s;
 inv_mapping = out.inv_mapping;
 odefun = out.odefun;

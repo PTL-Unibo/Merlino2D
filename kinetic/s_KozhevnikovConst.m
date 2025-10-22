@@ -1,4 +1,3 @@
-species = ["e","N2","O2","N2+","O2+","O2-","O","N","O4+"];
 reactions = {
        "e + N2 -> 2e + N2+",            "k1_Koz(E)"; 
        "e + O2 -> 2e + O2+",            "k2_Koz(E)";
@@ -27,5 +26,7 @@ reactions = {
        "O2- + O2+ + N2 -> 2O2 + N2",    2e-25 * 1e-12;
        "O2- + O2+ + O2 -> 2O2 + O2",    2e-25 * 1e-12;
        };
-const_species = [2,3];
-const_vals = [0.7884*Ngas, 0.2116*Ngas];
+const_species = {
+    "N2", 0.7884*Ngas;
+    "O2", 0.2116*Ngas;
+    };

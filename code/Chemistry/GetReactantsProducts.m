@@ -1,7 +1,5 @@
-function [reactants,products] = GetReactantsProducts(species,reactions)
-
-species = species(:);
-reactions = reactions(:);
+function [species,reactants,products,indices_const_species] = GetReactantsProducts(reactions, const_species)
+% reactions and const_species should always be a column string array
 
 str_standard = arrayfun(@(x)Convert2Standard(x), reactions);
 
@@ -10,14 +8,20 @@ str_unrolled = arrayfun(@(x)UnRoll(x), str_standard);
 members = split(str_unrolled,"->");
 molecules = arrayfun(@(x) split(x,"++"), members, 'UniformOutput', false);
 
-if numel(unique(vertcat(molecules{:}))) ~= numel(species)
-    error("The species provided do not match the reaction set")
-end
+species_with_space = OrderSpecies(unique(vertcat(molecules{:})));
 
-mol = cellfun(@(x)Cell2SpeciesArray(x,arrayfun(@(x)" "+x+" ", species)), molecules, 'UniformOutput', false);
+mol = cellfun(@(x)Cell2SpeciesArray(x,species_with_space), molecules, 'UniformOutput', false);
 
 reactants = vertcat(mol{:,1});
 products = vertcat(mol{:,2});
+species = strrep(species_with_space," ",""); % trim spaces
+
+[~,indices_const_species] = ismember(strtrim(const_species),species);
+if indices_const_species == 0
+    indices_const_species = [];
+end
+
+species(indices_const_species) = [];
 
 end
 

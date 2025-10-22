@@ -3,12 +3,12 @@ arguments
     id (1,:) char {mustBeMember(id,{'gmsh','geo','data','kin','loki'})}
 end
 
-Merlino2Dpath = "";
-LoKIpath = "";
+Merlino2Dpath = "C:/Users/fabio/Documents/GitHub/Merlino2D/";
+LoKIpath = "C:/Users/fabio/Documents/GitHub/Merlino/LokiB";
 
 switch id
     case 'gmsh'
-        path_gmsh = "";
+        path_gmsh = "C:/Users/fabio/Documents/gmsh-4.13.1-Windows64/gmsh.exe";
         p = path_gmsh;
     case 'loki'
         p = LoKIpath;
