@@ -170,7 +170,6 @@ out_pp.input.geo_file_content = out.geo_file_content;
 out_pp.input.p = out.p;
 % replacing function handles with strings
 out_pp.input.p.V_APPLIED = func2str(out.p.V_APPLIED);
-out_pp.input.p.BC_VAL = func2str(out.p.BC_VAL);
 
 % removing the .m mesh file
 mat_mesh_file = GetPath("geo") + "/" + out.p.MSH + ".m";

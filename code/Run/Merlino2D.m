@@ -14,7 +14,7 @@ arguments
     extra.BC_VAL
     extra.TIME_INSTANTS
     extra.INITIAL_CONDITION
-    extra.INPUT_SPECIES_ORDER
+    extra.SPECIES_NO_CHEM
     extra.MU
     extra.D
     extra.V_TH_COEFF
@@ -57,7 +57,7 @@ for name = fieldnames(extra)'
     p.(name{1}) = extra.(name{1});
 end
 
-p.INPUT_SPECIES_ORDER = strtrim(string(p.INPUT_SPECIES_ORDER(:))); % convert to column string array
+p.SPECIES_NO_CHEM = strtrim(string(p.SPECIES_NO_CHEM(:))); % convert to column string array
 
 % Generating Mesh ---------------------------------------------------------
 geo_file = GetPath("geo") + "/" + p.MSH + ".geo";
@@ -80,7 +80,7 @@ if upper(p.CHEMICAL_MODEL) == "OFF"
     Mindices = [];
     Nindices = [];
     reactions = {"","-1"};
-    species = p.INPUT_SPECIES_ORDER;
+    species = p.SPECIES_NO_CHEM;
     ns = numel(species);
     stoichiometric_matrix = zeros(1,ns);
 else
@@ -91,20 +91,14 @@ else
     [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), msh.Nc); 
 end
 
-% changing input parameters to match the order of "species" ---------------
-if sum(unique(p.INPUT_SPECIES_ORDER)==unique(species)) ~= ns
-    error("The input species and the species from the chemical model do not match")
-end
-[~,species_mapping] = ismember(species,p.INPUT_SPECIES_ORDER);
-inverse_species_mapping = sortrows([species_mapping,(1:ns)']);
-inverse_species_mapping = inverse_species_mapping(:,2);
-p.BC_FLAG = p.BC_FLAG(species_mapping,:);
-p.BC_VAL = eval(ReorderFunctionHandle(func2str(p.BC_VAL),species_mapping));
-p.INITIAL_CONDITION = p.INITIAL_CONDITION(species_mapping);
-p.MU = p.MU(species_mapping);
-p.D = p.D(species_mapping);
-p.V_TH_COEFF = p.V_TH_COEFF(species_mapping);
-p.CONST_OMEGA = p.CONST_OMEGA(species_mapping);
+% Ordering input parameters to match the order of "species" ---------------
+Ordered_bc_flag = OrderVariable(p.BC_FLAG,species,ns,"BC_FLAG",2);
+temp_ordered_bc_val = OrderVariable(p.BC_VAL,species,ns,"BC_VAL",0);
+Ordered_bc_val = eval(GetBCvalFuncStr(temp_ordered_bc_val));
+Ordered_v_th_coeff = OrderVariable(p.V_TH_COEFF,species,ns,"V_TH_COEFF",0)';
+Ordered_const_omega = OrderVariable(p.CONST_OMEGA,species,ns,"CONST_OMEGA",0)';
+Ordered_mu = OrderVariable(p.MU,species,ns,"MU",1);
+Ordered_d = OrderVariable(p.D,species,ns,"D",1);
 
 % Getting species info ----------------------------------------------------
 species_info_table = readtable(GetPath("data")+"/species_database.csv");
@@ -118,7 +112,7 @@ Loki = GetLoki(p.LOKI_INPUT,p.SAVE_LOKI,reactions);
 % ELECTRON_TEMPERATURE can be se to
 % a look up table
 % a uniform and costant value (in eV)
-if isstring(p.ELECTRON_TEMPERATURE)
+if isstring(p.ELECTRON_TEMPERATURE) | ischar(p.ELECTRON_TEMPERATURE)
     if upper(p.ELECTRON_TEMPERATURE) == "LOKI"
         if isempty(Loki)
             error("You need to provide a LOKI_INPUT if you set ELECTRON_TEMPERATURE to LoKI")
@@ -132,10 +126,10 @@ else
     fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
 end
 
-[fMu,fD,fKr] = GetFcomputeMuDKr(p.MU,p.D,reactions(:,2),msh.Nc,msh.Nf,Loki,inverse_species_mapping);
+[fMu,fD,fKr] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),msh.Nc,msh.Nf,Loki,species);
 
 BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
-fBfval = @(t) reshape(BCval2Bfval * p.BC_VAL(t)',[],1);
+fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
 
 full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "remove_dielectric","no");
 [Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, ...
@@ -160,7 +154,7 @@ Flux2N = CreateMultiFlux2N(msh, ns);
 
 [i_upwind,i_n_left,i_n_right] = CreateMultiUpwind(msh,ns);
 
-indices = CreateIndicesBCspecies(msh, p.BC_FLAG', ns);
+indices = CreateIndicesBCspecies(msh, Ordered_bc_flag', ns);
 
 [A,B] = CreateMultiInterpToNodes(msh, indices, ns);
 
@@ -181,15 +175,15 @@ XFy = ny_matrix * XF;
 % Other BC ----------------------------------------------------------------
 v_th_single = sqrt(8*kB*p.TEMPERATURE./(pi*ms)); % single row, with as many elements as species
 v_th_single(1) = v_th_single(1) * sqrt(11600/p.TEMPERATURE);
-v_th_single = v_th_single .* p.V_TH_COEFF;
+v_th_single = v_th_single .* Ordered_v_th_coeff;
 
 [GetBfaces, GetBcells] = CreateGetBfacesBcells(msh);
 
 [indices_faces_Gorin, indices_cells_Gorin,...
     indices_faces_Gorin_electrons, indices_faces_Gorin_positive_ions,...
-    v_th_x, v_th_y] = GorinBC(GetBfaces, GetBcells, p.BC_FLAG', qs, v_th_single, msh.sn);
+    v_th_x, v_th_y] = GorinBC(GetBfaces, GetBcells, Ordered_bc_flag', qs, v_th_single, msh.sn);
 
-[indices_faces_Absorbent, indices_cells_Absorbent] = AbsorbentBC(GetBfaces, GetBcells, p.BC_FLAG');
+[indices_faces_Absorbent, indices_cells_Absorbent] = AbsorbentBC(GetBfaces, GetBcells, Ordered_bc_flag');
 
 % Setting Initial Condition -----------------------------------------------
 % InitialCondition can be a string, a struct or an array
@@ -207,7 +201,8 @@ elseif isstruct(p.INITIAL_CONDITION)
     sigma0 = zeros(msh.Nd,1);
 else
     % array - setting uniform number density
-    N0 = ones(msh.Nc,ns) .* p.INITIAL_CONDITION;
+    Ordered_initial_condition = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0)';
+    N0 = ones(msh.Nc,ns) .* Ordered_initial_condition;
     sigma0 = zeros(msh.Nd,1);
 end
 
@@ -249,7 +244,7 @@ odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
     Kelet,rho2RHS,aux2RHS,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,p.TEMPERATURE,qs,p.BCEL_VAL,p.V_APPLIED,...
-    fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,p.CONST_OMEGA,ns,...
+    fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,Ordered_const_omega,ns,...
     indices_faces_Absorbent,indices_cells_Absorbent,...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
     surf_charge_accum_flux_coeff, perm, inv_perm,...

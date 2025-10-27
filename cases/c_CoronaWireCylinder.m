@@ -1,33 +1,45 @@
-opts.MSH = "WireCyl_50u_5m_30m";
+opts.MSH = 'WireCyl_50u_5m_30m';
 opts.BCEL_FLAG = [0; 0; 1; 1; 1; 1];
 opts.BCEL_VAL = [1; 0; 0; 0; 0; 0];
 [tx,vx,time_instants] = StairRamp(1e-3,1e-4,(7:2:21)*1e3);
 opts.V_APPLIED = @(t) interp1(tx,vx,t);
-opts.BC_FLAG = ["GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux";
-                "GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux";
-                "GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux";
-                "GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"];
-opts.BC_VAL = @(t) [NaN, NaN, 0, 0, 0, 0;
-                    NaN, NaN, 0, 0, 0, 0;
-                    NaN, NaN, 0, 0, 0, 0;
-                    NaN, NaN, 0, 0, 0, 0];
+opts.BC_FLAG = {"e",  {"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"};
+                "N2+",{"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"};
+                "O2+",{"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"};
+                "O2-",{"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"}};
+opts.BC_VAL = {
+    "e",  {NaN, NaN, 0, 0, 0, 0};
+    "N2+",{NaN, NaN, 0, 0, 0, 0};
+    "O2+",{NaN, NaN, 0, 0, 0, 0};
+    "O2-",{NaN, NaN, 0, 0, 0, 0}};
 opts.TIME_INSTANTS = [0, time_instants];
-opts.INITIAL_CONDITION = [0.001e13, 0.8e13, 0.2e13, 0.999e13];
-opts.INPUT_SPECIES_ORDER = {'e','N2+','O2+','O2-'};
+opts.INITIAL_CONDITION = {
+    "e",  0.001e13;
+    "N2+",0.8e13;
+    "O2+",0.2e13;
+    "O2-",0.999e13};
 opts.MU = {
-    "(1/Ngas) * 3.74e19 * exp(33.5 * (log(Te*11600))^(-0.5))";         
-    "(1/Ngas) * min(0.75e23 * (T)^(-0.5), 2.03e12 * (E/1e21)^(-0.5))";
-    "(1/Ngas) * min(1.18e23 * (T)^(-0.5), 3.61e12 * (E/1e21)^(-0.5))";
-    "(1/Ngas) * min(0.97e23 * (T)^(-0.5), 3.56e19 * (E/1e21)^(-0.1))"
+    "e",  "(1/Ngas) * 3.74e19 * exp(33.5 * (log(Te*11600))^(-0.5))";         
+    "N2+","(1/Ngas) * min(0.75e23 * (T)^(-0.5), 2.03e12 * (E/1e21)^(-0.5))";
+    "O2+","(1/Ngas) * min(1.18e23 * (T)^(-0.5), 3.61e12 * (E/1e21)^(-0.5))";
+    "O2-","(1/Ngas) * min(0.97e23 * (T)^(-0.5), 3.56e19 * (E/1e21)^(-0.1))"
     };
 opts.D = {
-    "mu1*Te";
-    "mu2*T/11600";
-    "mu3*T/11600";
-    "mu4*T/11600";
+    "e",  "(mue)*Te";
+    "N2+","(muN2+)*T/11600";
+    "O2+","(muO2+)*T/11600";
+    "O2-","(muO2-)*T/11600";
     };
-opts.V_TH_COEFF = [1, 1, 1, 1];
-opts.CONST_OMEGA = [1e15,0.5e15,0.5e15,1e5];
+opts.V_TH_COEFF = {
+    "e",  1;
+    "N2+",1;
+    "O2+",1;
+    "O2-",1};
+opts.CONST_OMEGA = {
+    "e",  1e15;
+    "N2+",0.5e15;
+    "O2+",0.5e15;
+    "O2-",1e5};
 opts.CHEMICAL_MODEL = "s_ParentConst";
 opts.ELECTRON_TEMPERATURE = "Te_Air";
 opts.GAMMA_II = 1e-2;
