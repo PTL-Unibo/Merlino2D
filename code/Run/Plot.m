@@ -308,8 +308,13 @@ switch opts.type
 
     case "t-iv"
         yyaxis left
-        plot(out_pp.tout, out_pp.I_SATO, ".-")
-        ylim([-max(abs(out_pp.I_SATO))*1.1,max(abs(out_pp.I_SATO))*1.1])
+        if opts.flip_y
+            plot(out_pp.tout, out_pp.I_SATO*2, ".-")
+            ylim([-max(abs(out_pp.I_SATO*2))*1.1,max(abs(out_pp.I_SATO*2))*1.1])
+        else
+            plot(out_pp.tout, out_pp.I_SATO, ".-")
+            ylim([-max(abs(out_pp.I_SATO))*1.1,max(abs(out_pp.I_SATO))*1.1])
+        end
         ylabel("current $(\mathrm{A}\mathrm{m}^{-1})$", "Interpreter","latex")
         yyaxis right
         plot(out_pp.tout, out_pp.V)
