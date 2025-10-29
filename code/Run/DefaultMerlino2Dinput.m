@@ -9,7 +9,6 @@ p.BC_FLAG = {};
 p.BC_VAL = {};
 p.TIME_INSTANTS = [];
 p.INITIAL_CONDITION = {};
-p.SPECIES_NO_CHEM = [];
 p.MU = {};
 p.D = {};
 p.V_TH_COEFF = {};
@@ -33,4 +32,5 @@ p.STEADY_STATE_THRESHOLD = 1e-3;
 p.T_START_STEADY_STATE = 0;
 p.ABS_TOL = 1e-6;
 p.REL_TOL = 1e-3;
+p.SPECIES_NO_CHEM = [];
 end

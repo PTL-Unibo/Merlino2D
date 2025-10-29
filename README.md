@@ -21,7 +21,7 @@ Contains all the functions that compose **Merlino2D**, organized in sub-folders.
 
 ---
 ### data/ 
-Contains the csv variables (described in chapter 5.15 of the user manual) created by the user. Some files of this type are already present inside this folder:
+Contains the csv variables (described in chapter 6.11 of the user manual) created by the user. Some files of this type are already present inside this folder:
 - **alpha_Air.csv**
 - **eta_Air.csv**
 - **D_Air.csv**
@@ -98,7 +98,7 @@ The core of the code is the function `Merlino2D`, the syntax is
 out = Merlino2D(opts,"key1",value1,"key2",value2,...);
 ```
 `opts` is a structure that contains the input parameters for the simulation. 
-Default values for these parameters can be found inside **DefaultMerlino2Dinput.m**.
+Some parameters have default values that can be found inside **DefaultMerlino2Dinput.m**.
 
 The key-value arguments are optional and can be used to overwrite the parameters passed though `opts`.
 

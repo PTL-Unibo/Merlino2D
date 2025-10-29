@@ -14,7 +14,6 @@ arguments
     extra.BC_VAL
     extra.TIME_INSTANTS
     extra.INITIAL_CONDITION
-    extra.SPECIES_NO_CHEM
     extra.MU
     extra.D
     extra.V_TH_COEFF
@@ -29,15 +28,16 @@ arguments
     extra.GAMMA_II
     extra.SURF_CHARGE_COEFF
     extra.GAMMA_II_DIEL
-    extra.ODE_TYPE
-    extra.OPEN_GMSH
-    extra.REORDERING
-    extra.OUTPUT_FUNCTION
-    extra.BAR_SCALE
+    extra.ODE_TYPE (1,:) char {mustBeMember(extra.ODE_TYPE,{'ode15s','idas'})}
+    extra.OPEN_GMSH (1,1) double {mustBeMember(extra.OPEN_GMSH,{0,1})}
+    extra.REORDERING (1,1) double {mustBeMember(extra.REORDERING,{0,1})}
+    extra.OUTPUT_FUNCTION (1,:) char {mustBeMember(extra.OUTPUT_FUNCTION,{'bar','current','none'})}
+    extra.BAR_SCALE (1,:) char {mustBeMember(extra.BAR_SCALE,{'lin','log'})}
     extra.STEADY_STATE_THRESHOLD
     extra.T_START_STEADY_STATE
     extra.ABS_TOL
     extra.REL_TOL
+    extra.SPECIES_NO_CHEM
 end
 
 % setting all parameters to default values
@@ -80,7 +80,7 @@ if upper(p.CHEMICAL_MODEL) == "OFF"
     Mindices = [];
     Nindices = [];
     reactions = {"","-1"};
-    species = p.SPECIES_NO_CHEM;
+    species = string(p.SPECIES_NO_CHEM(:));
     ns = numel(species);
     stoichiometric_matrix = zeros(1,ns);
 else
@@ -194,11 +194,15 @@ if isstring(p.INITIAL_CONDITION)
     sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
     fprintf("%s\n","Loaded from previous save: "+p.INITIAL_CONDITION);
 elseif isstruct(p.INITIAL_CONDITION)
-    % struct - generating a Gaussian
-    N0 = p.INITIAL_CONDITION.A .* exp(-(...
-        ((msh.xc - p.INITIAL_CONDITION.x0).^2)/p.INITIAL_CONDITION.sigma_x + ((msh.yc - p.INITIAL_CONDITION.y0).^2)/p.INITIAL_CONDITION.sigma_y ...
-        )) + p.INITIAL_CONDITION.B;
-    sigma0 = zeros(msh.Nd,1);
+    if upper(p.CHEMICAL_MODEL) == "OFF"
+        % struct - generating a Gaussian
+        N0 = p.INITIAL_CONDITION.A .* exp(-(...
+            ((msh.xc - p.INITIAL_CONDITION.x0).^2)/p.INITIAL_CONDITION.sigma_x + ((msh.yc - p.INITIAL_CONDITION.y0).^2)/p.INITIAL_CONDITION.sigma_y ...
+            )) + p.INITIAL_CONDITION.B;
+        sigma0 = zeros(msh.Nd,1);
+    else
+        error("INITIAL_CONDITION can not be a structure if CHEMICAL_MODEL is not set to ""Off""")
+    end
 else
     % array - setting uniform number density
     Ordered_initial_condition = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0)';

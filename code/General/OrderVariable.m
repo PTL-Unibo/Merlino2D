@@ -10,6 +10,9 @@ else
     non_ordered_var = vertcat(var{:,2});
 end
 
+if numel(input_species_order) ~= ns
+    error("The number of input species is wrong in %s",name)
+end
 if sum(unique(input_species_order)==unique(species)) ~= ns
     error("The input species and the species from the chemical model do not match in %s",name)
 end

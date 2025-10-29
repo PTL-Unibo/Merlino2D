@@ -109,10 +109,9 @@
 	\subsection{Installation Steps}
 	To use Merlino2D you need \href{https://it.mathworks.com/}{MATLAB} installed on your computer.
 	You also need to install \href{https://gmsh.info/}{Gmsh} for mesh generation.
-	If you wish to use the functionalities of the LoKI-B Boltzmann solver, you should also have available on your computer \href{https://github.com/apopoli/Merlino}{Merlino0D}.
 	The first time using Merlino2D it is necessary to run the script \textbf{Merlino2D\_startup.m}
 	that is inside the \textbf{Code/} folder.
-	By running this script, you will be asked to select the \textbf{gmsh.exe} executable (that you should have previously installed), and the LoKI-B folder (that is contained inside Merlino0D main directory).
+	By running this script, you will be asked to select the \textbf{gmsh.exe} executable that you should have previously installed on your computer.
 	If the folder containing the project is moved to another location, you need to run \textbf{Merlino2D\_startup.m} again.
 	
 	\subsection{Verification}
@@ -155,7 +154,7 @@ The syntax of the function is:
 \matlabs{out = Merlino2D(opts,"key1",value1,"key2",value2,...);}
 
 \noindent \matlabs{opts} is a structure that contains the input parameters for the simulation. 
-All the possible parameters have a default value that can be found inside \textbf{DefaultMerlino2Dinput.m}.
+Some parameters have a default value that can be found inside \textbf{DefaultMerlino2Dinput.m}.
 
 \noindent The key-value arguments are optional and can be used to overwrite the parameters passed through \matlabs{opts}. 
 
@@ -253,7 +252,7 @@ It is possible to pass to the \matlabs{Plot} function other key-value arguments.
 \item \matlabs{"ax"}: allows to pass the desired axes object to display the plot
 \item \matlabs{"species\_index}: index of the chemical species to plot
 \item \matlabs{"k"}: index of the time instant to display
-\item \matlabs{"flip\_y"}: if equal to 1, adds to the 2D plot the y-axis symmetric (very specific usage)
+\item \matlabs{"flip\_y"}: if equal to 1, plots also the symmetry of the domain with respect to the $x$-axis (for 2D color plots) and also \textbf{doubles the current}.
 \item \matlabs{"log10\_zero\_val"}: for log scale plots sets the threshold under which everything is considered to be zero
 \end{itemize}
 
@@ -313,6 +312,20 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	For this reason, in the \textbf{.geo} file, the yellow line can be labeled, for example, with the identifier 8888 using the \matlabs{Physical Curve} command.
 	
 	In general, a mesh provided as input to Merlino2D includes identifiers for the external boundaries, hereafter referred to as \textbf{BoundaryIDs} (\textcolor{red}{1}, \textcolor{blue}{2}, and \textcolor{mygreen}{3} in the previous example), as well as identifiers for the subdomains, hereafter referred to as \textbf{SurfaceIDs} (\colorbox{aircolor}{1} and \colorbox{dielcolor}{2} in the previous example).
+	
+	\section{Species Database}
+	All species used in a simulation—whether defined within the \matlabs{reactions} variable of the kinetic scheme specified by \seclink{chemicalmodel}{CHEMICAL\_MODEL}, or listed in the \seclink{speciesnochem}{SPECIES\_NO\_CHEM} input parameter—must be included in the \textbf{species\_database.csv} file located in the \textbf{data/} folder.
+	This file is a comma-separated values (CSV) file containing three columns. 
+	\begin{itemize}
+	\item The first column lists the names of the species. Every species name used in the \matlabs{reactions} variable or appearing in \seclink{speciesnochem}{SPECIES\_NO\_CHEM} must be present in this first column of \textbf{species\_database.csv}. 
+	
+	\item The second column contains the mass of the species, expressed in \unit{\kilogram}. 
+	
+	\item The third column contains the charge of the species. 
+	\end{itemize}
+	
+	\lstinputlisting{../data/species_database.csv}
+	New species that the user wants to consider in a simulation must be added here.
 	
 	\section{Input Parameters}
 	
@@ -377,37 +390,59 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	
 	\subsection{BC\_FLAG}
 	\label{sec:bcflag}
-	This parameter is a string matrix with \seclink{ns}{NS} rows and as many columns as there are BoundaryIDs (see Section \ref{sec:NemericalIdentifiers}). The $(i,j)$ element of this matrix contains a string specifying the boundary condition for the $i$ species at the $j$ boundary. The available conditions are:
+	This parameter is used to specify the type of boundary condition for the species conservation equation.
+	\seclink{bcflag}{BC\_FLAG} must be a cell array with two columns. 
+	
+	In the first column, you should put strings containing the names of the species considered for the simulation. If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to a \textbf{.m} script, the species must be the ones appearing in the \matlabs{reactions} defined inside the script.
+	If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to \matlabs{"Off"}, the species must be the ones specified in \seclink{speciesnochem}{SPECIES\_NO\_CHEM}. Note that all the species used must be defined inside the file \textbf{species\_database.csv} contained in the \textbf{data/} folder.
+	
+	Each element of the second column must be a row cell array with as many elements as there are BoundaryIDs (see Section \ref{sec:NemericalIdentifiers}). Each one of these cell arrays will be used to set the boundary condition for the continuity equation of the species that appears at the corresponding position in the first column of \seclink{bcflag}{BC\_FLAG}. 
+	The $ith$ element of one of these cell arrays must be a string specifying the type of boundary condition to be applied at the $ith$ boundary.
+	The available types of boundary conditions are (see the paper for details):
 	\begin{itemize}
 		\item \matlabs{"Dirichlet"}
 		\item \matlabs{"Flux"}
 		\item \matlabs{"FreeDriftFlow"}
 		\item \matlabs{"GorinLike"}
 	\end{itemize}
-	For instance, considering a mesh with 3 BoundaryIDs and 2 species, you could set
+	For instance, considering a mesh with 3 BoundaryIDs and 2 species (\matlabs{"e"} and \matlabs{"N2+"}, that must be defined inside \textbf{species\_database.csv}), you could set
 	
-	\matlabs{opts.BC\_FLAG = ["GorinLike", "Flux", "Dirichlet";}
+	\matlabs{opts.BC\_FLAG = \{}
 	
-	\hspace{88pt} \matlabs{"GorinLike", "FreeDriftFlow", "Flux"];}
+	\hspace{40pt} \matlabs{"e", \{"GorinLike", "Flux", "Dirichlet"\};}
+	
+	\hspace{40pt} \matlabs{"N2+", \{"GorinLike", "FreeDriftFlow", "Flux"\}\};}
 
-    \noindent Note that when using \matlabs{"GorinLike"} boundary conditions, the first species will automatically be interpreted as electrons and therefore secondary emission will be considered (with a coefficient \seclink{gammaII}{GAMMA\_II}).
 	
 	\subsection{BC\_VAL}
 	\label{sec:bcval}
-	This parameter is a function handle that returns a matrix with \seclink{ns}{NS} rows and as many columns as there are BoundaryIDs (see Section \ref{sec:NemericalIdentifiers}). It is used to specify in time the value for the \matlabs{"Dirichlet"} or \matlabs{"Flux"} boundary condition. Similarly to \seclink{bcflag}{BC\_FLAG}, the $(i,j)$ element of the \seclink{bcval}{BC\_VAL} matrix contains the desired value of number density (in \unit{\per\cubic\meter}) or flux density (in \unit{\per\square\meter\per\second}) for the $i$ species at the $j$ boundary, in the case of a \matlabs{"Dirichlet"} condition or a \matlabs{"Flux"} condition, respectively. 
+	This parameter is used to specify the value of boundary conditions for the species continuity equation.
+	\seclink{bcval}{BC\_VAL} must be a cell array with two columns.
+	
+	In the first column, you should put strings containing the names of the species considered for the simulation. If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to a \textbf{.m} script, the species must be the ones appearing in the \matlabs{reactions} defined inside the script.
+	If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to \matlabs{"Off"}, the species must be the ones specified in \seclink{speciesnochem}{SPECIES\_NO\_CHEM}. Note that all the species used must be defined inside the file \textbf{species\_database.csv} contained in the \textbf{data/} folder.
+
+	Each element of the second column must be a row cell array with as many elements as there are BoundaryIDs (see Section \ref{sec:NemericalIdentifiers}). Each one of these cell arrays will be used to set the boundary condition value for the continuity equation of the species that appears at the corresponding position in the first column of \seclink{bcval}{BC\_VAL}. 
+	The $ith$ element of these cell arrays can be an anonymous function (if you wish to set a time-dependent value) or a double (if you wish to set a constant value), specifying the boundary condition to be applied at the $ith$ boundary.
+	Note that \seclink{bcval}{BC\_VAL} is complementary to \seclink{bcflag}{BC\_FLAG}, and only boundary conditions of type \matlabs{"Dirichlet"} or \matlabs{"Flux"} require a value. Therefore, \seclink{bcval}{BC\_VAL} contains the desired value of number density (in \unit{\per\cubic\meter}) if a \matlabs{"Dirichlet"} condition was selected, and the desired value of flux density (in \unit{\per\square\meter\per\second}) if a \matlabs{"Flux"} condition was selected. For boundaries that were associated to \matlabs{"GorinLike"} or \matlabs{"FreeDriftFlow"} conditions, the corresponding value specified in \seclink{bcval}{BC\_VAL} will be ignored (but you must place some value anyway).
+	
 	For example, considering the case of a mesh with 3 BoundaryIDs and 2 species, where you previously set
 	
-	\matlabs{opts.BC\_FLAG = ["GorinLike", "Flux", "Dirichlet";}
+	\matlabs{opts.BC\_FLAG = \{}
+
+	\hspace{40pt} \matlabs{"e", \{"GorinLike", "Flux", "Dirichlet"\};}
 	
-	\hspace{88pt} \matlabs{"GorinLike", "FreeDriftFlow", "Flux"];}
+	\hspace{40pt} \matlabs{"N2+", \{"GorinLike", "FreeDriftFlow", "Flux"\}\};}
 	
 	\noindent you could set
 	
-	\matlabs{opts.BC\_VAL = @(t)[NaN, 1e10*t, 1e15;}
+	\matlabs{opts.BC\_VAL = \{}
 	
-	\hspace{105pt} \matlabs{NaN, NaN, t^2];}
+	\hspace{40pt} \matlabs{"N2+", \{NaN, NaN, @(t)t\^2\};}
 	
-	\noindent With this combination of parameters you are imposing a constant number density of \SI{1e5}{\per\cubic\meter} for the first species at the third boundary, and a time-dependent expression for computing the flux of the first species at the second boundary and of the second species at the third boundary. Notice that \matlabs{NaN} have been placed in \seclink{bcval}{BC\_VAL} in the positions corresponding to \matlabs{"GorinLike"} and \matlabs{"FreeDriftFlow"} flags. This was done to highlight that, for those species and boundaries where a \matlabs{"GorinLike"} or a \matlabs{"FreeDriftFlux"} condition has been used, the value inserted in the corresponding position of \seclink{bcval}{BC\_VAL} will be completely ignored.
+	\hspace{40pt} \matlabs{"e", \{NaN, @(t)1e10*t, 1e15\}\};}
+		
+	\noindent With this combination of parameters you are imposing a constant number density of \SI{1e5}{\per\cubic\meter} for the species \matlabs{"e"} at the third boundary, and a time-dependent expression for computing the flux of \matlabs{"e"} at the second boundary and of \matlabs{"N2+"} at the third boundary. Notice that \matlabs{NaN} have been placed in \seclink{bcval}{BC\_VAL} at positions corresponding to \matlabs{"GorinLike"} and \matlabs{"FreeDriftFlow"} flags. This was done to highlight that, for those species and boundaries where a \matlabs{"GorinLike"} or a \matlabs{"FreeDriftFlux"} condition has been used, the value inserted in the corresponding position of \seclink{bcval}{BC\_VAL} will be completely ignored.
 	
 	
 	
@@ -427,13 +462,26 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	\begin{itemize}
 		\item Uniform number density 
 		\item Load from previous simulation
-		\item Gaussian distribution
+		\item Gaussian distribution (only when \seclink{chemicalmodel}{CHEMICAL\_MODEL} = \matlabs{"Off"})
 	\end{itemize}
 	
 	\paragraph{Uniform number density}
-	If you wish to assign a uniform number density to each species across the entire domain, set \seclink{initial}{INITIAL\_CONDITION} to a vector with \seclink{ns}{NS} elements, where each element specifies the desired uniform number density for the corresponding species.
+	If you wish to assign a uniform number density to each species across the entire domain, set \seclink{initial}{INITIAL\_CONDITION} to a cell array with two columns.
 	
-	\matlabs{opts.INITIAL\_CONDITION = [1e10, 1e12, 1e13, 1e25];}
+	In the first column, you should put strings containing the names of the species considered for the simulation. If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to a \textbf{.m} script, the species must be the ones appearing in the \matlabs{reactions} defined inside the script.
+	If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to \matlabs{"Off"}, the species must be the ones specified in \seclink{speciesnochem}{SPECIES\_NO\_CHEM}. Note that all the species used must be defined inside the file \textbf{species\_database.csv} contained in the \textbf{data/} folder.
+	
+	In the second column, you should put the desired uniform number densities in \unit{\per\cubic\meter}. Each of these values will be associated to the corresponding species in the first column. 
+	
+	\matlabs{opts.INITIAL\_CONDITION = \{}
+	
+	\hspace{40pt} \matlabs{"e", 1e10;}
+	
+	\hspace{40pt} \matlabs{"N2+", 1e12;}
+	
+	\hspace{40pt} \matlabs{"O2+", 1e13;}
+	
+	\hspace{40pt} \matlabs{"N2", 1e25\};}
 	
 	\paragraph{Load from previous simulation}
 	If you wish to start a simulation using the number density distribution obtained at the end of a previous run, set \seclink{initial}{INITIAL\_CONDITION} to a string containing the absolute path of the saved results file (the \textbf{.mat} file generated by the \matlabs{Save} command). For example:
@@ -448,7 +496,8 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	\noindent For this usage, the mesh should be the same of the previous simulation, as well as the species.
 	
 	\paragraph{Gaussian distribution}
-	If you wish to assign to each species a two-dimensional Gaussian distribution, set \seclink{initial}{INITIAL\_CONDITION} to a struct with fields
+	This option is available only when \seclink{chemicalmodel}{CHEMICAL\_MODEL} is set to \matlabs{"Off"}.
+	In this case, if you wish to assign to each species a two-dimensional Gaussian distribution, set \seclink{initial}{INITIAL\_CONDITION} to a struct with fields
 	\begin{itemize}
 		\item A
 		\item B
@@ -457,11 +506,11 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 		\item sigma\_x
 		\item sigma\_y
 	\end{itemize}
-	each of them being a vector with \seclink{ns}{NS} elements. This will generate for the \textbf{ith} species a number density distribution
+	each of them being a vector with as many elements as the number of species contained in \seclink{speciesnochem}{SPECIES\_NO\_CHEM}. This will generate for the \textbf{ith} species contained in \seclink{speciesnochem}{SPECIES\_NO\_CHEM} a number density distribution
 	\[
 	n_i(x,y) = \boldsymbol{\mathrm{A}}[i] \, \mathrm{exp}\left(-\left(\frac{(x-\boldsymbol{\mathrm{x0}}[i])^2}{\boldsymbol{\mathrm{sigma\_x}}[i]} + \frac{(y-\boldsymbol{\mathrm{y0}}[i])^2}{\boldsymbol{\mathrm{sigma\_y}}[i]}\right)\right) + \boldsymbol{\mathrm{B}}[i].
 	\]
-	where the value of the parameters A, B, x0, y0, sigma\_x and sigma\_y is taken from the corresponding \textbf{i} element of the array. For example you could set
+	where the value of the parameters A, B, x0, y0, sigma\_x and sigma\_y is taken from the corresponding \textbf{i} element of the array. Note that the order of the numbers inside these arrays is important. For example you could set
 	
 	\matlabs{opts.INITIAL\_CONDITION.A = [1e10, 1e11];}
 	
@@ -475,94 +524,139 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	
 	\matlabs{opts.INITIAL\_CONDITION.sigms\_y = [1e-2, 1e-2];}
 	
-	\subsection{S\_NAMES}
-	\label{sec:snames}
-	This parameter is a string array with \seclink{ns}{NS} elements, containing the names you wish to assign to each species.
-	
-	\matlabs{opts.S\_NAMES = ["e", "N2", "O2", "O4+"];}
-	
-	\noindent This information will mainly be used when plotting the results.
-	
-	\subsection{NS}
-	\label{sec:ns}
-	This parameter is the number of species considered in the simulation.
-	
-	\matlabs{opts.NS = 4;}
-	
-	\noindent \seclink{ns}{NS} should be consistent with the dimension of \seclink{qs}{QS}, \seclink{mass}{MASS}, \seclink{mu}{MU}, \seclink{D}{D}, \seclink{vthcoeff}{V\_TH\_COEFF}, \seclink{constomega}{CONST\_OMEGA}, \seclink{snames}{S\_NAMES} and, only in the case of a Gaussian distribution, also \seclink{initial}{INITIAL\_CONDITION}. 
-	
-	\subsection{QS}
-	\label{sec:qs}
-	This parameter is a vector with \seclink{ns}{NS} elements, specifying the charge sign of of each species
-	
-	\matlabs{opts.QS = [-1,0,1,-1];}
-	
-	\noindent Be aware that the values of \seclink{qs}{QS} should be consistent with the species defined in the \seclink{chemicalmodel}{CHEMICAL\_MODEL}.
-	
-	\subsection{MASS}
-	\label{sec:mass}
-	This parameter is a vector with \seclink{ns}{NS} elements, specifying the mass of each species, in \unit{\kilo\gram}
-	
-	\matlabs{opts.MASS = [me, 0.032/Na, 0.028/Na, 3.75e-25];}
-	
-	\noindent The constants \matlabs{me} and \matlabs{Na}, representing the electron mass and the Avogadro number, respectively, can be useful for the initialization of this vector. Be aware that the values of \seclink{mass}{MASS} should be consistent with the species defined in the \seclink{chemicalmodel}{CHEMICAL\_MODEL}. This parameter is used for the computation of the thermal velocity.
-	
 	\subsection{MU}
 	\label{sec:mu}
-	This parameter is used to set the mobilities of the species, in \unit{\square\meter\per\volt\per\second}. \seclink{mu}{MU} must be a cell array with \seclink{ns}{NS} elements.
-	Each element can be a number (if you wish to set a constant and uniform mobility) or a string. You should use a string to write an expression that will be used to compute the mobility.
-	In the string, you can use any valid Matlab syntax to combine the available standard variables \textbf{E}, \textbf{Te}, \textbf{T} and \textbf{Ngas}, which correspond to the electric field in \unit{\Td}, the electron temperature in \unit{\electronvolt}, the gas temperature in K, and the gas density in \unit{\per\cubic\meter}, respectively. For example, you can set
+	This parameter is used to set the mobilities of the species, in \unit{\square\meter\per\volt\per\second}. \seclink{mu}{MU} must be a cell array with two columns.
 	
-	\matlabs{opts.MU = \{0.001, "exp(E/120)*T^(-0.5)", "Ngas*max(log(T),Te^(-0.2))"\};}
+	In the first column, you should put strings containing the names of the species considered for the simulation. If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to a \textbf{.m} script, the species must be the ones appearing in the \matlabs{reactions} defined inside the script.
+	If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to \matlabs{"Off"}, the species must be the ones specified in \seclink{speciesnochem}{SPECIES\_NO\_CHEM}. Note that all the species used must be defined inside the file \textbf{species\_database.csv} contained in the \textbf{data/} folder.
 	
-	\noindent to have a constant mobility for the first species and a mobility that is computed as a function of \textbf{E}, \textbf{Te}, \textbf{T}, and \textbf{Ngas} for the second and third species.
+	The elements in the second column will be used to determine the mobility of the corresponding species in the first column. Each element of the second column can be a number (if you wish to set a constant and uniform mobility) or a string. You should use a string to write an expression that will be used to compute the mobility.
+	In the string, you can use any valid Matlab syntax to combine the available standard variables \textbf{E}, \textbf{Te}, \textbf{T} and \textbf{Ngas}, which correspond to the electric field in \unit{\Td}, the electron temperature in \unit{\electronvolt}, the gas temperature in K, and the gas density in \unit{\per\cubic\meter}, respectively. Note that the first three are arrays with as many elements as domain points, while the last one is a scalar. For example, you can set
+	
+	\matlabs{opts.MU = \{}
+	
+	\hspace{40pt} \matlabs{"e", 0.001;}
+	
+	\hspace{40pt} \matlabs{"O2-","exp(E/120)*T\^(-0.5)";} 
+		
+	\hspace{40pt} \matlabs{"O4+", "Ngas*max(log(T),Te\^(-0.2))"\};}
+	
+	\noindent to have a constant mobility for the species \matlabs{"e"} and a mobility that is computed as a function of \textbf{E}, \textbf{Te}, \textbf{T}, and \textbf{Ngas} for the species \matlabs{"O2-"} and \matlabs{"O4+"}.
 	
 	Inside the string expressions, you can also use \textbf{.csv} files contained inside the \textbf{data/} folder to define new variables (called csv variables).
 	For example, suppose that you have obtained a relation between the reduced mobility and the reduced electric field, and that you have stored that relation inside a file \textbf{my\_reduced\_Mobility.csv}, where the first column contains the values of the reduced electric field, and the second column contains the values of the reduced mobility. In this case, you can set
 	
-	\matlabs{opts.MU = \{0.001, "exp(E/120)*T^(-0.5)", "my\_reduced\_Mobility(E)/Ngas"\};}
+	\matlabs{opts.MU = \{}
 	
-	\noindent to use the relation contained inside the \textbf{.csv} file to compute the mobility of the third species. Note that csv variables can be combined with standard variables, as you can see from the fact that \matlabs{"my\_reduced\_Mobility"} is divided by the gas density \matlabs{"Ngas"}. It is also possible to combine different csv variables inside a string expression.
+	\hspace{40pt} \matlabs{"O2-","exp(E/120)*T\^(-0.5)";} 
+	
+	\hspace{40pt} \matlabs{"e", 0.001;}
+	
+	\hspace{40pt} \matlabs{"O4+", "my\_reduced\_Mobility(E)/Ngas"\};}
+	
+	\noindent to use the relation contained inside the \textbf{.csv} file to compute the mobility of \matlabs{"O4+"}. Note that csv variables can be combined with standard variables, as you can see from the fact that \matlabs{"my\_reduced\_Mobility"} is divided by the gas density \matlabs{"Ngas"}. It is also possible to combine different csv variables inside a string expression.
 	
 	Also, note that you must specify the dependence of the csv variable from one of the four standard variables. For instance, in the above example, \matlabs{"(E)"} was added after the name of the csv variable to indicate that in the first column of the \textbf{.csv} file are stored the values of reduced electric field. If you wish to define a csv variable that depends on the value of the electron temperature, you must add \matlabs{"(Te)"} after the name of the variable, like 
 	
-	\matlabs{opts.MU = \{0.001, "exp(E/120)*T^(-0.5)", "my\_mob\_as\_func\_of\_Te(Te)"\};}
+	\matlabs{opts.MU = \{}
+	
+	\hspace{40pt} \matlabs{"O2-","exp(E/120)*T\^(-0.5)";} 
+	
+	\hspace{40pt} \matlabs{"e", 0.001;}
+	
+	\hspace{40pt} \matlabs{"O4+", "my\_mob\_as\_func\_of\_Te(Te)"\};}
 	
 	\noindent In case you set a value for \seclink{lokiinput}{LOKI\_INPUT}, additional variables (called loki variables) will be available. These are: \textbf{Loki\_D}, \textbf{Loki\_mu}, \textbf{Loki\_alpha}, \textbf{Loki\_eta}. They represent the reduced electron diffusion coefficient, the reduced electron mobility, the reduced Townsned ionization coefficient, and the reduced attachment coefficient, respectively.
 	These variables work in the same way of csv variables, but are available without the need to define any \textbf{.csv} file, since they are obtained from the LoKI-B simulation specified with \seclink{lokiinput}{LOKI\_INPUT}. In addition, these variables are all dependent on the reduced electric field, which means that they must always appear inside a string expression as \matlabs{Loki\_D(E)}, \matlabs{Loki\_mu(E)}, \matlabs{Loki\_alpha(E)}, and \matlabs{Loki\_eta(E)}. For example, you could set
 	
-	\matlabs{opts.MU = \{"Loki\_mu(E)/Ngas", 1e-4, "exp(E/120)*T^(-0.5)"\};}
+	\matlabs{opts.MU = \{}
+	
+	\hspace{40pt} \matlabs{"e", "Loki\_mu(E)/Ngas";} 
+	
+	\hspace{40pt} \matlabs{"N2+", 1e-4;}
+	
+	\hspace{40pt} \matlabs{"O-", "exp(E/120)*T\^(-0.5)"\};}
 	
 	\subsection{D}
 	\label{sec:d}
-	This parameter is used to set the diffusion coefficient of the species, in \unit{\square\meter\per\second}. \seclink{D}{D} must be a cell array with \seclink{ns}{NS} elements.
-	Each element can be a number (if you wish to set a constant and uniform value for the diffusion coefficient) or a string (if you wish to define an expression that will be used to compute the value of the diffusion coefficient). The exact same rules explained for the definition of a \seclink{mu}{MU} string expression (standard variables, csv variables and loki variables) also apply for \seclink{D}{D}. 
+	This parameter is used to set the diffusion coefficient of the species, in \unit{\square\meter\per\second}. \seclink{D}{D} must be a cell array with two columns.
 	
-	The only difference is that, when using a string expression for \seclink{D}{D}, you can use a fifth standard variable, \textbf{mu}, in addition to the four previously described (\textbf{E}, \textbf{Te}, \textbf{T}, \textbf{Ngas}). With this variable, you can access the mobility of the \textbf{ith} species, and use it in the definition of the diffusion coefficient expression. Note that if you want to use the mobility of the species 7, 12, and 104, you should write in the string expression \matlabs{"mu7"}, \matlabs{"mu12"}, and \matlabs{"mu104"}, respectively. This standard variable is particularly useful when you want to use the Einstein relation to compute the diffusion coefficient. For example, you can set
+	In the first column, you should put strings containing the names of the species considered for the simulation. If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to a \textbf{.m} script, the species must be the ones appearing in the \matlabs{reactions} defined inside the script.
+	If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to \matlabs{"Off"}, the species must be the ones specified in \seclink{speciesnochem}{SPECIES\_NO\_CHEM}. Note that all the species used must be defined inside the file \textbf{species\_database.csv} contained in the \textbf{data/} folder.
 	
-	\matlabs{opts.D = \{"mu1*Te", "mu2*T/11600", "mu3*T/11600"\};}
+	The elements in the second column will be used to determine the diffusion coefficient of the corresponding species in the first column. Each element of the second column can be a number (if you wish to set a constant and uniform value for the diffusion coefficient) or a string (if you wish to define an expression that will be used to compute the value of the diffusion coefficient). The exact same rules explained for the definition of a \seclink{mu}{MU} string expression (standard variables, csv variables and loki variables) also apply for \seclink{D}{D}. 
 	
-	\noindent to use the Einstein relation for all three species (electrons being the first one). Alternatively, if a value was specified for \seclink{lokiinput}{LOKI\_INPUT}, you could set
+	The only difference is that, when using a string expression for \seclink{D}{D}, you can use a fifth standard variable, \textbf{mu}, in addition to the four previously described (\textbf{E}, \textbf{Te}, \textbf{T}, \textbf{Ngas}). With this variable, you can access the mobility of the species used in the simulation, and use it in the definition of the diffusion coefficient expression. Note that if you want to use the mobility of the species \matlabs{"e"}, \matlabs{"O3-"}, and \matlabs{"N2+"}, you should write in the string expression \matlabs{"(mue)"}, \matlabs{"(muO3-)"}, and \matlabs{"(muN2+)"}, respectively. 
+	The general syntax for using the \textbf{mu} variable is: 
 	
-	\matlabs{opts.D = \{"Loki\_D(E)/Ngas", "mu2*T/11600", "mu3*T/11600"\};}
+	\matlabs{"(mu"} + name of the desired species + \matlabs{")"}.
+	
+	\noindent This standard variable is particularly useful when you want to use the Einstein relation to compute the diffusion coefficient. For example, you can set
+	
+	\matlabs{opts.D = \{}
+	
+	\hspace{40pt} \matlabs{"N2+", "(muN2+)*T/11600";} 
+	
+	\hspace{40pt} \matlabs{"e", "(mue)*Te";}
+	
+	\hspace{40pt} \matlabs{"O-", "(muO-)*T/11600"\};}
+	
+	\noindent to use the Einstein relation for all three species. Alternatively, if a value was specified for \seclink{lokiinput}{LOKI\_INPUT}, you could set
+	
+	\matlabs{opts.D = \{}
+	
+	\hspace{40pt} \matlabs{"N2+", "(muN2+)*T/11600";} 
+	
+	\hspace{40pt} \matlabs{"e", "Loki\_D(E)/Ngas";}
+	
+	\hspace{40pt} \matlabs{"O-", "(muO-)*T/11600"\};}
 	
 	\subsection{V\_TH\_COEFF}
 	\label{sec:vthcoeff}
 	This parameter is used  to specify if the thermal velocity needs to be considered or not in \matlabs{"GorinLike"} boundary conditions.
-	This parameter should be a vector with as many elements as \seclink{ns}{NS}, each of them being a 0 (if the user wants to neglect the thermal velocity contribution) or a 1 (if the user wants to consider also the thermal velocity contribution).
-	For example, in a simulation with \seclink{ns}{NS} = 6, setting
+	This parameter should be a cell array with two columns.
 	
-	\matlabs{opts.V\_TH\_COEFF = [0,0,0,1,1,1];}
+	In the first column, you should put strings containing the names of the species considered for the simulation. If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to a \textbf{.m} script, the species must be the ones appearing in the \matlabs{reactions} defined inside the script.
+	If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to \matlabs{"Off"}, the species must be the ones specified in \seclink{speciesnochem}{SPECIES\_NO\_CHEM}. Note that all the species used must be defined inside the file \textbf{species\_database.csv} contained in the \textbf{data/} folder.
 	
-	\noindent means that for the first 3 species the thermal velocity contribution to the boundary flux density will be neglected, while it will be considered for the latter 3 species.
+	Each element of the second column will be associated to the corresponding species in the first column and should be either a 0 (if the user wants to neglect the thermal velocity contribution) or a 1 (if the user wants to consider also the thermal velocity contribution). 
+	For example, in a simulation with 6 species, setting
+	
+	\matlabs{opts.V\_TH\_COEFF = \{}
+
+	\hspace{40pt} \matlabs{"O3-", 0;} 
+	
+	\hspace{40pt} \matlabs{"e", 0;}
+	
+	\hspace{40pt} \matlabs{"O4+", 0;}
+	
+	\hspace{40pt} \matlabs{"N2+", 1;} 
+	
+	\hspace{40pt} \matlabs{"O2+", 1;}
+	
+	\hspace{40pt} \matlabs{"O-", 1\};}
+	
+	\noindent means that for \matlabs{"O3-"}, \matlabs{"e"} and \matlabs{"O4+"} the thermal velocity contribution to the boundary flux density will be neglected, while it will be considered for \matlabs{"N2+"}, \matlabs{"O2+"} and \matlabs{"O-"}.
 	
 	\subsection{CONST\_OMEGA}
 	\label{sec:constomega}
-	This parameter is used to set a constant source term for the species. \seclink{constomega}{CONST\_OMEGA} must be a \textbf{row} vector with \seclink{ns}{NS} elements. Each element will contain the constant and uniform value (in \unit{\per\cubic\meter\per\second}) of the source term to add to the $\partial n/\partial t$ of the corresponding species. Considering a case with electrons as the first species, and positive ions as second and third species, you could set
+	This parameter is used to set a constant source term for the species. \seclink{constomega}{CONST\_OMEGA} must be a cell array with two columns.
 	
-	\matlabs{opts.CONST\_OMEGA = [1e15, 5e14, 5e14, 0, 0, 0];}
+	In the first column, you should put strings containing the names of the species considered for the simulation. If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to a \textbf{.m} script, the species must be the ones appearing in the \matlabs{reactions} defined inside the script.
+	If \seclink{chemicalmodel}{CHEMICAL\_MODEL} was set to \matlabs{"Off"}, the species must be the ones specified in \seclink{speciesnochem}{SPECIES\_NO\_CHEM}. Note that all the species used must be defined inside the file \textbf{species\_database.csv} contained in the \textbf{data/} folder.
 	
-	\noindent to mimic background ionization.
+	Each element of the second column should contain the constant and uniform value (in \unit{\per\cubic\meter\per\second}) of the source term to add to the $\partial n/\partial t$ of the corresponding species in the first column. This parameter can be useful to mimic background ionization and also to prevent the number density of species to decrease excessively.
+	
+	\matlabs{opts.CONST\_OMEGA = \{}
+	
+	\hspace{40pt} \matlabs{"N2+", 0.8e15;} 
+	
+	\hspace{40pt} \matlabs{"O2+", 0.2e15;}
+	
+	\hspace{40pt} \matlabs{"e", 1e15;}
+	
+	\hspace{40pt} \matlabs{"O2-", 1e5\};}
 	
 	\subsection{CHEMICAL\_MODEL}
 	\label{sec:chemicalmodel}
@@ -571,71 +665,57 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	
 	\matlabs{opts.CHEMICAL\_MODEL = "Off";}
 	
-	\noindent which means that no kinetic scheme will be used. This is equivalent to solving the drift-diffusion equations without considering the source term $\Omega$. If you want to use a kinetic scheme, you must first of all create a \textbf{.m} script inside the \textbf{kinetic/} folder. In this script, you should define the details of the kinetic scheme you wish to use. You can then assign to \seclink{chemicalmodel}{CHEMICAL\_MODEL} the name of the file you created. For example, if you created the script \textbf{my\_kinetic\_scheme.m}, you can set
+	\noindent which means that no kinetic scheme will be used. This is equivalent to solving the drift-diffusion equations without considering the source term $\Omega$. If you want to use a kinetic scheme, you must first of all create a \textbf{.m} script and put it inside the \textbf{kinetic/} folder. In this script, you should define the details of the kinetic scheme you wish to use. You can then assign to \seclink{chemicalmodel}{CHEMICAL\_MODEL} the name of the file you created. For example, if you created the script \textbf{my\_kinetic\_scheme.m}, you can set
 	
 	\matlabs{opts.CHEMICAL\_MODEL = "my\_kinetic\_scheme";}
 	
 	\noindent to use the reaction set defined inside that file. Note that the extension \textbf{.m} must be omitted.
-	A kinetic scheme script should contain 4 variables:
-	\begin{itemize}
-		\item \matlabs{species} must be a string array containing the names of the species. Note that these names will only be used to match the terms contained inside the reactions, while the names of the species used for plotting can be assigned using \seclink{snames}{S\_NAMES}. It is important that the order of the species matches between the kinetic scheme script and the parameters \seclink{qs}{QS}, \seclink{mass}{MASS}, \seclink{mu}{MU}, \seclink{D}{D}, \seclink{vthcoeff}{V\_TH\_COEFF}, \seclink{constomega}{CONST\_OMEGA} and \seclink{snames}{S\_NAMES}. \textbf{The first species must be electrons}. 
-		
-		\item \matlabs{reactions} must be a cell array, with two columns and as many rows as the number of chemical reactions included in the kinetic scheme. The first column should contain the definition of the reactions, the second should contain the definition of the corresponding rate coefficients (in \unit{\cubic\meter\per\second} or \unit{\metre\tothe{6}\per\second}). 
-		
-		Each element of the first column should be a string containing the definition of a chemical reaction, with the syntax:
-		
-		\matlabs{"A + B -> C + D"}
-		
-		\matlabs{"2A + E -> C+ + B"}
-		
-		Note that every chemical species appearing in the reactions should be present in \matlabs{species}. For instance, referring to the previous example, \matlabs{species} should contain \matlabs{"A"}, \matlabs{"B"}, \matlabs{"C"}, \matlabs{"D"}, \matlabs{"E"}, and \matlabs{"C+"}. 
-		
-		Each element of the second column can be a number (if you wish to set a constant and uniform value for the rate coefficient) or a string (if you wish to define an expression that will be used to compute the rate coefficient). 
-		In the second case, the exact same rules explained for the definition of a \seclink{mu}{MU} string expression (standard variables, csv variables, and loki variables) also apply.
-		
-		For the definition of rate coefficients of reactions involving electrons, in case a value has been specified for \seclink{lokiinput}{LOKI\_INPUT}, it is also possible to use the rate coefficient computed with LoKI-B. This can be done by setting the element of the second column to a specific string.
-		LoKI-B will compute the rate coefficient for all the reactions taken as input (contained inside LXCat files).
-		Therefore, to use a rate coefficient computed by LoKI-B, first of all it is necessary to identify the desired reaction.
-		For example, you might want to use, as rate coefficients of one of the reactions you defined in the first column of \matlabs{reactions}, the value that LoKI-B calculated for the following reaction (contained inside the LXCat files):
-		
-		\lstinputlisting{reaction_example.txt}
-		
-		To achieve this, you need to set the corresponding element of the second column of \matlabs{reactions} to a specific string, that will allow Merlino0D to select the right rate computed by LoKI-B.
-		This string is the one \textbf{inside the square brackets} after the text ``\matlabs{COMMENT:}'' in the LXCat files.
-		For this specific example, the string to put in the second column of \matlabs{reactions} is
-		
-		\texttt{\textcolor{matlab_string_color}{"e + O2(X) -> e + e + O2(+,X), Ionization"}}
-
-		
-		\item \matlabs{const\_species} must be a vector containing the indices of the species defined in \matlabs{species} that you wish to keep uniform and constant during the simulation. If you do not want to consider any species constant, you can set \matlabs{const\_species} to \matlabs{[]}.
-		Note that if you defined 10 species, but then you set 3 of them as constant, you have to set \seclink{ns}{NS} = 10 - 3 = 7. This should be consistent also with \seclink{qs}{QS}, \seclink{mass}{MASS}, \seclink{mu}{MU}, \seclink{D}{D}, \seclink{vthcoeff}{V\_TH\_COEFF}, \seclink{constomega}{CONST\_OMEGA} and \seclink{snames}{S\_NAMES}.
-		
-		\item \matlabs{const\_vals} must be a vector containing the constant values you want to assign to the species you set as constant. \matlabs{const\_vals} should have the same number of elements as \matlabs{const\_species}. If no species have been set as constants, set \matlabs{const\_vals} to \matlabs{[]}. Note that you have available the variable \matlabs{Ngas} when creating \matlabs{const\_vals}. This means that you can do something like
-		
-		\matlabs{const\_vals = [0.8*Ngas, 0.2*Ngas];}
-		
-	\end{itemize}
-	In Merlino2D some kinetic schemes for air are already provided inside the folder \textbf{kinetic/} and can be used as reference for the creation of new scripts.
+	
+	A kinetic scheme script must contain the variable \matlabs{reactions}, that is a cell array, with two columns and as many rows as the number of chemical reactions included in the kinetic scheme. The first column should contain the definition of the reactions, the second should contain the definition of the corresponding rate coefficients (in \unit{\cubic\meter\per\second}, if there are two reactants, or \unit{\metre\tothe{6}\per\second}, if there are three reactants). 
+	Each element of the first column should be a string containing the definition of a chemical reaction, with the syntax:
+	
+	\matlabs{"A + B -> C + D"}
+	
+	\matlabs{"2A + E -> C+ + B"}
+	
+	
+	\noindent Each element of the second column can be a number (if you wish to set a constant and uniform value for the rate coefficient) or a string (if you wish to define an expression that will be used to compute the rate coefficient). 
+	In the second case, the exact same rules explained for the definition of a \seclink{mu}{MU} string expression (standard variables, csv variables, and loki variables) also apply.
+	
+	For the definition of rate coefficients of reactions involving electrons, in case a value has been specified for \seclink{lokiinput}{LOKI\_INPUT}, it is also possible to use the rate coefficient computed with LoKI-B. This can be done by setting the element of the second column to a specific string.
+	LoKI-B will compute the rate coefficient for all the reactions taken as input (contained inside LXCat files).
+	Therefore, to use a rate coefficient computed by LoKI-B, first of all it is necessary to identify the desired reaction.
+	For example, you might want to use, as rate coefficients of one of the reactions you defined in the first column of \matlabs{reactions}, the value that LoKI-B calculated for the following reaction (contained inside the LXCat files):
+	
+	\lstinputlisting{reaction_example.txt}
+	
+	\noindent To achieve this, you need to set the corresponding element of the second column of \matlabs{reactions} to a specific string, that will allow Merlino0D to select the right rate computed by LoKI-B.
+	This string is the one \textbf{inside the square brackets} after the text ``\matlabs{COMMENT:}'' in the LXCat files.
+	For this specific example, the string to put in the second column of \matlabs{reactions} is
+	
+	\texttt{\textcolor{matlab_string_color}{"e + O2(X) -> e + e + O2(+,X), Ionization"}}
+	
+	In Merlino2D some kinetic schemes for air are already provided inside the folder \textbf{kinetic/} and can be used as reference for the creation of new scripts, also for other types of gases.
 	
 	\subsection{LOKI\_INPUT}
 	\label{sec:lokiinput}
-	This parameter is a string used to specify either the \textbf{.in} input file for LoKI-B, or the \textbf{.mat} file where LoKI results have been previously stored.
-	To run a new LoKI-B input file, you must first of all create a valid one (we refer the reader to \href{https://github.com/LoKI-Suite/LoKI-B/tree/master/Documentation}{LoKI-B documentation}), and place it inside the \textbf{Input/} folder of the LoKI directory. You can then set \seclink{lokiinput}{LOKI\_INPUT} to the name of the input file. You must include in the name the \textbf{.in} extension. If the input file was placed in some sub-folder inside the \textbf{Input/} directory, you can add that to the name of the file. For example, if you created a LoKI input file named \textbf{my\_loki\_input.in} and you put it inside the sub-folder\textbf{ Merlino2D\_inputs/} inside the \textbf{Input/} directory (already present in LoKI-B distribution), you should set 
+	This parameter is a string used to specify either the \textbf{.in} input file for LoKI-B, or the \textbf{.mat} file where LoKI-B results have been previously stored.
+	To run a new LoKI-B input file, you must first of all create a valid one (we refer the reader to \href{https://github.com/LoKI-Suite/LoKI-B/tree/master/Documentation}{LoKI-B documentation}), and place it inside the \textbf{Input/} folder of the LoKI-B directory. You can then set \seclink{lokiinput}{LOKI\_INPUT} to the name of the input file. You must include in the name the \textbf{.in} extension. If the input file was placed in some sub-folder inside the \textbf{Input/} directory, you can add that to the name of the file. For example, if you created a LoKI-B input file named \textbf{my\_loki\_input.in} and you put it inside the sub-folder\textbf{ Merlino2D\_inputs/} inside the \textbf{Input/} directory (already present in LoKI-B distribution), you should set 
 	
 	\matlabs{opts.LOKI\_INPUT = "Merlino2D\_inputs/my\_loki\_input.in";}
 	
-	\noindent If you have already saved LoKI results in a previous simulation (using the \seclink{saveloki}{SAVE\_LOKI} parameter), \seclink{lokiinput}{LOKI\_INPUT} can be set to the name of the saving file. For example, if you previously saved LoKI results in the file \textbf{my\_save.mat}, you can set
+	\noindent If you have already saved LoKI-B results in a previous simulation (using the \seclink{saveloki}{SAVE\_LOKI} parameter), \seclink{lokiinput}{LOKI\_INPUT} can be set to the name of the saving file. For example, if you previously saved LoKI results in the file \textbf{my\_save.mat}, you can set
 	
 	\matlabs{opts.LOKI\_INPUT = "my\_save.mat";}
 	
 	\noindent to retrieve the results without the need to run LoKI-B again. You must include the \textbf{.mat} extension.
 	
-	The input file for LoKI-B, \textbf{Air.in}, for a mixture of \ce{N2}(79 \%) - \ce{O2}(21 \%), is already provided with Merlino2D. It should be moved inside the \textbf{Input/} sub-folder of the LoKI directory if you wish to use the Boltzmann solver functionalities.
+	The input file for LoKI-B, \textbf{Air.in}, for a mixture of \ce{N2}(79 \%) - \ce{O2}(21 \%), is already provided with Merlino2D and is located inside the \textbf{Input/} folder of the LoKI-B directory.
 	
 	\subsection{SAVE\_LOKI}
 	\label{sec:saveloki}
 	This parameter is a string used to indicate the file where to save the results obtained from running the input file specified with \seclink{lokiinput}{LOKI\_INPUT}.
-	Merlino2D will create an additional folder inside the LoKI directory, called \textbf{LoKIsavings/}, where results will be saved. In case you want to load one of these savings, you can set \seclink{lokiinput}{LOKI\_INPUT} to the name of the saved file. Merlino2D will automatically look for a file with the name you specified inside the \textbf{LoKIsavings/} folder and load the results from it.
+	Merlino2D will create an additional folder inside the LoKI-B directory, called \textbf{LoKIsavings/}, where results will be saved. In case you want to load one of these savings, you can set \seclink{lokiinput}{LOKI\_INPUT} to the name of the saved file. Merlino2D will automatically look for a file with the name you specified inside the \textbf{LoKIsavings/} folder and load the results from it.
 	When using \seclink{saveloki}{SAVE\_LOKI}, the extension \textbf{.mat} is not compulsory. This means that both the following examples are valid.
 	
 	\matlabs{opts.SAVE\_LOKI = "my\_save";}
@@ -803,5 +883,13 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	This parameter is the relative tolerance for the DAE solver. The default is
 	
 	\matlabs{opts.REL\_TOL = 1e-3;}
+	
+	\subsection{SPECIES\_NO\_CHEM}
+	\label{sec:speciesnochem}
+	This parameter is used when \seclink{chemicalmodel}{CHEMICAL\_MODEL} is set to \matlabs{"Off"}.
+	\seclink{speciesnochem}{SPECIES\_NO\_CHEM} must be a cell array containing the strings that identify the species that the user wants to consider for the simulation. The order in which the species appear is important in case a Gaussian distribution is used in \seclink{initial}{INITIAL\_CONDITION}. Note that all the species used must be defined inside the file \textbf{species\_database.csv} contained in the \textbf{data/} folder.
+	
+	\matlabs{opts.SPECIES\_NO\_CHEM = \{"N2+", "O2-", "O-", "N", "N2";\}}
+	
 		
 \end{document}

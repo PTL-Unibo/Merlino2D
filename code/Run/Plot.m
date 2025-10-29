@@ -24,7 +24,7 @@ arguments
     opts.ax = -1
     opts.species_index = 1;
     opts.k = out_pp.nt
-    opts.flip_y = 0
+    opts.flip_y (1,1) double {mustBeMember(opts.flip_y,{0,1})} = 0
     opts.log10_zero_val = 2;
 end
 
@@ -66,12 +66,6 @@ switch opts.type
         cb.Label.Interpreter = "latex";
         cb.Label.String = out_pp.S_NAMES(opts.species_index) + " number density $(\mathrm{m}^{-3})$";
         cb.Label.FontSize = 15;
-        % tkz_lbl = cell(numel(cb.Ticks),1);
-        % for i = 1:numel(cb.Ticks)
-        %     tkz_lbl{i} = "$10^{" + cb.Ticks(i) + "}$";
-        % end
-        % cb.Ticks = cb.Ticks;
-        % cb.TickLabels = tkz_lbl;
     
     case "rhoc" % cell charge density
         rhok = out_pp.RHO_CELLS(:,opts.k);
@@ -137,12 +131,6 @@ switch opts.type
         cb.Label.Interpreter = "latex";
         cb.Label.String = out_pp.S_NAMES(opts.species_index) + " number density $(\mathrm{m}^{-3})$";
         cb.Label.FontSize = 15;
-        % tkz_lbl = cell(numel(cb.Ticks),1);
-        % for i = 1:numel(cb.Ticks)
-        %     tkz_lbl{i} = "$10^{" + cb.Ticks(i) + "}$";
-        % end
-        % cb.Ticks = cb.Ticks;
-        % cb.TickLabels = tkz_lbl;
     
     case "rhon" % nodes charge density
         rhok = out_pp.RHO_NODES(:,opts.k);
