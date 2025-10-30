@@ -26,7 +26,7 @@ indices_pos_ions = find(qs > 0);
 
 I = repmat(msh.f_from_d,numel(indices_pos_ions),1);
 J = msh.f_from_d + (indices_pos_ions-1)*msh.Nf;
-S = -gammaIIdiel * ones(size(J)); % .* coeff(indices_pos_ions);
+S = -gammaIIdiel * ones(size(J));
 
 surf_charge_accum_flux_coeff = surf_charge_accum_flux_coeff + sparse(I, J(:), S(:), msh.Nf*ns, msh.Nf*ns);
 

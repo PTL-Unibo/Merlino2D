@@ -9,11 +9,30 @@ inv_mapping = find(msh.nodes_mapping);
 [~,~,small_Dirichlet_nodes_indices] = find(msh.nodes_mapping(Dirichlet_nodes_indices));
 small_non_Dirichlet_nodes_indices = setdiff((1:msh.Nn)', small_Dirichlet_nodes_indices);
 
+% fix the electric field at zero Neumann faces-----------------------------%|
+removed_indices = GetRemovedIndices(full_msh);                             %|
+small_BCEL_FLAG = BCEL_FLAG;                                               %|
+small_BCEL_FLAG(removed_indices) = [];                                     %|
+Neumann_zero_boundaries = vertcat(msh.bs_from_bID{small_BCEL_FLAG==1});    %|
+Neumann_zero_faces = msh.f_from_b(Neumann_zero_boundaries);                %|
+Neumann_zero_nodes = msh.ns_from_b(Neumann_zero_boundaries,:);             %|
+%--------------------------------------------------------------------------%|
+
 dNdz = [1,0;0,1;-1,-1]; % 2D triangles 1st order shape functions
 [phi2Ex, phi2Ey] = CreateEMatricesFEM(msh.ns_from_c, msh.xn, msh.yn, msh.Nc, msh.Nn, dNdz);
 E2Faces = CreateE2FacesFEM(msh.inv_vol, msh.cs_from_f, msh.Nf, msh.Nc);
+E2Faces(Neumann_zero_faces,:) = 0;
 phi2Ex = E2Faces * phi2Ex;
 phi2Ey = E2Faces * phi2Ey;
+
+% fix the electric field at zero Neumann faces------------------------------------------------------------------------------------------%|
+ii = repelem(Neumann_zero_faces,2);                                                                                                     %|
+jj = reshape(Neumann_zero_nodes',[],1);                                                                                                 %|
+ss = reshape(reshape(repelem(reshape(msh.Tv(Neumann_zero_faces,:)./(msh.areaf(Neumann_zero_faces).^2),[],1),2),2,[]).*[1;-1],[],1);     %|
+phi2Ex(sub2ind(size(phi2Ex),ii,jj)) = ss(1:numel(ss)/2);                                                                                %|
+phi2Ey(sub2ind(size(phi2Ey),ii,jj)) = ss(numel(ss)/2+1:end);                                                                            %|
+% --------------------------------------------------------------------------------------------------------------------------------------%|
+
 aux2Ex = phi2Ex(:,small_Dirichlet_nodes_indices);
 aux2Ey = phi2Ey(:,small_Dirichlet_nodes_indices);
 phi2Ex = phi2Ex(:,small_non_Dirichlet_nodes_indices);

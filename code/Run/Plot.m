@@ -24,7 +24,7 @@ arguments
     opts.ax = -1
     opts.species_index = 1;
     opts.k = out_pp.nt
-    opts.flip_y (1,1) double {mustBeMember(opts.flip_y,{0,1})} = 0
+    opts.flip_y (1,1) double {mustBeMember(opts.flip_y,[0,1])} = 0
     opts.log10_zero_val = 2;
 end
 

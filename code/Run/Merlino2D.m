@@ -29,8 +29,8 @@ arguments
     extra.SURF_CHARGE_COEFF
     extra.GAMMA_II_DIEL
     extra.ODE_TYPE (1,:) char {mustBeMember(extra.ODE_TYPE,{'ode15s','idas'})}
-    extra.OPEN_GMSH (1,1) double {mustBeMember(extra.OPEN_GMSH,{0,1})}
-    extra.REORDERING (1,1) double {mustBeMember(extra.REORDERING,{0,1})}
+    extra.OPEN_GMSH (1,1) double {mustBeMember(extra.OPEN_GMSH,[0,1])}
+    extra.REORDERING (1,1) double {mustBeMember(extra.REORDERING,[0,1])}
     extra.OUTPUT_FUNCTION (1,:) char {mustBeMember(extra.OUTPUT_FUNCTION,{'bar','current','none'})}
     extra.BAR_SCALE (1,:) char {mustBeMember(extra.BAR_SCALE,{'lin','log'})}
     extra.STEADY_STATE_THRESHOLD
