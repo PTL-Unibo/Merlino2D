@@ -25,13 +25,15 @@ E2Faces(Neumann_zero_faces,:) = 0;
 phi2Ex = E2Faces * phi2Ex;
 phi2Ey = E2Faces * phi2Ey;
 
-% fix the electric field at zero Neumann faces------------------------------------------------------------------------------------------%|
-ii = repelem(Neumann_zero_faces,2);                                                                                                     %|
-jj = reshape(Neumann_zero_nodes',[],1);                                                                                                 %|
-ss = reshape(reshape(repelem(reshape(msh.Tv(Neumann_zero_faces,:)./(msh.areaf(Neumann_zero_faces).^2),[],1),2),2,[]).*[1;-1],[],1);     %|
-phi2Ex(sub2ind(size(phi2Ex),ii,jj)) = ss(1:numel(ss)/2);                                                                                %|
-phi2Ey(sub2ind(size(phi2Ey),ii,jj)) = ss(numel(ss)/2+1:end);                                                                            %|
-% --------------------------------------------------------------------------------------------------------------------------------------%|
+% fix the electric field at zero Neumann faces----------------------------------------------------------------------------------------------%|
+if numel(Neumann_zero_faces) > 0                                                                                                            %|
+    ii = repelem(Neumann_zero_faces,2);                                                                                                     %|
+    jj = reshape(Neumann_zero_nodes',[],1);                                                                                                 %|
+    ss = reshape(reshape(repelem(reshape(msh.Tv(Neumann_zero_faces,:)./(msh.areaf(Neumann_zero_faces).^2),[],1),2),2,[]).*[1;-1],[],1);     %|
+    phi2Ex(sub2ind(size(phi2Ex),ii,jj)) = ss(1:numel(ss)/2);                                                                                %|
+    phi2Ey(sub2ind(size(phi2Ey),ii,jj)) = ss(numel(ss)/2+1:end);                                                                            %|
+end                                                                                                                                         %|
+% ------------------------------------------------------------------------------------------------------------------------------------------%|
 
 aux2Ex = phi2Ex(:,small_Dirichlet_nodes_indices);
 aux2Ey = phi2Ey(:,small_Dirichlet_nodes_indices);

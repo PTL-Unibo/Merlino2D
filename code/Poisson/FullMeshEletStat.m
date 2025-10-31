@@ -66,6 +66,7 @@ for i = 1:numel(w)
     J = (X * dNdz(z));
     gradN = dNdz(z) / J;
     x = X * N(z);
+    % ke_i = p(X*N(z))*dNdz(z)/(dNdz(z)'*X'*X*dNdz(z))*dNdz(z)'*abs(det(X*dNdz(z)))
     ke_i = p(x) * (gradN * gradN') * abs(det(J));
     ke = ke + w(i) * ke_i;
 end

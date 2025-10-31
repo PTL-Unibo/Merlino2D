@@ -50,9 +50,9 @@ Te_c = fTe(E_c_Td);
 v_th_x(1:numel(indices_faces_Ge)) = v_th_x(1:numel(indices_faces_Ge)) .* sqrt(Te_int(indices_faces_Ge));
 v_th_y(1:numel(indices_faces_Ge)) = v_th_y(1:numel(indices_faces_Ge)) .* sqrt(Te_int(indices_faces_Ge));
 
-mu = fMu(E_int_Td,Te_int,ones(Nf,1)*T,Ngas);
-D = fD(mu,E_int_Td,Te_int,ones(Nf,1)*T,Ngas);
-kr = fKr(E_c_Td,Te_c,ones(Nc,1)*T,Ngas);
+mu = fMu(E_int_Td,Te_int,ones(Nf,1)*T,ones(Nf,1)*Ngas);
+D = fD(mu,E_int_Td,Te_int,ones(Nf,1)*T,ones(Nf,1)*Ngas);
+kr = fKr(E_c_Td,Te_c,ones(Nc,1)*T,ones(Nc,1)*Ngas);
 
 Dmatrix = spdiags(reshape(D,[],1),0,ns*Nf,ns*Nf);
 
