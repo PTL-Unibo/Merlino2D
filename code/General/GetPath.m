@@ -10,7 +10,8 @@ switch id
         path_gmsh = "C:/Users/fabio/Documents/gmsh-4.13.1-Windows64/gmsh.exe";
         p = path_gmsh;
     case 'loki'
-        p = Merlino2Dpath + "LoKI-B";
+        path_loki = "C:/Users/fabio/Documents/LoKI-B/Code";
+        p = path_loki;
     case 'geo'
         p = Merlino2Dpath + "geo";
     case 'data'

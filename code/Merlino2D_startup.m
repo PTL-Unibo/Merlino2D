@@ -15,12 +15,16 @@ new_text = regexprep(text,"Merlino2Dpath = [^;]*","Merlino2Dpath = """+Merlino2D
 location = strrep(location,"\","/");
 new_new_text = regexprep(new_text,"path_gmsh = [^;]*","path_gmsh = """+location+file+"""");
 
+location = uigetdir("",'Select the LoKI-B Code/ folder');
+location = strrep(location,"\","/");
+new_new_new_text = regexprep(new_new_text,"path_loki = [^;]*","path_loki = """+location+"""");
+
 fileID = fopen("code/General/GetPath.m","w");
-fprintf(fileID,"%s",new_new_text);
+fprintf(fileID,"%s",new_new_new_text);
 fclose(fileID);
 
 run("init.m");
 
 cd(current_directory)
 clear current_directory fileID Merlino2DPath mfilePath new_text 
-clear new_new_text pieces text ans location file
+clear new_new_text new_new_new_text pieces text ans location file

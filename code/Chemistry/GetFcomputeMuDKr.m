@@ -2,10 +2,10 @@ function [fComputeMu,fComputeD,fComputeKr] = GetFcomputeMuDKr(Mu,D,Kr,Nc,Nf,Loki
 
 flag_loki = 0;
 if ~isempty(Loki)
-    Loki_D = griddedInterpolant(Loki.E,cell2mat({Loki.swarmParam.redDiffCoeff}),'pchip','nearest'); %#ok<NASGU> % reduced diffusion coefficient
-    Loki_mu = griddedInterpolant(Loki.E,cell2mat({Loki.swarmParam.redMobility}),'pchip','nearest'); %#ok<NASGU> % reduced mobility
-    Loki_alpha = griddedInterpolant(Loki.E,cell2mat({Loki.swarmParam.redTownsendCoeff}),'pchip','nearest'); %#ok<NASGU> % reduced Townsend ionization coefficient
-    Loki_eta = griddedInterpolant(Loki.E,cell2mat({Loki.swarmParam.redAttCoeff}),'pchip','nearest'); %#ok<NASGU> % reduced attachment coefficient
+    Loki_D = griddedInterpolant(Loki.E,Loki.swarmParam.redDiffCoeff,'pchip','nearest'); %#ok<NASGU> % reduced diffusion coefficient
+    Loki_mu = griddedInterpolant(Loki.E,Loki.swarmParam.redMobility,'pchip','nearest'); %#ok<NASGU> % reduced mobility
+    Loki_alpha = griddedInterpolant(Loki.E,Loki.swarmParam.redTownsendCoeff,'pchip','nearest'); %#ok<NASGU> % reduced Townsend ionization coefficient
+    Loki_eta = griddedInterpolant(Loki.E,Loki.swarmParam.redAttCoeff,'pchip','nearest'); %#ok<NASGU> % reduced attachment coefficient
     if numel(Loki.map_MKin_Loki) > 0 
         % only if some rates need to be evaluated with LoKI ---------------
         k_Loki = Loki.ratecoeff(:,Loki.map_MKin_Loki(:,2));

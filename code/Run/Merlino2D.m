@@ -20,7 +20,6 @@ arguments
     extra.CONST_OMEGA
     extra.CHEMICAL_MODEL
     extra.LOKI_INPUT
-    extra.SAVE_LOKI
     extra.ELECTRON_TEMPERATURE
     extra.TEMPERATURE
     extra.PRESSURE
@@ -106,7 +105,7 @@ species_info_table = readtable(GetPath("data")+"/species_database.csv");
 ms = table2array(species_info_table(indices_table,2))';
 qs = table2array(species_info_table(indices_table,3))';
 
-Loki = GetLoki(p.LOKI_INPUT,p.SAVE_LOKI,reactions);
+Loki = GetLoki(p.LOKI_INPUT,reactions);
 
 % Setting Electron Temperature --------------------------------------------
 % ELECTRON_TEMPERATURE can be se to
@@ -117,7 +116,7 @@ if isstring(p.ELECTRON_TEMPERATURE) | ischar(p.ELECTRON_TEMPERATURE)
         if isempty(Loki)
             error("You need to provide a LOKI_INPUT if you set ELECTRON_TEMPERATURE to LoKI")
         end
-        fTe = griddedInterpolant(Loki.E,2/3*cell2mat({Loki.swarmParam.meanEnergy}),'pchip','nearest');
+        fTe = griddedInterpolant(Loki.E,2/3*Loki.swarmParam.meanEnergy,'pchip','nearest');
     else
         LUT_Te = load(GetPath("data")+"/"+p.ELECTRON_TEMPERATURE+".csv");
         fTe = griddedInterpolant(LUT_Te(:,1),LUT_Te(:,2),"pchip","nearest");
