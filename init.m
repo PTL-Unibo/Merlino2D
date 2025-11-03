@@ -1,2 +1,2 @@
 % adding the folder code/ to MATLAB path
-addpath(genpath("code"))
+addpath(genpath("src"))

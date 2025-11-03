@@ -8,7 +8,7 @@ Merlino2DPath = join(pieces(1:end-2),"");
 current_directory = pwd;
 cd(Merlino2DPath)
 
-text = fileread("code/General/GetPath.m");
+text = fileread("src/General/GetPath.m");
 new_text = regexprep(text,"Merlino2Dpath = [^;]*","Merlino2Dpath = """+Merlino2DPath+"""");
 
 [file,location] = uigetfile('*.exe','Select the gmsh executable');
@@ -19,7 +19,7 @@ location = uigetdir("",'Select the LoKI-B Code/ folder');
 location = strrep(location,"\","/");
 new_new_new_text = regexprep(new_new_text,"path_loki = [^;]*","path_loki = """+location+"""");
 
-fileID = fopen("code/General/GetPath.m","w");
+fileID = fopen("src/General/GetPath.m","w");
 fprintf(fileID,"%s",new_new_new_text);
 fclose(fileID);
 
