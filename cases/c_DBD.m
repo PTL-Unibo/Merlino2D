@@ -33,8 +33,9 @@ opts.CONST_OMEGA = {
     'I-',1e5
     'e', 1e15;
     "I+",1e15};
-opts.CHEMICAL_MODEL = 's_LokiTownsend';
-opts.LOKI_INPUT = "Air_saved.mat";
+opts.CHEMICAL_MODEL = 's_TownsendLoki';
+opts.CONST_SPECIES = {"M", 1, "rel"};
+opts.LOKI_INPUT = 'Air';
 opts.ELECTRON_TEMPERATURE = "Te_Air";
 opts.GAMMA_II = 5e-2;
 opts.SURF_CHARGE_COEFF = [0.1, 0.1, 0.1];
@@ -45,6 +46,6 @@ out_pp = PostProcessing(out);
 Save(out_pp,"DBD.mat")
 
 %%
-% out_pp = Load("DBD.mat");
+out_pp = Load("DBD.mat");
 Plot(out_pp,"type","t-iv");
 ExportVTU(out_pp,"DBD")

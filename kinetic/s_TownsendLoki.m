@@ -4,6 +4,3 @@ reactions = {
     "e + I+ -> M",          2e-7 * 1e-6; 
     "I- + I+ -> 2M",        2e-7 * 1e-6; 
     };
-const_species = {
-    "M", Ngas
-    };

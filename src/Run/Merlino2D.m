@@ -19,6 +19,7 @@ arguments
     extra.V_TH_COEFF
     extra.CONST_OMEGA
     extra.CHEMICAL_MODEL
+    extra.CONST_SPECIES
     extra.LOKI_INPUT
     extra.ELECTRON_TEMPERATURE
     extra.TEMPERATURE
@@ -83,7 +84,7 @@ if upper(p.CHEMICAL_MODEL) == "OFF"
     ns = numel(species);
     stoichiometric_matrix = zeros(1,ns);
 else
-    const_species = {"", []};
+    const_species = GetConstSpecies(p.CONST_SPECIES, Ngas);
     run(GetPath("kin")+"/"+p.CHEMICAL_MODEL+".m")
     [species,reactants,products,indices_const_species] = GetReactantsProducts(string(vertcat(reactions(:,1))), string(vertcat(const_species(:,1)))); %#ok<NODEF>
     ns = numel(species);

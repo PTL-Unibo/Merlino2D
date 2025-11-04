@@ -39,7 +39,10 @@ opts.CONST_OMEGA = {
     'N2+', 0.5e15;
     "O2+", 0.5e15;
     "O2-", 1e5};
-opts.CHEMICAL_MODEL = 's_LokiParentConst';
+opts.CHEMICAL_MODEL = 's_Parent';
+opts.CONST_SPECIES = {
+    "N2", 0.7884, "rel";
+    "O2", 0.2116, "rel"};
 opts.LOKI_INPUT = "Air";
 opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
