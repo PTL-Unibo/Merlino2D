@@ -1,6 +1,7 @@
-function [mshpp] = PreProcessing(msh_name, options)
+function [mshpp] = PreProcessing(msh_name, coordinates, options)
 arguments
     msh_name (1,:) char
+    coordinates (1,:) char
     options.remove_dielectric (1,:) char {mustBeMember(options.remove_dielectric,{'yes','no'})} = 'no'
 end
 % Physical curves with tag >= 8854 are considered to be dielectric
@@ -11,7 +12,7 @@ end
 run(msh_name + ".m")
 
 if options.remove_dielectric == "yes"
-    [msh,nodes_mapping] = RemoveDielectric(msh);
+    [msh,nodes_mapping] = RemoveDielectric(msh); %#ok<NODEF>
 end
 
 ns_from_c = msh.TRIANGLES(:,1:3);
@@ -116,8 +117,12 @@ end
 
 Face2Node = sparse(repelem(1:Nn, num_fs_from_n), vertcat(fs_from_n{:}), vertcat(w_fs_from_n{:}), Nn, Nf);
 
-areaf = sqrt((Xf(:,1)-Xf(:,2)).^2 + (Yf(:,1)-Yf(:,2)).^2);
-vol = TriangleArea(Xc, Yc);
+if lower(coordinates) == "cartesian"
+    areaf = sqrt((Xf(:,1)-Xf(:,2)).^2 + (Yf(:,1)-Yf(:,2)).^2);
+    vol = TriangleArea(Xc, Yc);
+elseif lower(coordinates) == "cylindrical"
+    [vol, areaf] = AxisymmetricVolumeArea(ns_from_c, ns_from_f, fs_from_c, f_from_ns, xn, yn, Nc, Nf);
+end
 inv_vol = 1 ./ vol;
 
 Tv = [Xf(:,2)-Xf(:,1), Yf(:,2)-Yf(:,1)];
@@ -177,6 +182,8 @@ mshpp.I = I;
 mshpp.sn = sn;
 mshpp.snsign = snsign;
 mshpp.delta = delta;
+mshpp.inv_vol_standard = 1./TriangleArea(Xc, Yc);
+mshpp.areaf_standard = sqrt((Xf(:,1)-Xf(:,2)).^2 + (Yf(:,1)-Yf(:,2)).^2);
 if options.remove_dielectric == "yes"
     mshpp.nodes_mapping = nodes_mapping;
 end

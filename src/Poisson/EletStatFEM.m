@@ -1,9 +1,9 @@
 function [Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, ...
           phi2Ex, phi2Ey, aux2Ex, aux2Ey, phi2En, aux2En, ...
-          inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, BCEL_FLAG, EPSR_VAL)
+          inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, BCEL_FLAG, EPSR_VAL, coordinates)
 
 [Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = ...
-    FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL);
+    FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL, coordinates);
 
 inv_mapping = find(msh.nodes_mapping);
 [~,~,small_Dirichlet_nodes_indices] = find(msh.nodes_mapping(Dirichlet_nodes_indices));
@@ -20,20 +20,20 @@ Neumann_zero_nodes = msh.ns_from_b(Neumann_zero_boundaries,:);             %|
 
 dNdz = [1,0;0,1;-1,-1]; % 2D triangles 1st order shape functions
 [phi2Ex, phi2Ey] = CreateEMatricesFEM(msh.ns_from_c, msh.xn, msh.yn, msh.Nc, msh.Nn, dNdz);
-E2Faces = CreateE2FacesFEM(msh.inv_vol, msh.cs_from_f, msh.Nf, msh.Nc);
+E2Faces = CreateE2FacesFEM(msh.inv_vol_standard, msh.cs_from_f, msh.Nf, msh.Nc);
 E2Faces(Neumann_zero_faces,:) = 0;
 phi2Ex = E2Faces * phi2Ex;
 phi2Ey = E2Faces * phi2Ey;
 
-% fix the electric field at zero Neumann faces----------------------------------------------------------------------------------------------%|
-if numel(Neumann_zero_faces) > 0                                                                                                            %|
-    ii = repelem(Neumann_zero_faces,2);                                                                                                     %|
-    jj = reshape(Neumann_zero_nodes',[],1);                                                                                                 %|
-    ss = reshape(reshape(repelem(reshape(msh.Tv(Neumann_zero_faces,:)./(msh.areaf(Neumann_zero_faces).^2),[],1),2),2,[]).*[1;-1],[],1);     %|
-    phi2Ex(sub2ind(size(phi2Ex),ii,jj)) = ss(1:numel(ss)/2);                                                                                %|
-    phi2Ey(sub2ind(size(phi2Ey),ii,jj)) = ss(numel(ss)/2+1:end);                                                                            %|
-end                                                                                                                                         %|
-% ------------------------------------------------------------------------------------------------------------------------------------------%|
+% fix the electric field at zero Neumann faces----------------------------------------------------------------------------------------------------%|
+if numel(Neumann_zero_faces) > 0                                                                                                                  %|
+    ii = repelem(Neumann_zero_faces,2);                                                                                                           %|
+    jj = reshape(Neumann_zero_nodes',[],1);                                                                                                       %|
+    ss = reshape(reshape(repelem(reshape(msh.Tv(Neumann_zero_faces,:)./(msh.areaf_standard(Neumann_zero_faces).^2),[],1),2),2,[]).*[1;-1],[],1);  %|
+    phi2Ex(sub2ind(size(phi2Ex),ii,jj)) = ss(1:numel(ss)/2);                                                                                      %|
+    phi2Ey(sub2ind(size(phi2Ey),ii,jj)) = ss(numel(ss)/2+1:end);                                                                                  %|
+end                                                                                                                                               %|
+% ------------------------------------------------------------------------------------------------------------------------------------------------%|
 
 aux2Ex = phi2Ex(:,small_Dirichlet_nodes_indices);
 aux2Ey = phi2Ey(:,small_Dirichlet_nodes_indices);

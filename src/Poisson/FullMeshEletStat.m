@@ -1,5 +1,5 @@
 function [Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = ...
-    FullMeshEletStat(msh, BCEL_FLAG, EPSR_VAL)
+    FullMeshEletStat(msh, BCEL_FLAG, EPSR_VAL, coordinates)
 
 Nnel = 3;
 Nc = msh.Nc; % number of elements
@@ -17,13 +17,21 @@ II_rho_rhs = zeros(Nc*Nnel + msh.Nd*2,1);
 JJ_rho_rhs = zeros(Nc*Nnel + msh.Nd*2,1);
 SS_rho_rhs = zeros(Nc*Nnel + msh.Nd*2,1);
 
+if lower(coordinates) == "cartesian"
+    f_fem_element = @(p,X,N,dNdz,Z,w) fem_element(p,X,N,dNdz,Z,w);
+    f_fem_rhs = @(t,X,N,dNdz,Z,w) fem_rhs(t,X,N,dNdz,Z,w);
+elseif lower(coordinates) == "cylindrical"
+    f_fem_element = @(p,X,N,dNdz,Z,w) fem_element_cyl(p,X,N,dNdz,Z,w);
+    f_fem_rhs = @(t,X,N,dNdz,Z,w) fem_rhs_cyl(t,X,N,dNdz,Z,w);
+end
+
 t = @(x) 1;
 for i = 1:Nc
     nodes = msh.ns_from_c(i,:);
     X = [msh.xn(nodes), msh.yn(nodes)]';
     p = @(x) EPSR_VAL(msh.cID_from_c(i));
-    Kel = fem_element(p,X,N,dNdz,Z,w);
-    RHSel = fem_rhs(t,X,N,dNdz,Z,w);
+    Kel = f_fem_element(p,X,N,dNdz,Z,w);
+    RHSel = f_fem_rhs(t,X,N,dNdz,Z,w);
     II_Kelet((i-1)*Nnel^2+1:(i-1)*Nnel^2+Nnel^2) = repmat(nodes,1,Nnel);
     JJ_Kelet((i-1)*Nnel^2+1:(i-1)*Nnel^2+Nnel^2) = repelem(nodes,Nnel);
     SS_Kelet((i-1)*Nnel^2+1:(i-1)*Nnel^2+Nnel^2) = Kel(:);
@@ -72,6 +80,18 @@ for i = 1:numel(w)
 end
 end
 
+function [ke] = fem_element_cyl(p,X,N,dNdz,Z,w)
+ke = zeros(size(X,2));
+for i = 1:numel(w)
+    z = Z(i,:);
+    J = (X * dNdz(z));
+    gradN = dNdz(z) / J;
+    x = X * N(z);
+    ke_i = p(x) * (gradN * gradN') * abs(det(J)) * x(2);
+    ke = ke + w(i) * ke_i;
+end
+end
+
 function [krhs] = fem_rhs(t,X,N,dNdz,Z,w)
 krhs = zeros(size(X,2),1);
 for i = 1:numel(w)
@@ -79,6 +99,17 @@ for i = 1:numel(w)
     J = (X * dNdz(z));
     x = X * N(z);
     krhs_i = N(z)*t(x)*abs(det(J));
+    krhs = krhs + w(i) * krhs_i;
+end
+end
+
+function [krhs] = fem_rhs_cyl(t,X,N,dNdz,Z,w)
+krhs = zeros(size(X,2),1);
+for i = 1:numel(w)
+    z = Z(i,:);
+    J = (X * dNdz(z));
+    x = X * N(z);
+    krhs_i = N(z)*t(x)*abs(det(J)) * x(2);
     krhs = krhs + w(i) * krhs_i;
 end
 end

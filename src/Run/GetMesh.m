@@ -1,4 +1,4 @@
-function [msh] = GetMesh(geo_file_content,MSHparameters)
+function [msh] = GetMesh(geo_file_content,coordinates,MSHparameters)
 
 % writing msh.geo
 lines = geo_file_content;
@@ -19,7 +19,7 @@ writelines(lines, user_directory+"/msh.geo");
 
 cmd_argumets = CreateCmdMshParameters(MSHparameters);
 [~,~] = system(GetPath("gmsh") + " " + user_directory + "/msh.geo" + cmd_argumets + " -parse_and_exit");
-msh = PreProcessing(user_directory+"/mesh", "remove_dielectric","yes");
+msh = PreProcessing(user_directory+"/mesh", coordinates, "remove_dielectric","yes");
 
 delete(user_directory+"/msh.geo")
 delete(user_directory+"/mesh.m")

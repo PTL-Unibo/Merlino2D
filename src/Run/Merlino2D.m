@@ -28,6 +28,7 @@ arguments
     extra.GAMMA_II
     extra.SURF_CHARGE_COEFF
     extra.GAMMA_II_DIEL
+    extra.COORDINATES (1,:) char {mustBeMember(extra.COORDINATES,{'cartesian','cylindrical'})}
     extra.ODE_TYPE (1,:) char {mustBeMember(extra.ODE_TYPE,{'ode15s','idas'})}
     extra.OPEN_GMSH (1,1) double {mustBeMember(extra.OPEN_GMSH,[0,1])}
     extra.REORDERING (1,1) double {mustBeMember(extra.REORDERING,[0,1])}
@@ -61,13 +62,13 @@ p.SPECIES_NO_CHEM = strtrim(string(p.SPECIES_NO_CHEM(:))); % convert to column s
 
 % Generating Mesh ---------------------------------------------------------
 geo_file = GetPath("geo") + "/" + p.MSH + ".geo";
-cmd_argumets = CreateCmdMshParameters(p.MSH_PARAMETERS);
+cmd_arguments = CreateCmdMshParameters(p.MSH_PARAMETERS);
 if p.OPEN_GMSH == 1
-    system(GetPath("gmsh") + " " + geo_file + cmd_argumets);
+    system(GetPath("gmsh") + " " + geo_file + cmd_arguments);
 elseif p.OPEN_GMSH == 0
-    [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_argumets + " -parse_and_exit");
+    [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
 end
-msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "remove_dielectric","yes");
+msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","yes");
 geo_file_content = readlines(geo_file);
 fprintf("%s\n","Generated Mesh");
 
@@ -131,10 +132,10 @@ end
 BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
 fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
 
-full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "remove_dielectric","no");
+full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
 [Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, ...
  phi2Ex, phi2Ey, aux2Ex, aux2Ey, phi2En, ~, ...
- inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, p.BCEL_FLAG, p.EPSR_VAL);
+ inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
 
 Kelet_d = decomposition(Kelet);
 
