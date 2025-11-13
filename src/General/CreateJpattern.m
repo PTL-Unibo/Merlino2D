@@ -51,8 +51,4 @@ DAE = [rho2RHS * RS, Kelet];
 
 Jpattern = [[DnsDns,[DnDphi;DsDphi]] ; DAE];
 
-% replace each number with a 1
-[i,j,s] = find(Jpattern);
-Jpattern = sparse(i,j,ones(size(s)),size(Jpattern,1),size(Jpattern,2));
-
 end

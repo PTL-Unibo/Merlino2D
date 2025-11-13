@@ -1,4 +1,4 @@
-function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I] = DaeFunc2D(t,y,Nf,Nc,Nd, ...
+function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I] = DaeFunc2D(t,y,Nf,Nc,Nd,Nph, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
     Kelet,rho2RHS,aux2RHS,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,T,qs,BCEL_VAL,V_APPLIED,...
@@ -7,7 +7,8 @@ function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I] = DaeFunc2D(t,y,Nf
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
     Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, re)
+    Ex_1, Ey_1, g2Is, re,...
+    Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh)
 
 persistent n_left n_right
 if isempty(n_left)
@@ -21,7 +22,8 @@ y = y(inv_ppp); % converts y into normal ordering
 
 n_c = y(1:ns*Nc);
 sigma = y(ns*Nc+1:ns*Nc+Nd);
-phi = y(ns*Nc+Nd+1:end);
+phi = y(ns*Nc+Nd+1:end-Nph);
+Sph = y(end-(Nph-1):end);
 
 n_left(i_upwind) = n_c(i_n_left);
 n_right(i_upwind) = n_c(i_n_right);
@@ -69,7 +71,8 @@ Bfval = fBfval(t);
 % Compute omega with matrix form 
 M(1,:) = kr(:);
 M(Mindices) = n_c(Nindices);
-omega = reshape(reshape(prod(M),Nc,[])*stoichiometric_matrix+const_omega,[],1);
+reaction_rates = reshape(prod(M),Nc,[]);
+omega = reshape(reaction_rates*stoichiometric_matrix + (CellFromNodesPh*Sph).*ph_coeff + const_omega,[],1);
 
 n_up = n_left .* u_dot_n_max + n_right .* u_dot_n_min + Xmu * Bfval;
 
@@ -101,11 +104,15 @@ I = g2Is * (Ex_1 .* sum(reshape(surf_charge_accum_flux_coeff*Gamma_x,Nf,ns).*qs,
 
 Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
 
+% photoionization
+Si = (0.03 + 0.1) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
+
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
-dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
+phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
+ph_ioniz_dae = Ks*Sph - Si2RHS*Si;
 
-dydt = [dndt; dsdt; dae];
+dydt = [dndt; dsdt; phi_dae; ph_ioniz_dae];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
 

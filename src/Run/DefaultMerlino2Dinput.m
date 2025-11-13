@@ -13,6 +13,7 @@ p.MU = {};
 p.D = {};
 p.V_TH_COEFF = {};
 p.CONST_OMEGA = {};
+p.PHOTOIONIZATION = struct;
 p.CHEMICAL_MODEL = "Off";
 p.CONST_SPECIES = {};
 p.LOKI_INPUT = "";

@@ -1,3 +1,4 @@
+clearvars, close, clc
 opts.MSH = 'WireWireGrid';
 opts.MSH_PARAMETERS.k = 1;
 opts.BCEL_FLAG = [0; 0; 0; 0; 0; 1; 1; 1; 1];
@@ -34,11 +35,23 @@ opts.V_TH_COEFF = {
     "e",   1;
     "O2+", 1;
     "O2-", 1};
+% opts.CONST_OMEGA = {
+%     "e",   1e15;
+%     'N2+', 0.5e15;
+%     "O2+", 0.5e15;
+%     "O2-", 1e5};
 opts.CONST_OMEGA = {
-    "e",   1e15;
-    'N2+', 0.5e15;
-    "O2+", 0.5e15;
-    "O2-", 1e5};
+    "e",   0;
+    'N2+', 0;
+    "O2+", 0;
+    "O2-", 0};
+opts.PHOTOIONIZATION.REACTIONS = {
+    'e + N2 -> 2e + N2+';
+    "e + O2 -> 2e + O2+"};
+opts.PHOTOIONIZATION.SPECIES_COEFF = {
+    'N2+',0.8;
+    'O2+',0.2};
+opts.PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 0, 0, 0, 0];
 opts.CHEMICAL_MODEL = 's_Parent';
 opts.CONST_SPECIES = {
     "N2", 0.7884, "rel";
@@ -47,7 +60,7 @@ opts.LOKI_INPUT = "Air";
 opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
 
-out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log");
+out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",1);
 out_pp = PostProcessing(out,'full');
 Save(out_pp,"CoronaWireWireGrid.mat")
 
