@@ -52,6 +52,7 @@ opts.PHOTOIONIZATION.SPECIES_COEFF = {
     'N2+',0.8;
     'O2+',0.2};
 opts.PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 0, 0, 0, 0];
+opts.PHOTOIONIZATION.N_EXP = 3;
 opts.CHEMICAL_MODEL = 's_Parent';
 opts.CONST_SPECIES = {
     "N2", 0.7884, "rel";
@@ -60,7 +61,7 @@ opts.LOKI_INPUT = "Air";
 opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
 
-out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",1);
+out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0);
 out_pp = PostProcessing(out,'full');
 Save(out_pp,"CoronaWireWireGrid.mat")
 

@@ -1,4 +1,4 @@
-function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I] = DaeFunc2D(t,y,Nf,Nc,Nd,Nph, ...
+function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates] = DaeFunc2D(t,y,Nf,Nc,Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
     Kelet,rho2RHS,aux2RHS,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,T,qs,BCEL_VAL,V_APPLIED,...
@@ -7,23 +7,20 @@ function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I] = DaeFunc2D(t,y,Nf
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
     Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, re,...
+    Ex_1, Ey_1, g2Is, re, n_left, n_right,...
     Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh)
 
-persistent n_left n_right
-if isempty(n_left)
-    n_left = zeros(Nf*ns, 1);
-end
-if isempty(n_right)
-    n_right = zeros(Nf*ns, 1);
+global global_update_ph %#ok<GVMIS>
+persistent Sph
+if isempty(Sph)
+    Sph = zeros(size(Ks,1),1);
 end
 
 y = y(inv_ppp); % converts y into normal ordering
 
 n_c = y(1:ns*Nc);
 sigma = y(ns*Nc+1:ns*Nc+Nd);
-phi = y(ns*Nc+Nd+1:end-Nph);
-Sph = y(end-(Nph-1):end);
+phi = y(ns*Nc+Nd+1:end);
 
 n_left(i_upwind) = n_c(i_n_left);
 n_right(i_upwind) = n_c(i_n_right);
@@ -104,16 +101,18 @@ I = g2Is * (Ex_1 .* sum(reshape(surf_charge_accum_flux_coeff*Gamma_x,Nf,ns).*qs,
 
 Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
 
-% photoionization
-Si = (0.03 + 0.1) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
-
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
 phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
-ph_ioniz_dae = Ks*Sph - Si2RHS*Si;
 
-dydt = [dndt; dsdt; phi_dae; ph_ioniz_dae];
+dydt = [dndt; dsdt; phi_dae];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
+
+if global_update_ph
+    Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
+    Sph = Ks \ (Si2RHS*(Si+1e5));
+    global_update_ph = false;
+end
 
 end

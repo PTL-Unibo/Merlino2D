@@ -1,5 +1,5 @@
 function [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
-    CreatePh(P,coordinates,Nc,Nn,xn,yn,ns_from_c,ns_from_b,bs_from_bID,BCPH_FLAG,species_coeff,ph_reactions,species,reactions)
+    CreatePh(exp_fitting,P,coordinates,Nc,Nn,xn,yn,ns_from_c,ns_from_b,bs_from_bID,BCPH_FLAG,species_coeff,ph_reactions,species,reactions)
 
 weights = ...
     0.5 * [4.50000000000000011102230246251565e-01
@@ -28,8 +28,6 @@ lambda3 = [0.0553;0.1460;0.89]*7.6e4;
 
 A2 = [0.0021;0.1775]*760*7.6e4;
 lambda2 = [0.0974;0.5877]*7.6e4;
-
-exp_fitting = 2;
 
 pq = (30/760)*101325; % quenching pressure = 30 Torr
 pO2 = 0.21; % partial pressure of O2

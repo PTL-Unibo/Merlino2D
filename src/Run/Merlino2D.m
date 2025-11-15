@@ -61,8 +61,6 @@ end
 
 p.SPECIES_NO_CHEM = strtrim(string(p.SPECIES_NO_CHEM(:))); % convert to column string array
 
-ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
-
 % Generating Mesh ---------------------------------------------------------
 geo_file = GetPath("geo") + "/" + p.MSH + ".geo";
 cmd_arguments = CreateCmdMshParameters(p.MSH_PARAMETERS);
@@ -96,16 +94,19 @@ else
 end
 
 % Photo-ionization --------------------------------------------------------
+global global_update_ph %#ok<GVMIS> this is the first time the global variable is created
+ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
+global_update_ph = ph_is_on; % true or false
 if ph_is_on
     [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
-        CreatePh(p.PRESSURE,p.COORDINATES,msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
+        CreatePh(p.PHOTOIONIZATION.N_EXP,p.PRESSURE,p.COORDINATES,msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
         p.PHOTOIONIZATION.BC,p.PHOTOIONIZATION.SPECIES_COEFF,p.PHOTOIONIZATION.REACTIONS,species,reactions);
 else
-    Ks = [];
-    Si2RHS = zeros(0,msh.Nc);
+    Ks = 0;
+    Si2RHS = [];
     ph_coeff = 0;
     indices_src_reactions_ph = [];
-    CellFromNodesPh = zeros(msh.Nc,0);
+    CellFromNodesPh = 0;
 end
 
 % Ordering input parameters to match the order of "species" ---------------
@@ -233,52 +234,18 @@ rho0 = e * sum(n_matrix.*qs, 2);
 rho_sigma_eps = [rho0; sigma0] / eps0;
 aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * p.V_APPLIED(p.TIME_INSTANTS(1));
 phi0 = Kelet_d \ (rho2RHS * rho_sigma_eps + aux2RHS * aux_BC_el);
-
-if ph_is_on
-    Ecx = Eint2Ec * (phi2Ex * phi0 + aux2Ex * aux_BC_el);
-    Ecy = Eint2Ec * (phi2Ey * phi0 + aux2Ey * aux_BC_el);
-    E_c_Td = sqrt(Ecx.^2 + Ecy.^2)/Ngas*1e21;
-    kr = fKr(E_c_Td, fTe(E_c_Td), ones(msh.Nc,1)*p.TEMPERATURE, ones(msh.Nc,1)*Ngas);
-    M(1,:) = kr(:);
-    M(Mindices) = N0(Nindices);
-    reaction_rates = reshape(prod(M),msh.Nc,[]);
-    Si = (0.03 + 0.1) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
-    Sph0 = Ks \ (Si2RHS * Si);
-    Nph = size(Ks,1);
-else
-    Sph0 = [];
-    Nph = 0;
-end
-
-y0 = [N0(:); sigma0; phi0; Sph0]; % initial condition
-
-% Setting Jacobian and Mass Matrix ----------------------------------------
-% solver will always be DAE, and it will always use FEM Poisson 
-Nphi = size(non_Dirichlet_nodes_indices,1);
-ode_dim = ns*msh.Nc+msh.Nd;
-dae_dim = Nphi + Nph;
+y0 = [N0(:); sigma0; phi0]; % initial condition
 
 % Create Jacobian sparsity pattern ----------------------------------------
 JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS);
-if ph_is_on
-    CellFromNodes = sparse(repmat(1:msh.Nc,1,3),msh.ns_from_c(:),ones(msh.Nc*3,1)*(1/3),msh.Nc,msh.Nn);
-    CellFromNodes = CellFromNodes(:,non_Dirichlet_nodes_indices);
-    small_reactants = reactants;
-    small_reactants(:,indices_const_species) = [];
-    indices_species_src_ph_jacobian = find(sum(small_reactants(indices_src_reactions_ph,:)));
-    indices_species_func_ph_jacobian = find(ph_coeff);
-    [I,J,S] = SparseRepMat(CellFromNodesPh,indices_species_func_ph_jacobian,"column");
-    Right_addition = sparse(I,J,S,ns*msh.Nc+msh.Nd+Nphi,Nph);
-    JPattern = [JPattern, Right_addition];
-    [I,J,S] = SparseRepMat(Si2RHS,indices_species_src_ph_jacobian,"row");
-    Bottom_addition = [sparse(I,J,S,Nph,ns*msh.Nc+msh.Nd), Si2RHS*CellFromNodes, Ks];
-    JPattern = [JPattern; Bottom_addition];
-end
-% replace each number with a 1
 [i,j,s] = find(JPattern);
-JPattern = sparse(i,j,ones(size(s)),size(JPattern,1),size(JPattern,2));
+JPattern = sparse(i,j,ones(size(s)),size(JPattern,1),size(JPattern,2)); % replace each number with a 1
 dim_Jac = size(JPattern,1);
 
+% Setting Mass Matrix -----------------------------------------------------
+Nphi = size(non_Dirichlet_nodes_indices,1);
+ode_dim = ns*msh.Nc+msh.Nd;
+dae_dim = Nphi;
 ode_options = odeset();
 ode_options.MassSingular = "yes";
 ode_options.Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), ode_dim+dae_dim, ode_dim+dae_dim);
@@ -297,7 +264,7 @@ ode_options.Mass = ode_options.Mass(ppp,ppp);
 y0 = y0(ppp);
 
 % Creating Ode Function ---------------------------------------------------
-odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd,Nph, ...
+odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
     Kelet,rho2RHS,aux2RHS,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,p.TEMPERATURE,qs,p.BCEL_VAL,p.V_APPLIED,...
@@ -306,14 +273,14 @@ odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd,Nph, ...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
     surf_charge_accum_flux_coeff, perm, inv_perm,...
     Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, p.ELECTRON_REF_COEFF,...
+    Ex_1, Ey_1, g2Is, p.ELECTRON_REF_COEFF, zeros(msh.Nf*ns,1), zeros(msh.Nf*ns,1),...
     Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh);
 odefun_mixed = @(t,y) odefun_perm(t,y,ppp,inv_ppp); % this is the one considering reordering
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
- 
+
 % Setting Output Function -------------------------------------------------
 if p.OUTPUT_FUNCTION == "bar"
-    ode_options.OutputFcn = @(t,y,flag)OdeProgressBar(t,y,flag,p.BAR_SCALE);
+    ode_options.OutputFcn = @(t,y,flag)OdeProgressBar(t,y,flag,p.BAR_SCALE,ph_is_on);
 elseif p.OUTPUT_FUNCTION == "current"
     indices_emitter = msh.f_from_b(msh.bs_from_bID{1}); % 1 corresponds to emitter
     ode_options.OutputFcn = @(t,y,flag)OutputCurrent(t,y,flag,odefun_mixed,e,msh.sn,indices_emitter,msh.areaf(indices_emitter),p.T_START_STEADY_STATE);
@@ -373,6 +340,19 @@ fprintf("%s\n","Simulation finished");
 
 yout = yout(inv_ppp,:);
 
+% retrieve Sph ------------------------------------------------------------
+if ph_is_on
+    [~,~,~,Ex,Ey,~,~,~,~,reaction_rates] = odefun(tout(end),yout(:,end));
+    Ecx = Eint2Ec * Ex;
+    Ecy = Eint2Ec * Ey;
+    E_c_Td = sqrt(Ecx.^2 + Ecy.^2)/Ngas*1e21;
+    Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
+    Sph = Ks \ (Si2RHS*(Si+1e5));
+    Sph = sum(reshape(Sph,msh.Nn,p.PHOTOIONIZATION.N_EXP),2);
+else
+    Sph = 0;
+end
+
 % Creating Output Structure -----------------------------------------------
 out.tout = tout;
 out.yout = yout;
@@ -392,6 +372,7 @@ out.I_s = I_s(tout);
 out.Phi2Ex_c = Phi2Ex_c(1:msh.Nc,:);
 out.Phi2Ey_c = Phi2Ey_c(1:msh.Nc,:);
 out.msh = msh;
+out.Sph = Sph;
 
 out.geo_file_content = geo_file_content;
 
