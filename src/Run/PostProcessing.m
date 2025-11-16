@@ -56,7 +56,6 @@ elseif type == "light"
     end
 end
 
-
 % Rho at cells
 RHO_CELLS = reshape(e*sum(reshape(N_CELLS,Nc,ns,nt).*qs,2),Nc,nt);
 
@@ -149,6 +148,7 @@ out_pp.Nn = Nn;
 out_pp.ns = ns;
 out_pp.nt = nt;
 out_pp.qs = qs;
+out_pp.Sph = out.Sph;
 out_pp.S_NAMES = S_NAMES;
 out_pp.msh = out.msh;
 out_pp.stats = stats;

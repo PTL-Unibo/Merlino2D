@@ -94,16 +94,15 @@ else
 end
 
 % Photo-ionization --------------------------------------------------------
-global global_update_ph %#ok<GVMIS> this is the first time the global variable is created
 ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
-global_update_ph = ph_is_on; % true or false
+offon = ["OFF", "ON"]; fprintf("Photoionization is %s\n",offon(ph_is_on+1)) % give feedback about photoionization
 if ph_is_on
     [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
         CreatePh(p.PHOTOIONIZATION.N_EXP,p.PRESSURE,p.COORDINATES,msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
         p.PHOTOIONIZATION.BC,p.PHOTOIONIZATION.SPECIES_COEFF,p.PHOTOIONIZATION.REACTIONS,species,reactions);
 else
-    Ks = 0;
-    Si2RHS = [];
+    Ks = 1;
+    Si2RHS = zeros(1,msh.Nc);
     ph_coeff = 0;
     indices_src_reactions_ph = [];
     CellFromNodesPh = 0;
@@ -114,7 +113,11 @@ Ordered_bc_flag = OrderVariable(p.BC_FLAG,species,ns,"BC_FLAG",2);
 temp_ordered_bc_val = OrderVariable(p.BC_VAL,species,ns,"BC_VAL",0);
 Ordered_bc_val = eval(GetBCvalFuncStr(temp_ordered_bc_val));
 Ordered_v_th_coeff = OrderVariable(p.V_TH_COEFF,species,ns,"V_TH_COEFF",0)';
-Ordered_const_omega = OrderVariable(p.CONST_OMEGA,species,ns,"CONST_OMEGA",0)';
+if isempty(p.CONST_OMEGA)
+    Ordered_const_omega = 0;
+else
+    Ordered_const_omega = OrderVariable(p.CONST_OMEGA,species,ns,"CONST_OMEGA",0)';
+end
 Ordered_mu = OrderVariable(p.MU,species,ns,"MU",1);
 Ordered_d = OrderVariable(p.D,species,ns,"D",1);
 
@@ -280,7 +283,13 @@ odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one us
 
 % Setting Output Function -------------------------------------------------
 if p.OUTPUT_FUNCTION == "bar"
-    ode_options.OutputFcn = @(t,y,flag)OdeProgressBar(t,y,flag,p.BAR_SCALE,ph_is_on);
+    clear OdeProgressBar
+    if ph_is_on
+        update_frequency = p.PHOTOIONIZATION.UPDATE_FREQUENCY;
+    else
+        update_frequency = Inf;
+    end
+    ode_options.OutputFcn = @(t,y,flag)OdeProgressBar(t,y,flag,p.BAR_SCALE,update_frequency);
 elseif p.OUTPUT_FUNCTION == "current"
     indices_emitter = msh.f_from_b(msh.bs_from_bID{1}); % 1 corresponds to emitter
     ode_options.OutputFcn = @(t,y,flag)OutputCurrent(t,y,flag,odefun_mixed,e,msh.sn,indices_emitter,msh.areaf(indices_emitter),p.T_START_STEADY_STATE);
@@ -300,7 +309,7 @@ end
 fprintf("%s\n","Initialization finished");
 
 % Solving with DAE --------------------------------------------------------
-clear DaeFunc2D % clear persistent variables
+clear DaeFunc2D % clear persistent variables (Sph)
 if p.ODE_TYPE == "idas"
     F = ode;
     F.InitialValue = y0;
@@ -347,7 +356,7 @@ if ph_is_on
     Ecy = Eint2Ec * Ey;
     E_c_Td = sqrt(Ecx.^2 + Ecy.^2)/Ngas*1e21;
     Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
-    Sph = Ks \ (Si2RHS*(Si+1e5));
+    Sph = Ks \ (Si2RHS*(Si+1e5)); % this is the value of Sph at the end of simulation
     Sph = sum(reshape(Sph,msh.Nn,p.PHOTOIONIZATION.N_EXP),2);
 else
     Sph = 0;

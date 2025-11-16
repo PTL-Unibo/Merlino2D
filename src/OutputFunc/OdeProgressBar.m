@@ -1,7 +1,8 @@
-function status = OdeProgressBar(t,~,flag,bar_scale,ph_is_on)
-persistent t0 t_end start_wct wct_last
-
-global global_update_ph %#ok<GVMIS>
+function status = OdeProgressBar(t,~,flag,bar_scale,update_frequency)
+persistent t0 t_end start_wct wct_last counter
+if isempty(counter)
+    counter = 1;
+end
 
 if isempty(flag)
     if((datetime("now")-wct_last)>seconds(1))
@@ -18,7 +19,9 @@ if isempty(flag)
         set(findobj('Tag','esttime'),'String',SecondsToString(elapsed_time_seconds*((1-perc)/perc)));
         wct_last=datetime("now");
     end
-    global_update_ph = ph_is_on;
+    if mod(counter,update_frequency) == 0
+        clear DaeFunc2D
+    end
 else
     if flag == "init"
         t0 = t(1);
@@ -45,7 +48,9 @@ else
         uicontrol('Style', 'text', 'Tag', 'eltime', 'String', "0s",'Position', [7 45 90 15])
         uicontrol('Style', 'text', 'String', 'Time Remaining','Position', [7 25 90 15])
         uicontrol('Style', 'text', 'Tag', 'esttime', 'String', num2str(inf),'Position', [7 5 90 15])
-        global_update_ph = ph_is_on;
+        if mod(counter,update_frequency) == 0
+            clear DaeFunc2D
+        end
         pause(0.1);
     elseif flag == "done"
         if(ishandle(95))
@@ -54,6 +59,7 @@ else
     end
 end
 
+counter = counter + 1;
 status = 0;
 drawnow;
 

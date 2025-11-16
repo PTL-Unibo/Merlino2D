@@ -10,11 +10,7 @@ function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates] = D
     Ex_1, Ey_1, g2Is, re, n_left, n_right,...
     Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh)
 
-global global_update_ph %#ok<GVMIS>
 persistent Sph
-if isempty(Sph)
-    Sph = zeros(size(Ks,1),1);
-end
 
 y = y(inv_ppp); % converts y into normal ordering
 
@@ -69,7 +65,12 @@ Bfval = fBfval(t);
 M(1,:) = kr(:);
 M(Mindices) = n_c(Nindices);
 reaction_rates = reshape(prod(M),Nc,[]);
-omega = reshape(reaction_rates*stoichiometric_matrix + (CellFromNodesPh*Sph).*ph_coeff + const_omega,[],1);
+if isempty(Sph)
+    Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
+    Sph = CellFromNodesPh * (Ks \ (Si2RHS*(Si+1e5)));
+    fprintf("Updated Photo-ionization, maximum value = %e\n", max(Sph))
+end
+omega = reshape(reaction_rates*stoichiometric_matrix + Sph.*ph_coeff + const_omega,[],1);
 
 n_up = n_left .* u_dot_n_max + n_right .* u_dot_n_min + Xmu * Bfval;
 
@@ -108,11 +109,5 @@ phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
 dydt = [dndt; dsdt; phi_dae];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
-
-if global_update_ph
-    Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
-    Sph = Ks \ (Si2RHS*(Si+1e5));
-    global_update_ph = false;
-end
 
 end

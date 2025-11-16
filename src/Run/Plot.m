@@ -19,6 +19,7 @@ arguments
         'fxn_log', ...
         'rhon_log', ...
         'sigma', ...
+        'sph',...
         'msh'
         })} = 'nc'
     opts.ax = -1
@@ -519,6 +520,21 @@ switch opts.type
         grid on
         ax.TickLabelInterpreter = "latex";
         ax.FontSize = 15;
+
+    case "sph"
+        if numel(out_pp.Sph) > 1
+            trisurf(out_pp.link_cell_to_nodes, out_pp.x_nodes, out_pp.y_nodes, out_pp.Sph+1e-3)
+            zscale("log")
+            view(3)
+            AxisEqual3D
+            xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+            ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+            zlabel("$\mathit{\Omega}_{\mathrm{ph}}$ $(\mathrm{m^{-3} s^{-1}})$", "Interpreter","latex")
+            ax.TickLabelInterpreter = "latex";
+            ax.FontSize = 15;
+        else
+            fprintf("The plot was not generated because Photo-ionization was OFF\n")
+        end
 
     case "msh"
         trisurf(out_pp.link_cell_to_nodes, out_pp.x_nodes, out_pp.y_nodes, zeros(size(out_pp.x_nodes)))
