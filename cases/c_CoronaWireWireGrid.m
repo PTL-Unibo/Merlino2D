@@ -44,14 +44,14 @@ opts.CONST_OMEGA = {
     "e",   0;
     'N2+', 0;
     "O2+", 0;
-    "O2-", 0};
+    "O2-", 1e5};
 opts.PHOTOIONIZATION.REACTIONS = {
     'e + N2 -> 2e + N2+';
     "e + O2 -> 2e + O2+"};
 opts.PHOTOIONIZATION.SPECIES_COEFF = {
     'N2+',0.8;
     'O2+',0.2};
-opts.PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 0, 0, 0, 0];
+opts.PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 1, 0, 1, 1];
 opts.CHEMICAL_MODEL = 's_Parent';
 opts.CONST_SPECIES = {
     "N2", 0.7884, "rel";
@@ -60,11 +60,12 @@ opts.LOKI_INPUT = "Air";
 opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
 
-out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",1);
+out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0,"BASES",[1,20e3,1e25]);
 out_pp = PostProcessing(out,'full');
-Save(out_pp,"CoronaWireWireGrid.mat")
+% Save(out_pp,"CoronaWireWireGrid.mat")
 
 %%
-out_pp = Load('CoronaWireWireGrid.mat');
+% out_pp = Load('CoronaWireWireGrid.mat');
 Plot(out_pp,"type","nn","species_index",1,"flip_y",1);
 Plot(out_pp,"type","rhon_log","flip_y",1,"log10_zero_val",-4);
+Plot(out_pp,"type","sph","flip_y",1);

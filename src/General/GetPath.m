@@ -3,7 +3,7 @@ arguments
     id (1,:) char {mustBeMember(id,{'gmsh','geo','data','kin','loki'})}
 end
 
-Merlino2Dpath = "C:/Users/fabio/Documents/GitHub/Merlino2D/";
+Merlino2Dpath = "C:/Users/fabio/Documents/Merlino2D/";
 
 switch id
     case 'gmsh'

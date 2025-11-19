@@ -6,45 +6,26 @@ function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I] = DaeFunc2D(t,y,Nf
     indices_faces_A,indices_cells_A,...
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
-    Gx, Gy, nx_matrix, ny_matrix,...
+    Gx, Gy, nx_matrix, ny_matrix, n_left, n_right,...
     Ex_1, Ey_1, g2Is, re,...
-    Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh)
-
-persistent n_left n_right
-if isempty(n_left)
-    n_left = zeros(Nf*ns, 1);
-end
-if isempty(n_right)
-    n_right = zeros(Nf*ns, 1);
-end
+    Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh,...
+    Nbase,Vbase,Sbase)
 
 y = y(inv_ppp); % converts y into normal ordering
 
-n_c = y(1:ns*Nc);
+n_c = y(1:ns*Nc) * Nbase;
 sigma = y(ns*Nc+1:ns*Nc+Nd);
-phi = y(ns*Nc+Nd+1:end-Nph);
-Sph = y(end-(Nph-1):end);
-
-n_left(i_upwind) = n_c(i_n_left);
-n_right(i_upwind) = n_c(i_n_right);
-
-% Compute charge density
-n_matrix = reshape(n_c,[],ns);
-rho = e * sum(n_matrix.*qs, 2);
-rho_sigma_eps = [rho; sigma] / eps0;
+phi = y(ns*Nc+Nd+1:end-Nph) * Vbase;
+Sph = y(end-(Nph-1):end) * Sbase;
 
 % Compute electric field
 aux_BC_el = M_get_aux_BC_el * BCEL_VAL * V_APPLIED(t);
 Ex = phi2Ex * phi + aux2Ex * aux_BC_el;
 Ey = phi2Ey * phi + aux2Ey * aux_BC_el;
-
 Ecx = Eint2Ec * Ex;
 Ecy = Eint2Ec * Ey;
-E_int = sqrt(Ex.^2 + Ey.^2);
-E_c = sqrt(Ecx.^2 + Ecy.^2);
-
-E_int_Td = E_int/Ngas*1e21; % in Td
-E_c_Td = E_c/Ngas*1e21; % in Td
+E_int_Td = sqrt(Ex.^2 + Ey.^2)/Ngas*1e21; % in Td
+E_c_Td = sqrt(Ecx.^2 + Ecy.^2)/Ngas*1e21; % in Td
 
 Te_int = fTe(E_int_Td);
 Te_c = fTe(E_c_Td);
@@ -66,14 +47,16 @@ u_dot_n = nx_matrix*ux + ny_matrix*uy;
 u_dot_n_max = u_dot_n>0;
 u_dot_n_min = ~u_dot_n_max;
 
-Bfval = fBfval(t);
-
 % Compute omega with matrix form 
 M(1,:) = kr(:);
 M(Mindices) = n_c(Nindices);
 reaction_rates = reshape(prod(M),Nc,[]);
 omega = reshape(reaction_rates*stoichiometric_matrix + (CellFromNodesPh*Sph).*ph_coeff + const_omega,[],1);
 
+Bfval = fBfval(t); % boundary conditions for species
+
+n_left(i_upwind) = n_c(i_n_left);
+n_right(i_upwind) = n_c(i_n_right);
 n_up = n_left .* u_dot_n_max + n_right .* u_dot_n_min + Xmu * Bfval;
 
 diffusion_x = -Dmatrix * (Gx * n_c);
@@ -104,15 +87,20 @@ I = g2Is * (Ex_1 .* sum(reshape(surf_charge_accum_flux_coeff*Gamma_x,Nf,ns).*qs,
 
 Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
 
-% photoionization
-Si = (0.03 + 0.1) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
+% Compute charge density
+n_matrix = reshape(n_c,[],ns);
+rho = e * sum(n_matrix.*qs, 2);
+rho_sigma_eps = [rho; sigma] / eps0;
+
+% Compute photoionization source
+Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
 
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
 phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
-ph_ioniz_dae = Ks*Sph - Si2RHS*Si;
+ph_ioniz_dae = Ks*Sph - Si2RHS*(Si+1e5);
 
-dydt = [dndt; dsdt; phi_dae; ph_ioniz_dae];
+dydt = [dndt/Nbase; dsdt; phi_dae/Vbase; ph_ioniz_dae/Sbase];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
 

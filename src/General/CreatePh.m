@@ -1,4 +1,4 @@
-function [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
+function [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh,non_dirichlet_nodes] = ...
     CreatePh(P,coordinates,Nc,Nn,xn,yn,ns_from_c,ns_from_b,bs_from_bID,BCPH_FLAG,species_coeff,ph_reactions,species,reactions)
 
 weights = ...
@@ -29,7 +29,7 @@ lambda3 = [0.0553;0.1460;0.89]*7.6e4;
 A2 = [0.0021;0.1775]*760*7.6e4;
 lambda2 = [0.0974;0.5877]*7.6e4;
 
-exp_fitting = 2;
+exp_fitting = 3;
 
 pq = (30/760)*101325; % quenching pressure = 30 Torr
 pO2 = 0.21; % partial pressure of O2
@@ -45,7 +45,7 @@ elseif lower(coordinates) == "cylindrical"
 end
 
 dirichlet_nodes = unique(ns_from_b(vertcat(bs_from_bID{BCPH_FLAG==0}),:));
-dirichlet_nodes = reshape(dirichlet_nodes + (0:Nn:(exp_fitting-1)*Nn),[],1);
+multi_dirichlet_nodes = reshape(dirichlet_nodes + (0:Nn:(exp_fitting-1)*Nn),[],1);
 
 BIG_II_KS = [];
 BIG_JJ_KS = [];
@@ -94,11 +94,11 @@ for j = 1:exp_fitting
 end
 
 Ks = sparse(BIG_II_KS, BIG_JJ_KS, BIG_SS_KS, exp_fitting*Nn, exp_fitting*Nn);
-Ks(dirichlet_nodes,:) = 0;
-Ks(sub2ind(size(Ks),dirichlet_nodes,dirichlet_nodes)) = 1;
+Ks(multi_dirichlet_nodes,:) = [];
+Ks(:,multi_dirichlet_nodes) = [];
 
 Si2RHS = sparse(BIG_II_Si_rhs, BIG_JJ_Si_rhs, BIG_SS_Si_rhs, exp_fitting*Nn, Nc);
-Si2RHS(dirichlet_nodes,:) = 0;
+Si2RHS(multi_dirichlet_nodes,:) = [];
 
 % -------------------------------------------------------------------------
 ph_coeff = zeros(1,numel(species));
@@ -114,7 +114,11 @@ reactions = string(vertcat(reactions(:,1)));
 [~,indices_src_reactions_ph] = ismember(photo_reactions,reactions);
 
 % -------------------------------------------------------------------------
-CellFromNodesPh = sparse(repmat(1:Nc,1,3),ns_from_c(:),ones(Nc*3,1)*(1/3),Nc,Nn) * repmat(speye(Nn),1,exp_fitting);
+CellFromNodes = sparse(repmat(1:Nc,1,3),ns_from_c(:),ones(Nc*3,1)*(1/3),Nc,Nn);
+CellFromNodes(:,dirichlet_nodes) = [];
+CellFromNodesPh = CellFromNodes * repmat(speye(Nn-numel(dirichlet_nodes)),1,exp_fitting);
+
+non_dirichlet_nodes = setdiff(1:Nn,dirichlet_nodes);
 
 end
 

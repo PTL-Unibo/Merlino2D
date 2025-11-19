@@ -19,6 +19,7 @@ arguments
         'fxn_log', ...
         'rhon_log', ...
         'sigma', ...
+        'sph',...
         'msh'
         })} = 'nc'
     opts.ax = -1
@@ -517,6 +518,23 @@ switch opts.type
         xlim([min(x), max(x)])
         xlabel("x $(\mathrm{m})$", "Interpreter","latex")
         grid on
+        ax.TickLabelInterpreter = "latex";
+        ax.FontSize = 15;
+
+    case "sph"
+        trisurf(out_pp.link_cell_to_nodes, out_pp.x_nodes, out_pp.y_nodes, out_pp.S_PH(:,opts.k)+1e-3)
+        if opts.flip_y
+            hold on
+            trisurf(out_pp.link_cell_to_nodes, out_pp.x_nodes, -out_pp.y_nodes, out_pp.S_PH(:,opts.k)+1e-3)
+            ylim(ax,[-max(abs(out_pp.y_nodes)),max(abs(out_pp.y_nodes))])
+            hold off
+        end
+        zscale("log")
+        view(3)
+        AxisEqual3D
+        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        zlabel("$\mathit{\Omega}_{\mathrm{ph}}$ $(\mathrm{m^{-3} s^{-1}})$", "Interpreter","latex")
         ax.TickLabelInterpreter = "latex";
         ax.FontSize = 15;
 

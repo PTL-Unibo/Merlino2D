@@ -25,6 +25,7 @@ Nc = out.msh.Nc;
 Nf = out.msh.Nf;
 Nb = out.msh.Nb;
 Nd = out.msh.Nd;
+Nph = out.Nph;
 
 if type == "full"
     EX_MATRIX = zeros(Nf,nt);
@@ -37,11 +38,17 @@ BFVAL_MATRIX = zeros(Nb*ns,nt);
 I = zeros(1,nt);
 V = zeros(1,nt);
 
-N_CELLS = out.yout(1:ns*Nc,:);
+N_CELLS = out.yout(1:ns*Nc,:) * out.Nbase;
 SIGMA = out.yout(ns*Nc+1:ns*Nc+Nd,:);
+partial_S_PH = out.yout(end-(Nph-1):end,:) * out.Sbase;
+
+FULL_S_PH = zeros(out.msh.Nn,nt);
+if out.Nph > 0
+    FULL_S_PH(out.ph_non_dirichlet_nodes,:) = repmat(speye(numel(out.ph_non_dirichlet_nodes)),1,3) * partial_S_PH;
+end
 
 DIRICHLET_NODES_MATRIX = zeros(size(Dirichlet_nodes_indices,1),nt);
-partial_PHI_NODES = out.yout(ns*Nc+Nd+1:end,:);
+partial_PHI_NODES = out.yout(ns*Nc+Nd+1:end-Nph,:) * out.Vbase;
 if type == "full"
     for k = 1:nt
         % [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I]
@@ -55,7 +62,6 @@ elseif type == "light"
         [~,DIRICHLET_NODES_MATRIX(:,k),BFVAL_MATRIX(:,k),~,~,~,~,~,I(k)] = odefun(out.tout(k), out.yout(:,k));
     end
 end
-
 
 % Rho at cells
 RHO_CELLS = reshape(e*sum(reshape(N_CELLS,Nc,ns,nt).*qs,2),Nc,nt);
@@ -127,6 +133,7 @@ stats.solutions_of_linear_systems = out.statsout(6);
 % Creating output structure
 out_pp.tout = out.tout;
 out_pp.N_CELLS = N_CELLS;
+out_pp.S_PH = FULL_S_PH;
 out_pp.SIGMA = SIGMA;
 out_pp.PHI_NODES = PHI_NODES; 
 out_pp.EX_CELLS_MATRIX = EX_CELLS_MATRIX;

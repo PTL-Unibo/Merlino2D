@@ -32,6 +32,7 @@ p.OUTPUT_FUNCTION = "bar";
 p.BAR_SCALE = "lin";
 p.STEADY_STATE_THRESHOLD = 1e-3;
 p.T_START_STEADY_STATE = 0;
+p.BASES = [1,1,1];
 p.ABS_TOL = 1e-6;
 p.REL_TOL = 1e-3;
 p.SPECIES_NO_CHEM = [];

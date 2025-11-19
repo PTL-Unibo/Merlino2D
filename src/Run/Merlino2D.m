@@ -37,6 +37,7 @@ arguments
     extra.BAR_SCALE (1,:) char {mustBeMember(extra.BAR_SCALE,{'lin','log'})}
     extra.STEADY_STATE_THRESHOLD
     extra.T_START_STEADY_STATE
+    extra.BASES
     extra.ABS_TOL
     extra.REL_TOL
     extra.SPECIES_NO_CHEM
@@ -97,7 +98,7 @@ end
 
 % Photo-ionization --------------------------------------------------------
 if ph_is_on
-    [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
+    [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh,ph_non_dirichlet_nodes] = ...
         CreatePh(p.PRESSURE,p.COORDINATES,msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
         p.PHOTOIONIZATION.BC,p.PHOTOIONIZATION.SPECIES_COEFF,p.PHOTOIONIZATION.REACTIONS,species,reactions);
 else
@@ -204,7 +205,7 @@ v_th_single = v_th_single .* Ordered_v_th_coeff;
 
 % Setting Initial Condition -----------------------------------------------
 % InitialCondition can be a string, a struct or an array
-if isstring(p.INITIAL_CONDITION)
+if isstring(p.INITIAL_CONDITION) | ischar(p.INITIAL_CONDITION)
     % string - loading previous result
     load(p.INITIAL_CONDITION,"y_end");
     N0 = y_end(1:ns*msh.Nc);
@@ -242,15 +243,18 @@ if ph_is_on
     M(1,:) = kr(:);
     M(Mindices) = N0(Nindices);
     reaction_rates = reshape(prod(M),msh.Nc,[]);
-    Si = (0.03 + 0.1) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
-    Sph0 = Ks \ (Si2RHS * Si);
+    Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
+    Sph0 = Ks \ (Si2RHS * (Si+1e5));
     Nph = size(Ks,1);
 else
     Sph0 = [];
     Nph = 0;
 end
 
-y0 = [N0(:); sigma0; phi0; Sph0]; % initial condition
+Nbase = p.BASES(1);
+Vbase = p.BASES(2);
+Sbase = p.BASES(3);
+y0 = [N0(:)/Nbase; sigma0; phi0/Vbase; Sph0/Sbase]; % initial condition
 
 % Setting Jacobian and Mass Matrix ----------------------------------------
 % solver will always be DAE, and it will always use FEM Poisson 
@@ -305,9 +309,10 @@ odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd,Nph, ...
     indices_faces_Absorbent,indices_cells_Absorbent,...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
     surf_charge_accum_flux_coeff, perm, inv_perm,...
-    Gx, Gy, nx_matrix, ny_matrix,...
+    Gx, Gy, nx_matrix, ny_matrix, zeros(msh.Nf*ns,1), zeros(msh.Nf*ns,1),...
     Ex_1, Ey_1, g2Is, p.ELECTRON_REF_COEFF,...
-    Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh);
+    Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh,...
+    Nbase,Vbase,Sbase);
 odefun_mixed = @(t,y) odefun_perm(t,y,ppp,inv_ppp); % this is the one considering reordering
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
  
@@ -333,7 +338,6 @@ end
 fprintf("%s\n","Initialization finished");
 
 % Solving with DAE --------------------------------------------------------
-clear DaeFunc2D % clear persistent variables
 if p.ODE_TYPE == "idas"
     F = ode;
     F.InitialValue = y0;
@@ -376,6 +380,13 @@ yout = yout(inv_ppp,:);
 % Creating Output Structure -----------------------------------------------
 out.tout = tout;
 out.yout = yout;
+out.Nbase = Nbase;
+out.Vbase = Vbase;
+out.Sbase = Sbase;
+out.Nph = Nph;
+if ph_is_on
+    out.ph_non_dirichlet_nodes = ph_non_dirichlet_nodes;
+end
 out.statsout = statsout;
 out.odefun = odefun;
 out.wall_clock_time = wall_clock_time;
