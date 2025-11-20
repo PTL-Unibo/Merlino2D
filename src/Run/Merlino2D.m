@@ -33,7 +33,7 @@ arguments
     extra.ODE_TYPE (1,:) char {mustBeMember(extra.ODE_TYPE,{'ode15s','idas'})}
     extra.OPEN_GMSH (1,1) double {mustBeMember(extra.OPEN_GMSH,[0,1])}
     extra.REORDERING (1,1) double {mustBeMember(extra.REORDERING,[0,1])}
-    extra.OUTPUT_FUNCTION (1,:) char {mustBeMember(extra.OUTPUT_FUNCTION,{'bar','current','none'})}
+    extra.OUTPUT_FUNCTION (1,:) char {mustBeMember(extra.OUTPUT_FUNCTION,{'bar','current','cmd','none'})}
     extra.BAR_SCALE (1,:) char {mustBeMember(extra.BAR_SCALE,{'lin','log'})}
     extra.STEADY_STATE_THRESHOLD
     extra.T_START_STEADY_STATE
@@ -322,6 +322,8 @@ if p.OUTPUT_FUNCTION == "bar"
 elseif p.OUTPUT_FUNCTION == "current"
     indices_emitter = msh.f_from_b(msh.bs_from_bID{1}); % 1 corresponds to emitter
     ode_options.OutputFcn = @(t,y,flag)OutputCurrent(t,y,flag,odefun_mixed,e,msh.sn,indices_emitter,msh.areaf(indices_emitter),p.T_START_STEADY_STATE);
+elseif p.OUTPUT_FUNCTION == "cmd"
+    ode_options.OutputFcn = @(t,y,flag)OutputFunctionCommand(t,y,flag,p.BAR_SCALE);
 elseif p.OUTPUT_FUNCTION == "none"
     % not using any output function
 end
