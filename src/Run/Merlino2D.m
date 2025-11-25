@@ -363,6 +363,7 @@ if p.ODE_TYPE == "idas"
 elseif p.ODE_TYPE == "ode15s"
     ode_options.AbsTol = p.ABS_TOL;
     ode_options.RelTol = p.REL_TOL;
+    ode_options.InitialStep = 1e-15;
     start_time_computation = tic();
     if isempty(ode_options.Events)
         [tout,yout,statsout] = ode15s(odefun_mixed,p.TIME_INSTANTS,y0,ode_options);
