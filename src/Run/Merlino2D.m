@@ -210,9 +210,18 @@ v_th_single = v_th_single .* Ordered_v_th_coeff;
 % InitialCondition can be a string, a struct or an array
 if isstring(p.INITIAL_CONDITION)
     % string - loading previous result
-    load(p.INITIAL_CONDITION,"y_end");
-    N0 = y_end(1:ns*msh.Nc);
-    sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
+    load(p.INITIAL_CONDITION,"y_end","Nc");
+    if Nc ~= msh.Nc
+        % different mesh, interpolation needed
+        load(p.INITIAL_CONDITION,"x_cells","y_cells");
+        N0 = InterpInitialCondition(x_cells,y_cells,...
+            y_end(1:ns*Nc),msh.xc,msh.yc,ns,msh.Nc);
+        sigma0 = zeros(0,1);
+        fprintf("%s\n","Interpolated to new mesh");
+    else
+        N0 = y_end(1:ns*msh.Nc);
+        sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
+    end
     fprintf("%s\n","Loaded from previous save: "+p.INITIAL_CONDITION);
 elseif isstruct(p.INITIAL_CONDITION)
     if upper(p.CHEMICAL_MODEL) == "OFF"
