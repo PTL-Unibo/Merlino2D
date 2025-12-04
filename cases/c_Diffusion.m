@@ -1,3 +1,4 @@
+clearvars, close, clc
 opts.MSH = "SquareCenterRefined";
 opts.BCEL_FLAG = 0;
 opts.BCEL_VAL = 0;
@@ -9,8 +10,8 @@ opts.INITIAL_CONDITION.A = 1;
 opts.INITIAL_CONDITION.B = 0;
 opts.INITIAL_CONDITION.x0 = 0;
 opts.INITIAL_CONDITION.y0 = 0;
-opts.INITIAL_CONDITION.sigma_x = 1e-2;
-opts.INITIAL_CONDITION.sigma_y = 1e-2;
+opts.INITIAL_CONDITION.sigma_x = 1e-1;
+opts.INITIAL_CONDITION.sigma_y = 1e-1;
 opts.SPECIES_NO_CHEM = 'N';
 opts.MU = {'N',0};
 opts.D = {'N',2};
@@ -33,14 +34,14 @@ ii = ii(1:7:end);
 x = out_pp.msh.xc(ii);
 y = out_pp.msh.yc(ii);
 
-s0 = 1e-2;
+s0 = 1e-1;
 A0 = 1;
 D = 2;
 
-A = @(t) A0*s0./(4*D*t + s0);
-s = @(t) 4*D*t + s0;
+A = @(t) A0*s0^2./(4*D*t + s0^2);
+s = @(t) sqrt(4*D*t + s0^2);
 y_exact = linspace(-0.6,0.6,1e4);
-n = @(t) A(t) .* exp(-(y_exact.^2)./s(t));
+n = @(t) A(t) .* exp(-(y_exact.^2)./(s(t).^2));
 
 indices_time = [1, 101, 201];
 

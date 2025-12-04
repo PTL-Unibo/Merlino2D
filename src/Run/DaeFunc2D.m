@@ -66,6 +66,7 @@ M(1,:) = kr(:);
 M(Mindices) = n_c(Nindices);
 reaction_rates = reshape(prod(M),Nc,[]);
 if isempty(Sph)
+    E_c_Td(E_c_Td == 0) = 1e-3;
     Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
     Sph = CellFromNodesPh * (Ks \ (Si2RHS*(Si+1e5)));
     fprintf("Updated Photo-ionization, maximum value = %e\n", max(Sph))
