@@ -1,3 +1,4 @@
+clearvars, close, clc
 opts.MSH = "Square";
 opts.BCEL_FLAG = [0;0;0;0];
 opts.BCEL_VAL = [0;0;0;0];
@@ -9,19 +10,19 @@ opts.INITIAL_CONDITION.A = 1e10;
 opts.INITIAL_CONDITION.B = 0;
 opts.INITIAL_CONDITION.x0 = 0;
 opts.INITIAL_CONDITION.y0 = -900*6e-3/(2*pi);
-opts.INITIAL_CONDITION.sigma_x = 5e-3;
-opts.INITIAL_CONDITION.sigma_y = 5e-3;
+opts.INITIAL_CONDITION.sigma_x = sqrt(5e-3);
+opts.INITIAL_CONDITION.sigma_y = sqrt(5e-3);
 opts.SPECIES_NO_CHEM = 'N';
 opts.MU = {'N',0};
 opts.D = {"N",0};
 opts.V_TH_COEFF = {"N",1};
 opts.CONST_OMEGA = {'N',0};
 
-% Uncomment lines 61 and 62 in DaeFunc2D.m:
+% Uncomment lines 56 and 57 in DaeFunc2D.m:
 % ux = ones(size(ux)) * 900*cos(2*pi*(1/6e-3)*t);
 % uy = ones(size(uy)) * 900*sin(2*pi*(1/6e-3)*t);
 % BE CAREFUL!! COMMENT THEM AGAIN AFTER!!
-out = Merlino2D(opts);
+out = Merlino2D(opts,"OUTPUT_FUNCTION","cmd");
 out_pp = PostProcessing(out,"full");
 
 fig = figure();

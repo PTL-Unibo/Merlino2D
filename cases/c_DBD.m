@@ -1,3 +1,4 @@
+clearvars, close, clc
 opts.MSH = "DBD";
 opts.MSH_PARAMETERS.k = 1;
 opts.EPSR_VAL = [1; 3.2];

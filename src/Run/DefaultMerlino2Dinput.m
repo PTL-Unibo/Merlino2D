@@ -24,7 +24,6 @@ p.ELECTRON_REF_COEFF = 0;
 p.GAMMA_II = 1e-2;
 p.SURF_CHARGE_COEFF = [1, 1, 1];
 p.GAMMA_II_DIEL = 1e-2;
-p.COORDINATES = "cartesian";
 p.ODE_TYPE = "ode15s";
 p.OPEN_GMSH = 1;
 p.REORDERING = 0;

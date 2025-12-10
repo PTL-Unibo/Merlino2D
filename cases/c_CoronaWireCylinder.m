@@ -1,3 +1,4 @@
+clearvars, close, clc
 opts.MSH = 'WireCyl_50u_5m_30m';
 opts.BCEL_FLAG = [0; 0; 1; 1; 1; 1];
 opts.BCEL_VAL = [1; 0; 0; 0; 0; 0];

@@ -29,7 +29,6 @@ arguments
     extra.GAMMA_II
     extra.SURF_CHARGE_COEFF
     extra.GAMMA_II_DIEL
-    extra.COORDINATES (1,:) char {mustBeMember(extra.COORDINATES,{'cartesian','cylindrical'})}
     extra.ODE_TYPE (1,:) char {mustBeMember(extra.ODE_TYPE,{'ode15s','idas'})}
     extra.OPEN_GMSH (1,1) double {mustBeMember(extra.OPEN_GMSH,[0,1])}
     extra.REORDERING (1,1) double {mustBeMember(extra.REORDERING,[0,1])}
@@ -69,7 +68,7 @@ if p.OPEN_GMSH == 1
 elseif p.OPEN_GMSH == 0
     [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
 end
-msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","yes");
+msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "cartesian", "remove_dielectric","yes");
 geo_file_content = readlines(geo_file);
 fprintf("%s\n","Generated Mesh");
 
@@ -98,7 +97,7 @@ ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZA
 offon = ["OFF", "ON"]; fprintf("Photoionization is %s\n",offon(ph_is_on+1)) % give feedback about photoionization
 if ph_is_on
     [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
-        CreatePh(p.PHOTOIONIZATION.N_EXP,p.PRESSURE,p.COORDINATES,msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
+        CreatePh(3,p.PRESSURE,"cartesian",msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
         p.PHOTOIONIZATION.BC,p.PHOTOIONIZATION.SPECIES_COEFF,p.PHOTOIONIZATION.REACTIONS,species,reactions);
 else
     Ks = 1;
@@ -152,10 +151,10 @@ end
 BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
 fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
 
-full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
+full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "cartesian", "remove_dielectric","no");
 [Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, ...
  phi2Ex, phi2Ey, aux2Ex, aux2Ey, phi2En, ~, ...
- inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
+ inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, p.BCEL_FLAG, p.EPSR_VAL, "cartesian");
 
 Kelet_d = decomposition(Kelet);
 
@@ -369,7 +368,7 @@ if ph_is_on
     E_c_Td = sqrt(Ecx.^2 + Ecy.^2)/Ngas*1e21;
     Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
     Sph = Ks \ (Si2RHS*(Si+1e5)); % this is the value of Sph at the end of simulation
-    Sph = sum(reshape(Sph,msh.Nn,p.PHOTOIONIZATION.N_EXP),2);
+    Sph = sum(reshape(Sph,msh.Nn,3),2);
 else
     Sph = 0;
 end
