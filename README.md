@@ -1,9 +1,10 @@
 # Merlino2D
+Merlino2D is an open-source plasma simulation code designed to provide a fast and user-friendly platform for modeling a broad range of plasma devices and gas discharges. The code is based on a drift–diffusion fluid framework and can accommodate detailed kinetic reaction schemes, depending on the chosen mesh resolution. Merlino2D employs a fully implicit time-integration scheme with adaptive time stepping, enabling stable and computationally efficient simulations. The code is implemented in MATLAB and supports two-dimensional plasma simulations on unstructured triangular meshes generated using Gmsh.
 
 ## Structure
 The main folder contains the script **init.m**, that always needs to be run before using the code.
 
-The main folder also contains 7 sub-folders:
+The main folder also contains 6 sub-folders:
 
 ### cases/ 
 Contains the scripts for running some tests, with the aim of illustrating the capabilities of the code:
@@ -14,10 +15,6 @@ Contains the scripts for running some tests, with the aim of illustrating the ca
 - **c_Drift.m**
 
 In the examples provided, accuracy has been sacrificed to reduce the computational time.
-
----
-### code/ 
-Contains all the functions that compose **Merlino2D**, organized in sub-folders. It also contains the script **Merlino2D_startup.m**, that needs to be run only the first time the code is used.
 
 ---
 ### data/ 
@@ -34,7 +31,7 @@ New csv variables must be placed inside the **data/** folder.
 
 The folder also contains the file **species_database.csv**, where information about the mass and charge of species should be stored.
 
-In addition, the folder contains experimental results obtained by [Kiousis et al.](https://iopscience.iop.org/article/10.1088/1009-0630/16/4/11) for an I-V characteristic of a corona discharge in a wire-cylinder configuration (**Experimental_Results_50u_5m_30m.csv**), used for comparison with the results obtained from the code.
+In addition, the folder contains experimental results obtained by [Kiousis et al.](https://iopscience.iop.org/article/10.1088/1009-0630/16/4/11) for an I-V characteristic of a corona discharge in a wire-cylinder configuration (**Experimental_Results_50u_5m_30m.csv**), used for comparison with the results obtained from the code when running the test **c_CoronaWireCylinder.m**.
 
 ---
 ### doc/
@@ -56,28 +53,25 @@ New mesh files created by the user must be placed inside this directory.
 Contains the definition of the kinetic schemes. Some kinetic schemes for air have already been provided and can be used as reference for the creation of custom ones.
 The provided kinetic schemes are:
 - **s_Kozhevnikov.m**
-- **s_KozhevnikovConst.m**
-- **s_LokiParentConst.m**
-- **s_LokiTownsend.m**
 - **s_Parent.m**
-- **s_ParentConst.m**
+- **s_ParentLoki.m**
 - **s_Townsend.m**
+- **s_TownsendLoki.m**
 
-New kinetic schemes defined by the user must be placed inside this folder.
+New kinetic schemes defined by the user must be placed inside this folder. Note that the kinetic scheme can refer to any gas mixture.
 
 ---
-### LoKI-B/
-Contains the [LisbOn KInetics Boltzmann](https://github.com/LoKI-Suite/LoKI-B/tree/master/Code) (LoKI-B). The input file **Air.in** is already provided inside the sub-folder **Input/** and is used for running Merlino2D examples. Other input file for LoKI-B must be placed inside the **Input/** sub-folder as well.
-
-
+### src/ 
+Contains all the functions that compose **Merlino2D**, organized in sub-folders. It also contains the script **Merlino2D_startup.m**, that needs to be run only the first time the code is used.
 
 ## Installation
 To use Merlino2D you need MATLAB installed on your computer.
-You also need to install Gmsh for mesh generation.
+You also need to install [Gmsh](https://gmsh.info/) for mesh generation.
 
 The first time using Merlino2D it is necessary to run the script **Merlino2D_startup.m**
-that is inside the **code/** folder.
-By running this script, you will be asked to select the **gmsh.exe** executable, that you should have previously installed on your computer.
+that is inside the **src/** folder.
+By running this script, you will be firstly asked to select the **gmsh.exe** executable, that you should have previously installed on your computer.
+After, you will be asked to select the **Code/** folder of the [LoKI-B](https://github.com/LoKI-Suite/LoKI-B) repository, that you should have cloned on your device if you wish to have the option of using the Boltzmann solver for computing swarm parameters and rate coefficients.
 
 If the folder containing the project is moved to another location, you need to run **Merlino2D_startup.m** again.
 
@@ -89,7 +83,7 @@ that is inside the main folder. You can do it by selecting the file and pressing
 ```
 init
 ```
-This will add to the MATLAB path the folder **code/** that contains the code.
+This will add to the MATLAB path the folder **src/** that contains the code.
 
 
 The core of the code is the function `Merlino2D`, the syntax is
@@ -127,3 +121,6 @@ ExportVTU(out_pp,"my_results")
 
 ## Test
 To perform a comprehensive test, you can run the script **c_CoronaWireWireGrid.m** that is inside the folder **cases/**.
+This simulation will use LoKI-B to compute the mobility and diffusion coefficient of electrons, and also the electron temperature as a function of the reduced electric field.
+
+It will also use the [three-exponential Helmholtz model of photoionization](https://iopscience.iop.org/article/10.1088/0963-0252/16/3/026) during the simulation.
