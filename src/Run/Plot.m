@@ -533,7 +533,7 @@ switch opts.type
             ax.TickLabelInterpreter = "latex";
             ax.FontSize = 15;
         else
-            fprintf("The plot was not generated because Photo-ionization was OFF\n")
+            fprintf("The plot was not generated because photoionization was OFF\n")
         end
 
     case "msh"

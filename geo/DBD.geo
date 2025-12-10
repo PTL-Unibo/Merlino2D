@@ -99,7 +99,7 @@ Physical Curve(5) = {L_FG, L_KA}; // west
 Physical Curve(6) = {L_CD, L_DE}; // east
 Physical Curve(7) = {L_EF}; // north
 
-Physical Curve(8854) = {L_JL, L_LD}; // dielectric interface
+Physical Curve(1000) = {L_JL, L_LD}; // dielectric interface
 
 Physical Surface(1) = {S_air};
 Physical Surface(2) = {S_diel};

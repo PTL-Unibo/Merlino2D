@@ -95,7 +95,7 @@
 	% ===============================
 	\section{Introduction}
 	
-	Merlino2D solves time-dependent drift-diffusion-reaction equations on a 2D unstructured triangular mesh
+	Merlino2D is an open-source plasma simulation code designed to provide a fast and user-friendly platform for modeling a broad range of plasma devices and gas discharges. The code is based on a drift–diffusion fluid framework and can accommodate detailed kinetic reaction schemes, depending on the chosen mesh resolution. Merlino2D employs a fully implicit time-integration scheme with adaptive time stepping, enabling stable and computationally efficient simulations. The code is implemented in MATLAB and supports two-dimensional plasma simulations on unstructured triangular meshes generated using Gmsh.
 	
 	% ===============================
 	\section{Installation}
@@ -109,19 +109,26 @@
 	\subsection{Installation Steps}
 	To use Merlino2D you need \href{https://it.mathworks.com/}{MATLAB} installed on your computer.
 	You also need to install \href{https://gmsh.info/}{Gmsh} for mesh generation.
+	
 	The first time using Merlino2D it is necessary to run the script \textbf{Merlino2D\_startup.m}
-	that is inside the \textbf{Code/} folder.
-	By running this script, you will be asked to select the \textbf{gmsh.exe} executable that you should have previously installed on your computer.
+	that is inside the \textbf{src/} folder.
+	By running this script, you will be firstly asked to select the \textbf{gmsh.exe} executable that you should have previously installed on your computer.
+	After, you will be asked to select the \textbf{Code/} folder of the \href{https://github.com/LoKI-Suite/LoKI-B}{LoKI-B} repository, that you should have cloned on your device if you wish to have the option of using the Boltzmann solver for computing swarm parameters and rate coefficients.
+	
 	If the folder containing the project is moved to another location, you need to run \textbf{Merlino2D\_startup.m} again.
 	
 	\subsection{Verification}
-	If the installation was successful, you can now run all the examples contained in the \textbf{cases/} folder. 
-	We suggest that you start by running the script \textbf{c\_Diffusion.m}, which should not take a long time.
+	If the installation was successful, you can now run all the examples contained in the \textbf{cases/} folder (if you also moved the \textbf{Air.in} file inside the \textbf{Code/Input/} folder of the LoKI-B repository). 
+	We suggest that you start by running the script \textbf{c\_Diffusion.m}, which should not take a long time and does not require to move the \textbf{Air.in} file.
 	By running that script, a Gmsh window containing a square divided into two half should appear. Closing that window the simulation will start and you should see the following text appearing in the Command Window:
 	
 	\matlabs{Generated Mesh}
 	
+	\matlabs{Photoionization is OFF}
+	
 	\matlabs{Initialization finished}
+	
+	\matlabs{Updated photoionization, maximum value = 0.000000e+00}
 	
 	\matlabs{Simulation finished}
 	
@@ -144,7 +151,7 @@ that is inside the main folder. You can do it by selecting the file and pressing
 
 \matlabs{>> init}
 
-\noindent This will add to the MATLAB path the folder \textbf{Code/} that contains the code. 
+\noindent This will add to the MATLAB path the folder \textbf{src/} that contains the code. 
 
 \vspace{10pt}
 
@@ -245,6 +252,7 @@ The \matlabs{Plot} function can plot several output quantities and will return t
 \item \matlabs{"fxn\_log"}, to plot the force density along x at nodes in log scale
 \item \matlabs{"rhon\_log"}, to plot the charge density at nodes in log scale
 \item \matlabs{"sigma"}, to plot the surface charge density
+\item \matlabs{"sph"}, to plot the photoionization source term
 \item \matlabs{"msh"}, to plot only the used mesh 
 \end{itemize}
 It is possible to pass to the \matlabs{Plot} function other key-value arguments. The available keys are:
@@ -308,8 +316,9 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	Similarly, each subdomain corresponding to a different relative permittivity value $\varepsilon_r$ must be assigned a unique identifier. In the present example, the gas and solid dielectric regions are labeled as \colorbox{aircolor}{1} and \colorbox{dielcolor}{2}, respectively. These identifiers are defined in the \textbf{.geo} file using the \matlabs{Physical Surface} command.
 	
 	Note that \textbf{Merlino2D treats as gas only regions with a surface identifier equal to 1}, whereas all regions assigned a numerical identifier greater than 1 are interpreted as solid dielectric materials.
-	Note also that \textbf{Merlino2D identifies as dielectric interfaces only lines assigned a numerical identifier greater than or equal to 8854} \footnote{This apparently random number actually corresponds to the first four digits of the vacuum permittivity $\varepsilon_0 = \SI{8.8541878188e-12}{\farad\per\meter}$.}.
-	For this reason, in the \textbf{.geo} file, the yellow line can be labeled, for example, with the identifier 8888 using the \matlabs{Physical Curve} command.
+	Note also that \textbf{Merlino2D identifies as dielectric interfaces only lines assigned a numerical identifier greater than or equal to 1000}. 
+%	\footnote{This apparently random number actually corresponds to the first four digits of the vacuum permittivity $\varepsilon_0 = \SI{8.8541878188e-12}{\farad\per\meter}$.}.
+	For this reason, in the \textbf{.geo} file, the yellow line can be labeled, for example, with the identifier 1005 using the \matlabs{Physical Curve} command.
 	
 	In general, a mesh provided as input to Merlino2D includes identifiers for the external boundaries, hereafter referred to as \textbf{BoundaryIDs} (\textcolor{red}{1}, \textcolor{blue}{2}, and \textcolor{mygreen}{3} in the previous example), as well as identifiers for the subdomains, hereafter referred to as \textbf{SurfaceIDs} (\colorbox{aircolor}{1} and \colorbox{dielcolor}{2} in the previous example).
 	
@@ -508,7 +517,7 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	\end{itemize}
 	each of them being a vector with as many elements as the number of species contained in \seclink{speciesnochem}{SPECIES\_NO\_CHEM}. This will generate for the \textbf{ith} species contained in \seclink{speciesnochem}{SPECIES\_NO\_CHEM} a number density distribution
 	\[
-	n_i(x,y) = \boldsymbol{\mathrm{A}}[i] \, \mathrm{exp}\left(-\left(\frac{(x-\boldsymbol{\mathrm{x0}}[i])^2}{\boldsymbol{\mathrm{sigma\_x}}[i]} + \frac{(y-\boldsymbol{\mathrm{y0}}[i])^2}{\boldsymbol{\mathrm{sigma\_y}}[i]}\right)\right) + \boldsymbol{\mathrm{B}}[i].
+	n_i(x,y) = \boldsymbol{\mathrm{A}}[i] \, \mathrm{exp}\!\!\left(-\left(\frac{(x-\boldsymbol{\mathrm{x0}}[i])^2}{(\boldsymbol{\mathrm{sigma\_x}}[i])^2} + \frac{(y-\boldsymbol{\mathrm{y0}}[i])^2}{(\boldsymbol{\mathrm{sigma\_y}}[i])^2}\right)\right) + \boldsymbol{\mathrm{B}}[i].
 	\]
 	where the value of the parameters A, B, x0, y0, sigma\_x and sigma\_y is taken from the corresponding \textbf{i} element of the array. Note that the order of the numbers inside these arrays is important. For example you could set
 	
@@ -522,7 +531,7 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	
 	\matlabs{opts.INITIAL\_CONDITION.sigma\_x = [1e-3, 1e-3];}
 	
-	\matlabs{opts.INITIAL\_CONDITION.sigms\_y = [1e-2, 1e-2];}
+	\matlabs{opts.INITIAL\_CONDITION.sigms\_y = [1e-1, 1e-1];}
 	
 	\subsection{MU}
 	\label{sec:mu}
@@ -657,6 +666,8 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	\hspace{40pt} \matlabs{"e", 1e15;}
 	
 	\hspace{40pt} \matlabs{"O2-", 1e5\};}
+	
+	\subsection{PHOTOIONIZATION}
 	
 	\subsection{CHEMICAL\_MODEL}
 	\label{sec:chemicalmodel}

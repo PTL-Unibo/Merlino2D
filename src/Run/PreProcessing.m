@@ -4,7 +4,7 @@ arguments
     coordinates (1,:) char
     options.remove_dielectric (1,:) char {mustBeMember(options.remove_dielectric,{'yes','no'})} = 'no'
 end
-% Physical curves with tag >= 8854 are considered to be dielectric
+% Physical curves with tag >= 1000 are considered to be dielectric
 % interfaces.
 % Physical surfaces with tag >= 2 are considered to be dielectric regions.
 
@@ -20,7 +20,7 @@ ns_from_c = msh.TRIANGLES(:,1:3);
 % modify ns_from_c so that nodes are ordered
 ns_from_c = Order3Matrix(ns_from_c);
 
-li_d = msh.LINES(:,3) >= 8854;
+li_d = msh.LINES(:,3) >= 1000;
 ns_from_d = msh.LINES(li_d,1:2);
 [dim_dID, dID_from_d, ds_from_dID, ~] = OrderingID(msh.LINES(li_d,3));
 msh.LINES(li_d,:) = [];

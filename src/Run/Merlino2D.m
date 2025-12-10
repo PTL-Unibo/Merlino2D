@@ -92,7 +92,7 @@ else
     [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), msh.Nc); 
 end
 
-% Photo-ionization --------------------------------------------------------
+% Photoionization --------------------------------------------------------
 ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
 offon = ["OFF", "ON"]; fprintf("Photoionization is %s\n",offon(ph_is_on+1)) % give feedback about photoionization
 if ph_is_on
