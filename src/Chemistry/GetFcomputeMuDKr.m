@@ -21,6 +21,10 @@ Mu_str = CellExpressionToStringArray(Mu,Nf);
 D_str = CellExpressionToStringArray(D,Nf);
 Kr_str = CellExpressionToStringArray(Kr,Nc);
 
+if isfolder(GetPath("data")+"/"+"func")
+    addpath(GetPath("data")+"/"+"func")
+end
+
 strMu = "@(E,Te,T,Ngas)[" + join(Mu_str,",") + "]";
 strD = "@(mu,E,Te,T,Ngas)[" + join(D_str,",") + "]";
 if flag_loki == 1
