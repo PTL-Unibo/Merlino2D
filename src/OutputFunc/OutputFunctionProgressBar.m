@@ -1,29 +1,8 @@
-function status = OdeProgressBar(t,~,flag,bar_scale,update_frequency)
-persistent t0 t_end start_wct wct_last counter
-if isempty(counter)
-    counter = 1;
-end
+function status = OutputFunctionProgressBar(t,~,flag,bar_scale)
+persistent t0 t_end start_wct wct_last ax
 
-if isempty(flag)
-    if((datetime("now")-wct_last)>seconds(1))
-        figure(95); 
-        if bar_scale == "log"
-            perc=(log10(t(end))-log10(t0))/(log10(t_end)-log10(t0));
-        elseif bar_scale == "lin"
-            perc=(t(end)-t0)/(t_end-t0);
-        end
-        elapsed_time_seconds = seconds(datetime("now")-start_wct);
-        area([t(end) t_end-t(end);t(end) t_end-t(end)]);
-        set(findobj('Tag','perc'),'String',num2str(perc*100) + " %");
-        set(findobj('Tag','eltime'),'String',SecondsToString(elapsed_time_seconds));
-        set(findobj('Tag','esttime'),'String',SecondsToString(elapsed_time_seconds*((1-perc)/perc)));
-        wct_last=datetime("now");
-    end
-    if mod(counter,update_frequency) == 0
-        clear DaeFunc2D
-    end
-else
-    if flag == "init"
+switch flag
+    case 'init'
         t0 = t(1);
         t_end = t(end);
         start_wct=datetime("now");
@@ -48,19 +27,29 @@ else
         uicontrol('Style', 'text', 'Tag', 'eltime', 'String', "0s",'Position', [7 45 90 15])
         uicontrol('Style', 'text', 'String', 'Time Remaining','Position', [7 25 90 15])
         uicontrol('Style', 'text', 'Tag', 'esttime', 'String', num2str(inf),'Position', [7 5 90 15])
-        if mod(counter,update_frequency) == 0
-            clear DaeFunc2D
+            
+    case ''
+        if((datetime("now")-wct_last)>seconds(1))
+            if bar_scale == "log"
+                perc=(log10(t(end))-log10(t0))/(log10(t_end)-log10(t0));
+            elseif bar_scale == "lin"
+                perc=(t(end)-t0)/(t_end-t0);
+            end
+            elapsed_time_seconds = seconds(datetime("now")-start_wct);
+            area(ax,[t(end) t_end-t(end);t(end) t_end-t(end)]);
+            set(findobj('Tag','perc'),'String',num2str(perc*100) + " %");
+            set(findobj('Tag','eltime'),'String',SecondsToString(elapsed_time_seconds));
+            set(findobj('Tag','esttime'),'String',SecondsToString(elapsed_time_seconds*((1-perc)/perc)));
+            wct_last=datetime("now");
         end
-        pause(0.1);
-    elseif flag == "done"
+            
+    case 'done'
         if(ishandle(95))
             close(95);
         end
-    end
 end
 
-counter = counter + 1;
-status = 0;
+status = ~ishandle(95);
 drawnow;
 
 end

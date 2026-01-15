@@ -7,10 +7,9 @@ function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates] = D
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
     Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, re, n_left, n_right,...
-    Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh)
+    Ex_1, Ey_1, g2Is, re, n_left, n_right, ph_coeff)
 
-persistent Sph
+global Sph %#ok<GVMIS>
 
 y = y(inv_ppp); % converts y into normal ordering
 
@@ -65,12 +64,6 @@ Bfval = fBfval(t);
 M(1,:) = kr(:);
 M(Mindices) = n_c(Nindices);
 reaction_rates = reshape(prod(M),Nc,[]);
-if isempty(Sph)
-    E_c_Td(E_c_Td == 0) = 1e-3;
-    Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
-    Sph = CellFromNodesPh * (Ks \ (Si2RHS*(Si+1e5)));
-    fprintf("Updated photoionization, maximum value = %e\n", max(Sph))
-end
 omega = reshape(reaction_rates*stoichiometric_matrix + Sph.*ph_coeff + const_omega,[],1);
 
 n_up = n_left .* u_dot_n_max + n_right .* u_dot_n_min + Xmu * Bfval;

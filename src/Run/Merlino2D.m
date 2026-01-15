@@ -29,10 +29,11 @@ arguments
     extra.GAMMA_II
     extra.SURF_CHARGE_COEFF
     extra.GAMMA_II_DIEL
+    extra.SAVE_EACH_K_TIMESTEPS
     extra.ODE_TYPE (1,:) char {mustBeMember(extra.ODE_TYPE,{'ode15s','idas'})}
     extra.OPEN_GMSH (1,1) double {mustBeMember(extra.OPEN_GMSH,[0,1])}
     extra.REORDERING (1,1) double {mustBeMember(extra.REORDERING,[0,1])}
-    extra.OUTPUT_FUNCTION (1,:) char {mustBeMember(extra.OUTPUT_FUNCTION,{'bar','current','cmd','none'})}
+    extra.OUTPUT_FUNCTION (1,:) char {mustBeMember(extra.OUTPUT_FUNCTION,{'bar','cmd','none'})}
     extra.BAR_SCALE (1,:) char {mustBeMember(extra.BAR_SCALE,{'lin','log'})}
     extra.STEADY_STATE_THRESHOLD
     extra.T_START_STEADY_STATE
@@ -40,6 +41,8 @@ arguments
     extra.REL_TOL
     extra.SPECIES_NO_CHEM
 end
+
+global tout_sparse yout_sparse %#ok<GVMIS>
 
 % setting all parameters to default values
 p = DefaultMerlino2Dinput(); 
@@ -90,21 +93,6 @@ else
     [species,reactants,products,indices_const_species] = GetReactantsProducts(string(vertcat(reactions(:,1))), string(vertcat(const_species(:,1)))); %#ok<NODEF>
     ns = numel(species);
     [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), msh.Nc); 
-end
-
-% Photoionization --------------------------------------------------------
-ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
-offon = ["OFF", "ON"]; fprintf("Photoionization is %s\n",offon(ph_is_on+1)) % give feedback about photoionization
-if ph_is_on
-    [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
-        CreatePh(3,p.PRESSURE,"cartesian",msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
-        p.PHOTOIONIZATION.BC,p.PHOTOIONIZATION.SPECIES_COEFF,p.PHOTOIONIZATION.REACTIONS,species,reactions);
-else
-    Ks = 1;
-    Si2RHS = zeros(1,msh.Nc);
-    ph_coeff = 0;
-    indices_src_reactions_ph = [];
-    CellFromNodesPh = 0;
 end
 
 % Ordering input parameters to match the order of "species" ---------------
@@ -274,6 +262,49 @@ ode_options.JPattern = JPattern(ppp,ppp);
 ode_options.Mass = ode_options.Mass(ppp,ppp);
 y0 = y0(ppp);
 
+% Photoionization --------------------------------------------------------
+ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
+offon = ["OFF", "ON"]; fprintf("Photoionization is %s\n",offon(ph_is_on+1)) % give feedback about photoionization
+if ph_is_on
+    [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
+        CreatePh(3,p.PRESSURE,"cartesian",msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
+        p.PHOTOIONIZATION.BC,p.PHOTOIONIZATION.SPECIES_COEFF,p.PHOTOIONIZATION.REACTIONS,species,reactions);
+    photo_update_frequency = p.PHOTOIONIZATION.UPDATE_FREQUENCY;
+        input_photo.inv_ppp = inv_ppp;      
+    input_photo.Nc = msh.Nc;
+    input_photo.ns = ns;
+    input_photo.Nd = msh.Nd;
+    input_photo.M_get_aux_BC_el = M_get_aux_BC_el;
+    input_photo.BCEL_VAL = p.BCEL_VAL;
+    input_photo.V_APPLIED = p.V_APPLIED;
+    input_photo.Eint2Ec = Eint2Ec;
+    input_photo.phi2Ex = phi2Ex;
+    input_photo.aux2Ex = aux2Ex;
+    input_photo.phi2Ey = phi2Ey;
+    input_photo.aux2Ey = aux2Ey;
+    input_photo.Ngas = Ngas;
+    input_photo.fTe = fTe;       
+    input_photo.fKr = fKr;
+    input_photo.T = p.TEMPERATURE;
+    input_photo.M = M;
+    input_photo.Mindices = Mindices;
+    input_photo.Nindices = Nindices;
+    input_photo.indices_src_reactions_ph = indices_src_reactions_ph;
+    input_photo.CellFromNodesPh = CellFromNodesPh;
+    input_photo.Ks = Ks;
+    input_photo.Si2RHS = Si2RHS;
+    % UpdatePhoto(y0,p.TIME_INSTANTS(1),input_photo)
+else
+    % Ks = 1;
+    % Si2RHS = zeros(1,msh.Nc);
+    % indices_src_reactions_ph = [];
+    % CellFromNodesPh = 0;
+    ph_coeff = 0;
+    photo_update_frequency = -1;
+    input_photo = -1;
+end
+InitializePhoto(y0,p.TIME_INSTANTS(1),input_photo,ph_is_on);
+
 % Creating Ode Function ---------------------------------------------------
 odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
@@ -284,40 +315,25 @@ odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
     surf_charge_accum_flux_coeff, perm, inv_perm,...
     Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, p.ELECTRON_REF_COEFF, zeros(msh.Nf*ns,1), zeros(msh.Nf*ns,1),...
-    Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh);
+    Ex_1, Ey_1, g2Is, p.ELECTRON_REF_COEFF, zeros(msh.Nf*ns,1), zeros(msh.Nf*ns,1), ph_coeff);
 odefun_mixed = @(t,y) odefun_perm(t,y,ppp,inv_ppp); % this is the one considering reordering
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
 
 % Setting Output Function -------------------------------------------------
-if p.OUTPUT_FUNCTION == "bar"
-    clear OdeProgressBar
-    if ph_is_on
-        update_frequency = p.PHOTOIONIZATION.UPDATE_FREQUENCY;
-    else
-        update_frequency = Inf;
-    end
-    ode_options.OutputFcn = @(t,y,flag)OdeProgressBar(t,y,flag,p.BAR_SCALE,update_frequency);
-elseif p.OUTPUT_FUNCTION == "current"
-    indices_emitter = msh.f_from_b(msh.bs_from_bID{1}); % 1 corresponds to emitter
-    ode_options.OutputFcn = @(t,y,flag)OutputCurrent(t,y,flag,odefun_mixed,e,msh.sn,indices_emitter,msh.areaf(indices_emitter),p.T_START_STEADY_STATE);
-elseif p.OUTPUT_FUNCTION == "cmd"
-    ode_options.OutputFcn = @(t,y,flag)OutputFunctionCommand(t,y,flag,p.BAR_SCALE);
-elseif p.OUTPUT_FUNCTION == "none"
-    % not using any output function
-end
-
-% Setting Event Function --------------------------------------------------
-clear SteadyStateHalt
-if p.STEADY_STATE_THRESHOLD ~= -1
-    ode_options.Events = @(t,y)SteadyStateHalt(t,y,p.STEADY_STATE_THRESHOLD);
-end
-if p.OUTPUT_FUNCTION == "bar"
-    ode_options.Events = @(t,y) OdeAbort(t,y);
+if p.OUTPUT_FUNCTION == "none"
+    % no output function
+else
+    clear GeneralOutputFunction
+    sporadic_save_is_on = p.SAVE_EACH_K_TIMESTEPS < Inf;
+    ode_options.OutputFcn = @(t,y,flag)GeneralOutputFunction(t,y,flag,...
+        p.OUTPUT_FUNCTION,p.BAR_SCALE,...
+        ph_is_on,photo_update_frequency,input_photo,...
+        sporadic_save_is_on,p.SAVE_EACH_K_TIMESTEPS);
 end
 
 fprintf("%s\n","Initialization finished");
 
+statsout = [-1,-1,-1,-1,-1,-1];
 % Solving with DAE --------------------------------------------------------
 clear DaeFunc2D % clear persistent variables (Sph)
 if p.ODE_TYPE == "idas"
@@ -336,8 +352,6 @@ if p.ODE_TYPE == "idas"
         S = solve(F,p.TIME_INSTANTS(1),p.TIME_INSTANTS(2));
     end
     wall_clock_time = toc(start_time_computation);
-
-    statsout = [-1,-1,-1,-1,-1,-1];
     tout = S.Time;
     yout = S.Solution;
 elseif p.ODE_TYPE == "ode15s"
@@ -345,13 +359,14 @@ elseif p.ODE_TYPE == "ode15s"
     ode_options.RelTol = p.REL_TOL;
     ode_options.InitialStep = 1e-15;
     start_time_computation = tic();
-    if isempty(ode_options.Events)
-        [tout,yout,statsout] = ode15s(odefun_mixed,p.TIME_INSTANTS,y0,ode_options);
+    if sporadic_save_is_on
+        ode15s(odefun_mixed,[p.TIME_INSTANTS(1),p.TIME_INSTANTS(end)],y0,ode_options);
+        tout = tout_sparse;
+        yout = yout_sparse;
     else
-        [tout,yout,~,~,~,statsout] = ode15s(odefun_mixed,p.TIME_INSTANTS,y0,ode_options);
+        [tout,yout,statsout] = ode15s(odefun_mixed,p.TIME_INSTANTS,y0,ode_options);
     end
     wall_clock_time = toc(start_time_computation);
-
     tout = tout';
     yout = yout';
 end
@@ -367,10 +382,14 @@ if ph_is_on
     Ecy = Eint2Ec * Ey;
     E_c_Td = sqrt(Ecx.^2 + Ecy.^2)/Ngas*1e21;
     Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
-    Sph = Ks \ (Si2RHS*(Si+1e5)); % this is the value of Sph at the end of simulation
-    Sph = sum(reshape(Sph,msh.Nn,3),2);
+    Sph_nodes = Ks \ (Si2RHS*(Si+1e5)); % this is the value of Sph at the end of simulation
+    Sph_nodes = sum(reshape(Sph_nodes,msh.Nn,3),2);
 else
-    Sph = 0;
+    Sph_nodes = 0;
+end
+
+if isfolder(GetPath("data")+"/"+"func")
+    rmpath(GetPath("data")+"/"+"func")
 end
 
 % Creating Output Structure -----------------------------------------------
@@ -392,7 +411,7 @@ out.I_s = I_s(tout);
 out.Phi2Ex_c = Phi2Ex_c(1:msh.Nc,:);
 out.Phi2Ey_c = Phi2Ey_c(1:msh.Nc,:);
 out.msh = msh;
-out.Sph = Sph;
+out.Sph = Sph_nodes;
 
 out.geo_file_content = geo_file_content;
 
