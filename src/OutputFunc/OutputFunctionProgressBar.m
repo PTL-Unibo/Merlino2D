@@ -1,6 +1,9 @@
 function status = OutputFunctionProgressBar(t,~,flag,bar_scale)
 persistent t0 t_end start_wct wct_last ax
 
+bg = [220, 210, 198]/255;
+fg = [195, 33, 54]/255;
+
 switch flag
     case 'init'
         t0 = t(1);
@@ -19,7 +22,7 @@ switch flag
             set(gca,'XTickLabel',[],'NextPlot','replacechildren');
         end
         ylabel('Simulation Progress - Time (s)');
-        area([t(1) t(end);t(1) t(end)]);
+        fill([1;1;2;2],[t0;t_end;t_end;t0],bg)
         uicontrol('Style', 'pushbutton', 'String', 'Abort','Position', [7 515 103 30], 'Callback', 'close(gcf)')
         uicontrol('Style', 'text', 'String', 'Progress','Position', [7 105 90 15])
         uicontrol('Style', 'text', 'Tag', 'perc', 'String', "0 %",'Position', [7 85 90 15])
@@ -36,7 +39,7 @@ switch flag
                 perc=(t(end)-t0)/(t_end-t0);
             end
             elapsed_time_seconds = seconds(datetime("now")-start_wct);
-            area(ax,[t(end) t_end-t(end);t(end) t_end-t(end)]);
+            fill([1;1;2;2],[t0;t_end;t_end;t0],bg,[1;1;2;2],[t0;t(end);t(end);t0],fg)
             set(findobj('Tag','perc'),'String',num2str(perc*100) + " %");
             set(findobj('Tag','eltime'),'String',SecondsToString(elapsed_time_seconds));
             set(findobj('Tag','esttime'),'String',SecondsToString(elapsed_time_seconds*((1-perc)/perc)));
