@@ -43,6 +43,7 @@ arguments
 end
 
 global tout_sparse yout_sparse %#ok<GVMIS>
+global BentoCaraca %#ok<GVMIS>
 
 % setting all parameters to default values
 p = DefaultMerlino2Dinput(); 
@@ -66,14 +67,18 @@ p.SPECIES_NO_CHEM = strtrim(string(p.SPECIES_NO_CHEM(:))); % convert to column s
 % Generating Mesh ---------------------------------------------------------
 geo_file = GetPath("geo") + "/" + p.MSH + ".geo";
 cmd_arguments = CreateCmdMshParameters(p.MSH_PARAMETERS);
-if p.OPEN_GMSH == 1
-    system(GetPath("gmsh") + " " + geo_file + cmd_arguments);
-elseif p.OPEN_GMSH == 0
-    [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
+if BentoCaraca
+   fprintf("%s\n",GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
+else
+    if p.OPEN_GMSH == 1
+        system(GetPath("gmsh") + " " + geo_file + cmd_arguments);
+    elseif p.OPEN_GMSH == 0
+        [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
+    end
+    fprintf("%s\n","Generated Mesh");
 end
 msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "cartesian", "remove_dielectric","yes");
 geo_file_content = readlines(geo_file);
-fprintf("%s\n","Generated Mesh");
 
 % Compute Ngas ------------------------------------------------------------
 Ngas = p.PRESSURE/(p.TEMPERATURE*kB); % p V = m * R * T
@@ -298,12 +303,7 @@ if ph_is_on
     input_photo.CellFromNodesPh = CellFromNodesPh;
     input_photo.Ks = Ks;
     input_photo.Si2RHS = Si2RHS;
-    % UpdatePhoto(y0,p.TIME_INSTANTS(1),input_photo)
 else
-    % Ks = 1;
-    % Si2RHS = zeros(1,msh.Nc);
-    % indices_src_reactions_ph = [];
-    % CellFromNodesPh = 0;
     ph_coeff = 0;
     photo_update_frequency = -1;
     input_photo = -1;

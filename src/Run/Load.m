@@ -1,8 +1,13 @@
 function [out_pp] = Load(name)
+global BentoCaraca %#ok<GVMIS>
 
 out_pp = load(name);
 
-out_pp.msh = GetMesh(out_pp.input.geo_file_content, "cartesian", out_pp.input.p.MSH_PARAMETERS);
+if BentoCaraca
+    out_pp.msh = PreProcessing(GetPath("geo")+"/"+out_pp.input.p.MSH, "cartesian", "remove_dielectric","yes"); 
+else
+    out_pp.msh = GetMesh(out_pp.input.geo_file_content, "cartesian", out_pp.input.p.MSH_PARAMETERS);
+end
 
 out_pp = rmfield(out_pp,"y_end");
 

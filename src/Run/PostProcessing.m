@@ -4,6 +4,8 @@ arguments
     type (1,:) char {mustBeMember(type,{'light','full'})} = 'light' 
 end
 
+global BentoCaraca %#ok<GVMIS>
+
 if type == "full"
     msh = out.msh;
     A = out.A;
@@ -171,11 +173,15 @@ out_pp.input.p = out.p;
 % replacing function handles with strings
 out_pp.input.p.V_APPLIED = func2str(out.p.V_APPLIED);
 
-% removing the .m mesh file
-mat_mesh_file = GetPath("geo") + "/" + out.p.MSH + ".m";
-if isfile(mat_mesh_file)
-    delete(mat_mesh_file)
-    fprintf("%s\n","Deleted " + out.p.MSH + ".m");
+if BentoCaraca
+    % do nothing
+else
+    % removing the .m mesh file
+    mat_mesh_file = GetPath("geo") + "/" + out.p.MSH + ".m";
+    if isfile(mat_mesh_file)
+        delete(mat_mesh_file)
+        fprintf("%s\n","Deleted " + out.p.MSH + ".m");
+    end
 end
 
 end
