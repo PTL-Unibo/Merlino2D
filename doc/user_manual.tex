@@ -668,6 +668,58 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	\hspace{40pt} \matlabs{"O2-", 1e5\};}
 	
 	\subsection{PHOTOIONIZATION}
+	\label{sec:photoionization}
+	
+	This parameter is a struct with fields: REACTIONS, SPECIES\_COEFF, BC, and \\ UPDATE\_FREQUENCY.
+
+	\paragraph{REACTIONS} is a cell array of strings. It is used to indicate which chemical reactions (contained in the kinetic scheme specified with \seclink{chemicalmodel}{CHEMICAL\_MODEL}) contribute to the ionization rate of neutral molecules by electron impact. The total ionization rate, $S_i$, will be computed as the sum of the reaction rates of the reactions specified. For example, you could set
+	
+	\matlabs{opts.PHOTOIONIZATION.REACTIONS = \{}
+	
+	\hspace{40pt} \matlabs{'e + N2 -> 2e + N2+';} 
+	
+	\hspace{40pt} \matlabs{"e + O2 -> 2e + O2+"\};}
+	
+	
+	\paragraph{SPECIES\_COEFF} is used to distribute the total photoionization rate, $S_{ph}$, among different species.
+	SPECIES\_COEFF is a cell array with two columns. The first column contains the names of the positive ions produced (as strings) and the second column contains the weight associated to each positive ion.
+	
+	Considering the previous example of PHOTOIONIZATION.REACTIONS, you may want to split $S_{ph}$ between \ce{N2+} and \ce{O2+} with different weights.
+	You could set
+	
+	\matlabs{opts.PHOTOIONIZATION.SPECIES\_COEFF = \{}
+	
+	\hspace{40pt} \matlabs{"N2+",0.8;}
+	
+	\hspace{40pt} \matlabs{"O2+",0.2\};}
+	
+	\noindent to add $0.8 \, S_{ph}$ to the production rate of \ce{N2+} and to add $0.2 \, S_{ph}$ to the production rate of \ce{O2+}. $S_{ph}$ will be automatically added to the production rate of electrons.
+	
+	\paragraph{BC} is used to set the boundary conditions for the Helmholtz equation
+	\begin{equation*}
+		\nabla^2 S_{ph}^{(j)} - (\lambda_j p_{\ce{O2}})^2 S_{ph}^{(j)} = -A_j p_{\ce{O2}}^2 I .
+	\end{equation*}
+	
+	BC must be a vector containing as many elements as there are BoundaryIDs (see Section \ref{sec:NemericalIdentifiers}). Each element of the vector can be set to 0, corresponding to a \textbf{zero} Dirichlet boundary condition at the associated external boundary, or 1, corresponding to a \textbf{zero} Neumann condition. 
+	For example, you could set
+	
+	\matlabs{opts.PHOTOIONIZATION.BC = [1, 1, 0, 1];}
+	
+	
+	\paragraph{UPDATE\_FREQUENCY} is an integer used to specify the frequency at which the photoionization rate $S_{ph}$ is updated. 
+
+	\noindent Setting 
+	
+	\matlabs{opts.PHOTOIONIZATION.UPDATE\_FREQUENCY = 1;} 
+	
+	\noindent means that the rate $S_{ph}$ will be recomputed at each time instant contained inside \\ \seclink{timeinst}{TIME\_INSTANTS}.
+	
+	\noindent Setting 
+	
+	\matlabs{opts.PHOTOIONIZATION.UPDATE\_FREQUENCY = 5;} 
+	
+	\noindent means that the rate $S_{ph}$ will be recomputed once every 5 time instants.
+	
 	
 	\subsection{CHEMICAL\_MODEL}
 	\label{sec:chemicalmodel}
@@ -708,30 +760,78 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	
 	In Merlino2D some kinetic schemes for air are already provided inside the folder \textbf{kinetic/} and can be used as reference for the creation of new scripts, also for other types of gases.
 	
+	\subsection{CONST\_SPECIES}
+	\label{sec:constspecies}
+	This parameter is a cell array with 3 columns, used to specify the species that need to be considered constant and uniform during the simulation (if there are any) and their respective value.
+	
+	The first column should contain the name of the species (as strings) to treat as constant. All the species should appear inside the kinetic scheme specified with the \seclink{chemicalmodel}{CHEMICAL\_MODEL} parameter.
+	
+	The second column contains the constant value of the associated species, that can be an absolute value or a relative value with respect to the gas density, depending on the content of the third column.
+	If the third column contains the string \matlabs{"abs"}, the number in the corresponding second column will be interpreted as a constant number density (in \unit{\per\cubic\meter}). If the third column contains the string \matlabs{"rel"}, the number in the corresponding second column will be interpreted as a fraction of the gas density \matlabs{Ngas}.
+	
+	For example, you could impose a constant number density for the species \matlabs{"A"} equal to 80\% of the total gas density, and a constant number density for the species \matlabs{"B"} equal to \SI{1e15}{\per\cubic\meter} by setting 
+	
+	\matlabs{opts.CONST\_SPECIES = \{}
+			
+	\hspace{40pt} \matlabs{"A", 0.8, "rel";}
+		
+	\hspace{40pt} \matlabs{"B", 1e15, "abs"\};}
+	
+	\noindent Note that all the species defined in \seclink{constspecies}{CONST\_SPECIES} must be removed from the input parameters \seclink{bcflag}{BC\_FLAG}, \seclink{bcval}{BC\_VAL}, \seclink{initial}{INITIAL\_CONDITION}, \seclink{mu}{MU}, \seclink{d}{D}, \seclink{vthcoeff}{V\_TH\_COEFF}, and \seclink{constomega}{CONST\_OMEGA}, since they will not be part of the degrees of freedom of the simulation.
+	
+	\vspace{10pt}
+	
+	\noindent If no species need to be considered as constant, you can avoid to define \seclink{constspecies}{CONST\_SPECIES}.
+	
+	
 	\subsection{LOKI\_INPUT}
 	\label{sec:lokiinput}
-	This parameter is a string used to specify either the \textbf{.in} input file for LoKI-B, or the \textbf{.mat} file where LoKI-B results have been previously stored.
-	To run a new LoKI-B input file, you must first of all create a valid one (we refer the reader to \href{https://github.com/LoKI-Suite/LoKI-B/tree/master/Documentation}{LoKI-B documentation}), and place it inside the \textbf{Input/} folder of the LoKI-B directory. You can then set \seclink{lokiinput}{LOKI\_INPUT} to the name of the input file. You must include in the name the \textbf{.in} extension. If the input file was placed in some sub-folder inside the \textbf{Input/} directory, you can add that to the name of the file. For example, if you created a LoKI-B input file named \textbf{my\_loki\_input.in} and you put it inside the sub-folder\textbf{ Merlino2D\_inputs/} inside the \textbf{Input/} directory (already present in LoKI-B distribution), you should set 
+	This parameter is a string used to specify the \textbf{.in} input file for LoKI-B.
+	To run a new LoKI-B input file, you must first of all create a valid one (we refer the reader to \href{https://github.com/LoKI-Suite/LoKI-B/tree/master/Documentation}{LoKI-B documentation}), and place it inside the \textbf{Input/} folder of the LoKI-B directory (note that it is not possible to put the file inside a sub-folder). You can then set \seclink{lokiinput}{LOKI\_INPUT} to the name of the input file, removing from the name the \textbf{.in} extension. 
 	
-	\matlabs{opts.LOKI\_INPUT = "Merlino2D\_inputs/my\_loki\_input.in";}
+	For example, if you created a LoKI-B input file named \textbf{my\_loki\_input.in} and you put it inside the \textbf{Input/} directory (already present in LoKI-B distribution), you should set 
 	
-	\noindent If you have already saved LoKI-B results in a previous simulation (using the \seclink{saveloki}{SAVE\_LOKI} parameter), \seclink{lokiinput}{LOKI\_INPUT} can be set to the name of the saving file. For example, if you previously saved LoKI results in the file \textbf{my\_save.mat}, you can set
+	\matlabs{opts.LOKI\_INPUT = "my\_loki\_input";}
 	
-	\matlabs{opts.LOKI\_INPUT = "my\_save.mat";}
+	\vspace{10pt}
 	
-	\noindent to retrieve the results without the need to run LoKI-B again. You must include the \textbf{.mat} extension.
+	\noindent To avoid running again the same file in the future, and load directly the results, it is suggested to save the results directly from the LoKI-B input file, by putting these settings at the end:
 	
-	The input file for LoKI-B, \textbf{Air.in}, for a mixture of \ce{N2}(79 \%) - \ce{O2}(21 \%), is already provided with Merlino2D and is located inside the \textbf{Input/} folder of the LoKI-B directory.
+	\lstinputlisting{save_settings.txt}
 	
-	\subsection{SAVE\_LOKI}
-	\label{sec:saveloki}
-	This parameter is a string used to indicate the file where to save the results obtained from running the input file specified with \seclink{lokiinput}{LOKI\_INPUT}.
-	Merlino2D will create an additional folder inside the LoKI-B directory, called \textbf{LoKIsavings/}, where results will be saved. In case you want to load one of these savings, you can set \seclink{lokiinput}{LOKI\_INPUT} to the name of the saved file. Merlino2D will automatically look for a file with the name you specified inside the \textbf{LoKIsavings/} folder and load the results from it.
-	When using \seclink{saveloki}{SAVE\_LOKI}, the extension \textbf{.mat} is not compulsory. This means that both the following examples are valid.
+	\noindent Note that the text \matlabs{my_loki_input} after the \matlabs{folder} field should be replaced with the actual name of the \textbf{.in} file (\matlabs{my_loki_input} was used here to be consistent with the previous example).  
+	If the shown settings are added to the \textbf{.in} file, the next time a simulation is run with the option
 	
-	\matlabs{opts.SAVE\_LOKI = "my\_save";}
+	\matlabs{opts.LOKI\_INPUT = "my\_loki\_input";}
 	
-	\matlabs{opts.SAVE\_LOKI = "my\_save.mat";}
+	\noindent the results will be loaded directly without the need to run again LoKI-B.
+	
+	The input file for LoKI-B, \textbf{Air.in}, for a mixture of \ce{N2}(79 \%) - \ce{O2}(21 \%), is already provided with Merlino2D.
+	
+%	\subsection{LOKI\_INPUT}
+%	\label{sec:lokiinput}
+%	This parameter is a string used to specify either the \textbf{.in} input file for LoKI-B, or the \textbf{.mat} file where LoKI-B results have been previously stored.
+%	To run a new LoKI-B input file, you must first of all create a valid one (we refer the reader to \href{https://github.com/LoKI-Suite/LoKI-B/tree/master/Documentation}{LoKI-B documentation}), and place it inside the \textbf{Input/} folder of the LoKI-B directory. You can then set \seclink{lokiinput}{LOKI\_INPUT} to the name of the input file. You must include in the name the \textbf{.in} extension. If the input file was placed in some sub-folder inside the \textbf{Input/} directory, you can add that to the name of the file. For example, if you created a LoKI-B input file named \textbf{my\_loki\_input.in} and you put it inside the sub-folder\textbf{ Merlino2D\_inputs/} inside the \textbf{Input/} directory (already present in LoKI-B distribution), you should set 
+%	
+%	\matlabs{opts.LOKI\_INPUT = "Merlino2D\_inputs/my\_loki\_input.in";}
+%	
+%	\noindent If you have already saved LoKI-B results in a previous simulation (using the \seclink{saveloki}{SAVE\_LOKI} parameter), \seclink{lokiinput}{LOKI\_INPUT} can be set to the name of the saving file. For example, if you previously saved LoKI results in the file \textbf{my\_save.mat}, you can set
+%	
+%	\matlabs{opts.LOKI\_INPUT = "my\_save.mat";}
+%	
+%	\noindent to retrieve the results without the need to run LoKI-B again. You must include the \textbf{.mat} extension.
+%	
+%	The input file for LoKI-B, \textbf{Air.in}, for a mixture of \ce{N2}(79 \%) - \ce{O2}(21 \%), is already provided with Merlino2D and is located inside the \textbf{Input/} folder of the LoKI-B directory.
+	
+%	\subsection{SAVE\_LOKI}
+%	\label{sec:saveloki}
+%	This parameter is a string used to indicate the file where to save the results obtained from running the input file specified with \seclink{lokiinput}{LOKI\_INPUT}.
+%	Merlino2D will create an additional folder inside the LoKI-B directory, called \textbf{LoKIsavings/}, where results will be saved. In case you want to load one of these savings, you can set \seclink{lokiinput}{LOKI\_INPUT} to the name of the saved file. Merlino2D will automatically look for a file with the name you specified inside the \textbf{LoKIsavings/} folder and load the results from it.
+%	When using \seclink{saveloki}{SAVE\_LOKI}, the extension \textbf{.mat} is not compulsory. This means that both the following examples are valid.
+%	
+%	\matlabs{opts.SAVE\_LOKI = "my\_save";}
+%	
+%	\matlabs{opts.SAVE\_LOKI = "my\_save.mat";}
 	
 	\subsection{ELECTRON\_TEMPERATURE}
 	\label{sec:electrontemp}
