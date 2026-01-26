@@ -2,6 +2,7 @@
 !data/*.csv
 
 /geo/*.m
+/BentoCaraca
 
 *.avi
 *.gif
