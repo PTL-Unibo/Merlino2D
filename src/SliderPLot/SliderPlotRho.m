@@ -16,6 +16,14 @@ sld = uicontrol(fig, ...
     'Position',[0, 1, 1, 0], ...
     'Callback', @(src,~) PlotRho(round(src.Value),FLIP_Y));
 
+btn = uicontrol(fig, ...
+    'Style','togglebutton', ...
+    'String','GLOBAL', ...
+    'Units','normalized', ... 
+    'Value', 1,...
+    'Position',[0.94 0.95 0.05 0.04], ...
+    'Callback',@(src,~) PlotRho(round(sld.Value),FLIP_Y));
+
 count = 1;
 
 function PlotRho(k,flip_y)
@@ -50,10 +58,18 @@ function PlotRho(k,flip_y)
         ax.ColorScale = "log";
         ax.FontSize = 15;
         cb = colorbar(ax,"TickLabelInterpreter","latex");
-        clim([bottom_lim, top_lim]);
         cb.Label.Interpreter = "latex";
         cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
         cb.Label.FontSize = 15;
+    end
+    if btn.Value == 1
+        clim([bottom_lim, top_lim]);
+        btn.String = "GLOBAL";
+    else
+        if max(rhok) ~= min(rhok)
+            clim([min(rhok), max(rhok)])
+        end
+        btn.String = "Instant";
     end
     ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
 

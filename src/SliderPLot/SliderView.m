@@ -1,4 +1,10 @@
 function SliderView(out_pp,cell_types)
+%SliderView creates a slider to easily navigate over time instants
+%   IV
+%   N
+%   Sigma
+%   E
+%   Rho
 
 sld_cell = cell(1, numel(cell_types));
 

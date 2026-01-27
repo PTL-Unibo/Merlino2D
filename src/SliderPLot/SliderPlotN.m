@@ -31,6 +31,14 @@ sld = uicontrol(fig, ...
     'Position',[0, 1, 1, 0], ...
     'Callback', @(src,~) PlotSpecies(round(src.Value),cmbbox.Value,FLIP_Y));
 
+btn = uicontrol(fig, ...
+    'Style','togglebutton', ...
+    'String','GLOBAL', ...
+    'Units','normalized', ... 
+    'Value', 1,...
+    'Position',[0.94 0.95 0.05 0.04], ...
+    'Callback',@(src,~) PlotSpecies(round(sld.Value),cmbbox.Value,FLIP_Y));
+
 cmbbox.Callback = @(src,~) PlotSpecies(round(sld.Value),src.Value,FLIP_Y);
 
 count = 1;
@@ -73,7 +81,15 @@ function PlotSpecies(k,is,flip_y)
         % cb.Label.String = out_pp.S_NAMES(is) + " number density $(\mathrm{m}^{-3})$";
         cb.Label.FontSize = 15;
     end
-    clim([bottom_lim(is), top_lim(is)]);
+    if btn.Value == 1
+        clim([bottom_lim(is), top_lim(is)]);
+        btn.String = "GLOBAL";
+    else
+        if max(nk) ~= min(nk)
+            clim([min(nk), max(nk)])
+        end
+        btn.String = "Instant";
+    end
     cb.Label.String = out_pp.S_NAMES(is) + " number density $(\mathrm{m}^{-3})$";
     ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
 
