@@ -121,7 +121,12 @@ if lower(coordinates) == "cartesian"
     areaf = sqrt((Xf(:,1)-Xf(:,2)).^2 + (Yf(:,1)-Yf(:,2)).^2);
     vol = TriangleArea(Xc, Yc);
 elseif lower(coordinates) == "cylindrical"
-    [vol, areaf] = AxisymmetricVolumeArea(ns_from_c, ns_from_f, fs_from_c, f_from_ns, xn, yn, Nc, Nf);
+    x1 = xn(ns_from_f(:,1));
+    y1 = yn(ns_from_f(:,1));
+    x2 = xn(ns_from_f(:,2));
+    y2 = yn(ns_from_f(:,2));
+    areaf = pi * sqrt((x2-x1).^2 + (y2-y1).^2) .* (y1 + y2);
+    vol = 2*pi * TriangleArea(Xc, Yc) .* sum(yn(ns_from_c),2)/3;
 end
 inv_vol = 1 ./ vol;
 
