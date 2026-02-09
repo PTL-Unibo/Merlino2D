@@ -451,7 +451,7 @@ The \matlabs{Load} function takes as argument a string specifying the \textbf{.m
 	
 	\hspace{40pt} \matlabs{"e", \{NaN, @(t)1e10*t, 1e15\}\};}
 		
-	\noindent With this combination of parameters you are imposing a constant number density of \SI{1e5}{\per\cubic\meter} for the species \matlabs{"e"} at the third boundary, and a time-dependent expression for computing the flux of \matlabs{"e"} at the second boundary and of \matlabs{"N2+"} at the third boundary. Notice that \matlabs{NaN} have been placed in \seclink{bcval}{BC\_VAL} at positions corresponding to \matlabs{"GorinLike"} and \matlabs{"FreeDriftFlow"} flags. This was done to highlight that, for those species and boundaries where a \matlabs{"GorinLike"} or a \matlabs{"FreeDriftFlux"} condition has been used, the value inserted in the corresponding position of \seclink{bcval}{BC\_VAL} will be completely ignored.
+	\noindent With this combination of parameters you are imposing a constant number density of \SI{1e5}{\per\cubic\meter} for the species \matlabs{"e"} at the third boundary, and a time-dependent expression for computing the \textbf{outgoing} flux of \matlabs{"e"} at the second boundary and of \matlabs{"N2+"} at the third boundary. Notice that \matlabs{NaN} have been placed in \seclink{bcval}{BC\_VAL} at positions corresponding to \matlabs{"GorinLike"} and \matlabs{"FreeDriftFlow"} flags. This was done to highlight that, for those species and boundaries where a \matlabs{"GorinLike"} or a \matlabs{"FreeDriftFlux"} condition has been used, the value inserted in the corresponding position of \seclink{bcval}{BC\_VAL} will be completely ignored.
 	
 	
 	
