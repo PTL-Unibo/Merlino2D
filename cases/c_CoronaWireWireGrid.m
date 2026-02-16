@@ -51,7 +51,7 @@ opts.LOKI_INPUT = "Air";
 opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
 
-out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0);
+out = Merlino2D(M2DInput(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0));
 out_pp = PostProcessing(out,'full');
 Save(out_pp,"CoronaWireWireGrid.mat")
 

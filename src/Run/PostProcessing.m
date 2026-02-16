@@ -168,10 +168,10 @@ if type == "full"
 end
 
 % adding a field to know what was the input
-out_pp.input.geo_file_content = out.geo_file_content;
+% out_pp.input.geo_file_content = out.geo_file_content;
 out_pp.input.p = out.p;
 % replacing function handles with strings
-out_pp.input.p.V_APPLIED = func2str(out.p.V_APPLIED);
+% out_pp.input.p.V_APPLIED = func2str(out.p.V_APPLIED);
 
 if BentoCaraca
     % do nothing
