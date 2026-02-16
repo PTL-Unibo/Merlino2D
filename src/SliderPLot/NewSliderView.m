@@ -1,4 +1,4 @@
-function SliderView(out_pp,cell_types)
+function NewSliderView(out,cell_types)
 %SliderView creates a slider to easily navigate over time instants
 %   IV
 %   Sigma
@@ -13,10 +13,10 @@ ed_ylim_sup_cell = cell(0);
 k = 1;
 for ic = 1:numel(cell_types)
     if cell_types{ic} == "Cell"
-        [sld_cell{ic}, ed_xlim_inf_cell{k}, ed_xlim_sup_cell{k}, ed_ylim_inf_cell{k}, ed_ylim_sup_cell{k}] = SliderPlotCell(out_pp);
+        [sld_cell{ic}, ed_xlim_inf_cell{k}, ed_xlim_sup_cell{k}, ed_ylim_inf_cell{k}, ed_ylim_sup_cell{k}] = NewSliderPlotCell(out);
         k = k + 1;
     else
-        eval("sld_cell{" + ic + "} = SliderPlot" + cell_types{ic} + "(out_pp);")
+        eval("sld_cell{" + ic + "} = SliderPlot" + cell_types{ic} + "(out);")
     end
 end
 
@@ -44,7 +44,7 @@ lbl_t = annotation(fig, 'textbox', ...
 
 uicontrol(fig, ...
     'Style','slider', ...
-    'Min',1, 'Max',out_pp.nt, 'Value',1, 'SliderStep',[1/(out_pp.nt-1),max(0.05,1/(out_pp.nt-1))],...
+    'Min',1, 'Max',numel(out.tout), 'Value',1, 'SliderStep',[1/(numel(out.tout)-1),max(0.05,1/(numel(out.tout)-1))],...
     'Units','normalized', ...
     'Position',[0.04 0.4, 0.76, 0.3], ...
     'Callback', @(src,~) MasterSliderCallBack(round(src.Value)));
@@ -85,8 +85,8 @@ uicontrol(fig, ...
 MasterSliderCallBack(1);
 
     function MasterSliderCallBack(k)
-        lbl_i.String = num2str(k) + " / " + out_pp.nt;
-        lbl_t.String = sprintf("t = %.5e s", out_pp.tout(k));
+        lbl_i.String = num2str(k) + " / " + numel(out.tout);
+        lbl_t.String = sprintf("t = %.5e s", out.tout(k));
         for i = 1:numel(sld_cell)
             sld_cell{i}.Value = k; feval(sld_cell{i}.Callback, sld_cell{i}, [])
         end

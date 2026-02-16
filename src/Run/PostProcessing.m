@@ -167,6 +167,8 @@ if type == "full"
     out_pp.I_bID = I_bID;
 end
 
+out_pp.reactions = out.reactions;
+
 % adding a field to know what was the input
 % out_pp.input.geo_file_content = out.geo_file_content;
 out_pp.input.p = out.p;

@@ -16,7 +16,7 @@ addpath(genpath(folder_name+"/src"))
 
 out.p.OPEN_GMSH = 0; % not opening gmsh
 [odefun,msh,A,B,inv_mapping,I_s,ns,qs,...
-    Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c] = M2DInit(out.p);
+    Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions] = M2DInit(out.p);
 
 if isfolder(GetPath("data")+"/"+"func")
     rmpath(GetPath("data")+"/"+"func")
@@ -39,5 +39,6 @@ out.non_Dirichlet_nodes_indices = non_Dirichlet_nodes_indices;
 out.s_names = species;
 out.Phi2Ex_c = Phi2Ex_c(1:msh.Nc,:);
 out.Phi2Ey_c = Phi2Ey_c(1:msh.Nc,:);
+out.reactions = string(vertcat(reactions(:,1)));
 
 end
