@@ -4,8 +4,6 @@ if ~exist("name","var")
     name = GetTimeString(datetime);
 end
 
-CopyInSaveFolder(name)
-
 save_struct.tout = out_pp.tout;
 save_struct.N_CELLS = out_pp.N_CELLS;
 save_struct.SIGMA = out_pp.SIGMA;

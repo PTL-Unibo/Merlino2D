@@ -1,5 +1,5 @@
 function [odefun,msh,A,B,inv_mapping,I_s,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions,...
-    odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p)
+    stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p)
 
 global BentoCaraca %#ok<GVMIS>
 

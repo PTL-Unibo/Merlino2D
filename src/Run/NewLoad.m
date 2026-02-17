@@ -15,9 +15,8 @@ try
     
     addpath(genpath(folder_name+"/src"))
     
-    out.p.OPEN_GMSH = 0; % not opening gmsh
     [odefun,msh,A,B,inv_mapping,I_s,ns,qs,...
-        Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions] = M2DInit(out.p);
+        Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions,stoichiometric_matrix] = M2DInit(M2DInput(out.p,"OPEN_GMSH",0));
     
     if isfolder(GetPath("data")+"/"+"func")
         rmpath(GetPath("data")+"/"+"func")
@@ -39,6 +38,7 @@ try
     out.Phi2Ex_c = Phi2Ex_c(1:msh.Nc,:);
     out.Phi2Ey_c = Phi2Ey_c(1:msh.Nc,:);
     out.reactions = string(vertcat(reactions(:,1)));
+    out.stoichiometric_matrix = stoichiometric_matrix;
 catch ME
     fprintf("Load failed due to: " + ME.message + "\n")
     out = 0;

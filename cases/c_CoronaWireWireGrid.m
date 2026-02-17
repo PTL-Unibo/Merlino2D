@@ -14,7 +14,7 @@ opts.BC_VAL = {
     'O2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'O2-', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'N2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0}};
-opts.TIME_INSTANTS = logspace(-12,-6,100);
+opts.TIME_INSTANTS = logspace(-12,-3,100);
 opts.INITIAL_CONDITION = {
     'N2+',0.8e13;
     'O2-',0.999e13;

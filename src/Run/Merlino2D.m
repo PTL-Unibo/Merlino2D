@@ -6,7 +6,7 @@ function [out] = Merlino2D(p)
 
 % Initialization------------------------------------------------------------------------------------
 [odefun,msh,A,B,inv_mapping,I_s,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions,...
-    odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p);
+    stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p);
 
 % Run-----------------------------------------------------------------------------------------------
 [tout,yout,wall_clock_time,statsout,Sph_nodes] = M2DRun(p,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo);
@@ -33,5 +33,6 @@ out.s_names = species;
 out.Phi2Ex_c = Phi2Ex_c(1:msh.Nc,:);
 out.Phi2Ey_c = Phi2Ey_c(1:msh.Nc,:);
 out.reactions = string(vertcat(reactions(:,1)));
+out.stoichiometric_matrix = stoichiometric_matrix;
 
 end
