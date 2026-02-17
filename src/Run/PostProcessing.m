@@ -5,6 +5,7 @@ arguments
 end
 
 global BentoCaraca %#ok<GVMIS>
+circuit = 0;
 
 if type == "full"
     msh = out.msh;
@@ -37,13 +38,17 @@ if type == "full"
 end
 BFVAL_MATRIX = zeros(Nb*ns,nt);
 I = zeros(1,nt);
-V = zeros(1,nt);
+VAPP = zeros(1,nt);
 
 N_CELLS = out.yout(1:ns*Nc,:);
 SIGMA = out.yout(ns*Nc+1:ns*Nc+Nd,:);
 
 DIRICHLET_NODES_MATRIX = zeros(size(Dirichlet_nodes_indices,1),nt);
-partial_PHI_NODES = out.yout(ns*Nc+Nd+1:end,:);
+if circuit
+    partial_PHI_NODES = out.yout(ns*Nc+Nd+1:end-1,:);
+else
+    partial_PHI_NODES = out.yout(ns*Nc+Nd+1:end,:);
+end
 if type == "full"
     for k = 1:nt
         % [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I]
@@ -80,11 +85,11 @@ x_nodes = out.msh.xn;
 y_nodes = out.msh.yn;
 
 % Compute Sato current
-I_SATO = I + I_s(1:nt);
+I_SATO = I ;%+ I_s(1:nt);
 
 % Applied voltage
 for i = 1:nt
-    V(i) = out.p.V_APPLIED(out.tout(i));
+    VAPP(i) = out.p.V_APPLIED(out.tout(i));
 end
 
 S_NAMES = out.s_names;
@@ -134,7 +139,12 @@ out_pp.EX_CELLS_MATRIX = EX_CELLS_MATRIX;
 out_pp.EY_CELLS_MATRIX = EY_CELLS_MATRIX;
 out_pp.RHO_CELLS = RHO_CELLS;
 out_pp.I_SATO = I_SATO;
-out_pp.V = V;
+out_pp.VAPP = VAPP;
+if circuit
+    out_pp.v = out.yout(end,:);
+else
+    out_pp.v = VAPP;
+end
 out_pp.link_cell_to_nodes = link_cell_to_nodes;
 out_pp.x_cells = x_cells;
 out_pp.x_faces = x_faces;

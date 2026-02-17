@@ -22,7 +22,7 @@ opts.BC_VAL = {
     "He2(+,X)",  {NaN, NaN, 0, 0};
     "He2(*)",    {0,   0,   0, 0}};
 opts.TIME_INSTANTS = linspace(0,1e-2,101);
-opts.INITIAL_CONDITION = "CoronaPointPlane_He_500V_5deg.mat";
+opts.INITIAL_CONDITION = "CoronaPointPlane_He_500V_5deg_Tok.mat";
 % opts.INITIAL_CONDITION = {
 %     "e",         1e13;
 %     "He(gnd)",   2.45e25;
@@ -33,9 +33,9 @@ opts.INITIAL_CONDITION = "CoronaPointPlane_He_500V_5deg.mat";
 opts.MU = {
     "e",         'Loki_mu(E)/Ngas';
     "He(gnd)",   0;
-    "He(+,gnd)", 1e-3;
+    "He(+,gnd)", 2e-3;
     "He(*)",     0;
-    "He2(+,X)",  1e-3;
+    "He2(+,X)",  2e-3;
     "He2(*)",    0};
 opts.D = {
     "e",         'Loki_D(E)/Ngas';

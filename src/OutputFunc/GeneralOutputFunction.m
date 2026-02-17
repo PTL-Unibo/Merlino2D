@@ -14,6 +14,8 @@ if sporadic_save_is_on
     OutputFunctionEachKthTimeStep(t,y,flag,save_each_k_tinesteps);
 end
 
+% OutputFunctionExternalCircuit(t,y,flag,V_APPLIED,C_s,func)
+
 switch output_function
     case 'bar'
         status = OutputFunctionProgressBar(t,y,flag,scale);

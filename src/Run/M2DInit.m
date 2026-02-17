@@ -18,7 +18,7 @@ else
     end
     fprintf("%s\n","Generated Mesh");
 end
-msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "cartesian", "remove_dielectric","yes");
+msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","yes");
 % geo_file_content = readlines(geo_file);
 
 % Compute Ngas ------------------------------------------------------------
@@ -85,10 +85,10 @@ end
 BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
 fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
 
-full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, "cartesian", "remove_dielectric","no");
+full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
 [Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, ...
  phi2Ex, phi2Ey, aux2Ex, aux2Ey, phi2En, ~, ...
- inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, p.BCEL_FLAG, p.EPSR_VAL, "cartesian");
+ inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
 
 Kelet_d = decomposition(Kelet);
 
@@ -99,7 +99,7 @@ weights = 1./sqrt((msh.xf(msh.fs_from_c) - msh.xc).^2 + (msh.yf(msh.fs_from_c) -
 normalized_weights = weights ./ sum(weights,2);
 Eint2Ec = sparse(repmat(1:msh.Nc,1,3), msh.fs_from_c(:), normalized_weights(:), msh.Nc, msh.Nf);
 
-[I_s, Ex_1, Ey_1, g2Is] = ComputeStaticSato(p.TIME_INSTANTS(1), p.TIME_INSTANTS(end), p.BCEL_VAL, p.V_APPLIED, p.EPSR_VAL,...
+[I_s, ~, Ex_1, Ey_1, g2Is] = ComputeStaticSato(p.TIME_INSTANTS(1), p.TIME_INSTANTS(end), p.BCEL_VAL, p.V_APPLIED, p.DV_APPLIED, p.EPSR_VAL,...
     M_get_aux_BC_el, Kelet_d, aux2RHS,...
     Dirichlet_nodes_indices, non_Dirichlet_nodes_indices, Phi2Ex_c, Phi2Ey_c,...
     phi2Ex, phi2Ey, aux2Ex, aux2Ey, full_msh.cID_from_c, full_msh.vol, eps0, e, Eint2Ec, msh.vol);
@@ -152,7 +152,7 @@ if isstring(p.INITIAL_CONDITION)
         sigma0 = zeros(0,1);
         if Nd ~= msh.Nd
             load(p.INITIAL_CONDITION,"input");
-            old_msh = GetMesh(input.geo_file_content, "cartesian", input.p.MSH_PARAMETERS);
+            old_msh = GetMesh(input.geo_file_content, p.COORDINATES, input.p.MSH_PARAMETERS);
             sigma0 = InterpInitialConditionSigma(old_msh.xf(old_msh.f_from_d),old_msh.yf(old_msh.f_from_d),y_end(ns*Nc+1:ns*Nc+Nd),msh.xf(msh.f_from_d),msh.yf(msh.f_from_d),msh.Nd);
         end
         fprintf("%s\n","Interpolated to new mesh");
@@ -218,7 +218,7 @@ ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZA
 offon = ["OFF", "ON"]; fprintf("Photoionization is %s\n",offon(ph_is_on+1)) % give feedback about photoionization
 if ph_is_on
     [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
-        CreatePh(3,p.PRESSURE,"cartesian",msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
+        CreatePh(3,p.PRESSURE,p.COORDINATES,msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
         p.PHOTOIONIZATION.BC,p.PHOTOIONIZATION.SPECIES_COEFF,p.PHOTOIONIZATION.REACTIONS,species,reactions);
     photo_update_frequency = p.PHOTOIONIZATION.UPDATE_FREQUENCY;
     input_photo.inv_ppp = inv_ppp;      

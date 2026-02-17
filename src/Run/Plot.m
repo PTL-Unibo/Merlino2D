@@ -56,17 +56,21 @@ switch opts.type
             hold off
             ylim(ax,[-max(abs(out_pp.y_nodes)),max(abs(out_pp.y_nodes))])
         end
-        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-        ax.TickLabelInterpreter = "latex";
-        ax.ColorScale = "log";
-        ax.FontSize = 15;
-        cb = colorbar("TickLabelInterpreter","latex");
-        clim([min(nk), max(nk)]);
-        cb.Label.Interpreter = "latex";
-        cb.Label.String = out_pp.S_NAMES(opts.species_index) + " number density $(\mathrm{m}^{-3})$";
-        cb.Label.FontSize = 15;
+        plot_settings(...
+            out_pp.S_NAMES(opts.species_index) + " number density $(\mathrm{m}^{-3})$",...
+            [min(nk), max(nk)],...
+            "log")
+        % xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        % ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        % ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+        % ax.TickLabelInterpreter = "latex";
+        % ax.ColorScale = "log";
+        % ax.FontSize = 15;
+        % cb = colorbar("TickLabelInterpreter","latex");
+        % clim([min(nk), max(nk)]);
+        % cb.Label.Interpreter = "latex";
+        % cb.Label.String = out_pp.S_NAMES(opts.species_index) + " number density $(\mathrm{m}^{-3})$";
+        % cb.Label.FontSize = 15;
     
     case "rhoc" % cell charge density
         rhok = out_pp.RHO_CELLS(:,opts.k);
@@ -87,16 +91,20 @@ switch opts.type
             hold off
             ylim(ax,[-max(abs(out_pp.y_nodes)),max(abs(out_pp.y_nodes))])
         end
-        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-        ax.TickLabelInterpreter = "latex";
-        ax.FontSize = 15;
-        cb = colorbar("TickLabelInterpreter","latex");
-        clim([min(rhok), max(rhok)]);
-        cb.Label.Interpreter = "latex";
-        cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
-        cb.Label.FontSize = 15;
+        plot_settings(...
+            "charge density $(\mathrm{C}\mathrm{m}^{-3})$",...
+            [min(rhok), max(rhok)],...
+            "lin")
+        % xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        % ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        % ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+        % ax.TickLabelInterpreter = "latex";
+        % ax.FontSize = 15;
+        % cb = colorbar("TickLabelInterpreter","latex");
+        % clim([min(rhok), max(rhok)]);
+        % cb.Label.Interpreter = "latex";
+        % cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
+        % cb.Label.FontSize = 15;
 
     case "nn" % nodes number density
         nk = (out_pp.N_NODES((opts.species_index-1)*out_pp.Nn+1:opts.species_index*out_pp.Nn,opts.k));
@@ -120,18 +128,22 @@ switch opts.type
             ylim(ax,[-max(abs(out_pp.y_nodes)),max(abs(out_pp.y_nodes))])
         end
         shading interp
-        view([0,90])
-        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-        ax.TickLabelInterpreter = "latex";
-        ax.FontSize = 15;
-        ax.ColorScale = "log";
-        cb = colorbar("TickLabelInterpreter","latex");
-        clim([min(nk), max(nk)]);
-        cb.Label.Interpreter = "latex";
-        cb.Label.String = out_pp.S_NAMES(opts.species_index) + " number density $(\mathrm{m}^{-3})$";
-        cb.Label.FontSize = 15;
+        plot_settings(...
+            out_pp.S_NAMES(opts.species_index) + " number density $(\mathrm{m}^{-3})$",...
+            [min(nk), max(nk)],...
+            "lin")
+        % view([0,90])
+        % xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        % ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        % ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+        % ax.TickLabelInterpreter = "latex";
+        % ax.FontSize = 15;
+        % ax.ColorScale = "log";
+        % cb = colorbar("TickLabelInterpreter","latex");
+        % clim([min(nk), max(nk)]);
+        % cb.Label.Interpreter = "latex";
+        % cb.Label.String = out_pp.S_NAMES(opts.species_index) + " number density $(\mathrm{m}^{-3})$";
+        % cb.Label.FontSize = 15;
     
     case "rhon" % nodes charge density
         rhok = out_pp.RHO_NODES(:,opts.k);
@@ -155,17 +167,21 @@ switch opts.type
             ylim(ax,[-max(abs(out_pp.y_nodes)),max(abs(out_pp.y_nodes))])
         end
         shading interp
-        view([0,90])
-        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-        ax.TickLabelInterpreter = "latex";
-        ax.FontSize = 15;
-        cb = colorbar("TickLabelInterpreter","latex");
-        clim([min(rhok), max(rhok)]);
-        cb.Label.Interpreter = "latex";
-        cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
-        cb.Label.FontSize = 15;
+        plot_settings(...
+            "charge density $(\mathrm{C}\mathrm{m}^{-3})$",...
+            [min(rhok), max(rhok)],...
+            "log")
+        % view([0,90])
+        % xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        % ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        % ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+        % ax.TickLabelInterpreter = "latex";
+        % ax.FontSize = 15;
+        % cb = colorbar("TickLabelInterpreter","latex");
+        % clim([min(rhok), max(rhok)]);
+        % cb.Label.Interpreter = "latex";
+        % cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
+        % cb.Label.FontSize = 15;
 
     case "phi" % electric potential
         phik = out_pp.PHI_NODES(:,opts.k);
@@ -189,17 +205,21 @@ switch opts.type
             ylim(ax,[-max(abs(out_pp.y_nodes)),max(abs(out_pp.y_nodes))])
         end
         shading interp
-        view([0,90])
-        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-        ax.TickLabelInterpreter = "latex";
-        ax.FontSize = 15;
-        cb = colorbar("TickLabelInterpreter","latex");
-        clim([min(phik), max(phik)]);
-        cb.Label.Interpreter = "latex";
-        cb.Label.String = "electric potential $(\mathrm{V})$";
-        cb.Label.FontSize = 15;
+        plot_settings(...
+            "electric potential $(\mathrm{V})$",...
+            [min(phik), max(phik)],...
+            "lin")
+        % view([0,90])
+        % xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        % ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        % ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+        % ax.TickLabelInterpreter = "latex";
+        % ax.FontSize = 15;
+        % cb = colorbar("TickLabelInterpreter","latex");
+        % clim([min(phik), max(phik)]);
+        % cb.Label.Interpreter = "latex";
+        % cb.Label.String = "electric potential $(\mathrm{V})$";
+        % cb.Label.FontSize = 15;
 
     case "Ec" % cell electric field
         Exk = out_pp.EX_CELLS_MATRIX(:,opts.k);
@@ -238,16 +258,20 @@ switch opts.type
             hold off
             ylim(ax,[-max(abs(out_pp.y_nodes)),max(abs(out_pp.y_nodes))])
         end
-        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-        ax.TickLabelInterpreter = "latex";
-        ax.FontSize = 15;
-        cb = colorbar("TickLabelInterpreter","latex");
-        clim([min(Ek), max(Ek)]);
-        cb.Label.Interpreter = "latex";
-        cb.Label.String = "electric field $(\mathrm{V}\mathrm{m}^{-1})$";
-        cb.Label.FontSize = 15;
+        plot_settings(...
+            "electric field $(\mathrm{V}\mathrm{m}^{-1})$",...
+            [min(Ek), max(Ek)],...
+            "lin")
+        % xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        % ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        % ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+        % ax.TickLabelInterpreter = "latex";
+        % ax.FontSize = 15;
+        % cb = colorbar("TickLabelInterpreter","latex");
+        % clim([min(Ek), max(Ek)]);
+        % cb.Label.Interpreter = "latex";
+        % cb.Label.String = "electric field $(\mathrm{V}\mathrm{m}^{-1})$";
+        % cb.Label.FontSize = 15;
 
     case "|En|" % nodes electric field module
         Ek = sqrt(out_pp.EX_NODES_MATRIX(:,opts.k).^2 + out_pp.EY_NODES_MATRIX(:,opts.k).^2);
@@ -271,23 +295,29 @@ switch opts.type
             ylim(ax,[-max(abs(out_pp.y_nodes)),max(abs(out_pp.y_nodes))])
         end
         shading interp
-        view([0,90])
-        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-        ax.TickLabelInterpreter = "latex";
-        ax.FontSize = 15;
-        cb = colorbar("TickLabelInterpreter","latex");
-        clim([min(Ek), max(Ek)]);
-        cb.Label.Interpreter = "latex";
-        cb.Label.String = "electric field $(\mathrm{V}\mathrm{m}^{-1})$";
-        cb.Label.FontSize = 15;
+        lot_settings(...
+            "x $(\mathrm{m})$",...
+            "y $(\mathrm{m})$",...
+            "electric field $(\mathrm{V}\mathrm{m}^{-1})$",...
+            [min(Ek), max(Ek)],...
+            "lin")
+        % view([0,90])
+        % xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        % ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        % ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+        % ax.TickLabelInterpreter = "latex";
+        % ax.FontSize = 15;
+        % cb = colorbar("TickLabelInterpreter","latex");
+        % clim([min(Ek), max(Ek)]);
+        % cb.Label.Interpreter = "latex";
+        % cb.Label.String = "electric field $(\mathrm{V}\mathrm{m}^{-1})$";
+        % cb.Label.FontSize = 15;
         
     case "v-i" % V-I curve
         if opts.flip_y
-            plot(ax, out_pp.V(2:end), out_pp.I_SATO(2:end)*2, ".-", "MarkerSize",15, "LineWidth",2)
+            plot(ax, out_pp.VAPP(2:end), out_pp.I_SATO(2:end)*2, ".-", "MarkerSize",15, "LineWidth",2)
         else
-            plot(ax, out_pp.V(2:end), out_pp.I_SATO(2:end), ".-", "MarkerSize",15, "LineWidth",2)
+            plot(ax, out_pp.VAPP(2:end), out_pp.I_SATO(2:end), ".-", "MarkerSize",15, "LineWidth",2)
         end
         xlabel("voltage $(\mathrm{V})$", "Interpreter","latex")
         ylabel("current $(\mathrm{A}\mathrm{m}^{-1})$", "Interpreter","latex")
@@ -306,8 +336,8 @@ switch opts.type
         end
         ylabel("current $(\mathrm{A}\mathrm{m}^{-1})$", "Interpreter","latex")
         yyaxis right
-        plot(out_pp.tout, out_pp.V)
-        ylim([-max(abs(out_pp.V))*1.05,max(abs(out_pp.V))*1.05])
+        plot(out_pp.tout, out_pp.VAPP)
+        ylim([-max(abs(out_pp.VAPP))*1.05,max(abs(out_pp.VAPP))*1.05])
         ylabel("voltage $(\mathrm{V})$", "Interpreter","latex")
         grid on
         xlim([out_pp.tout(1), out_pp.tout(end)])
@@ -322,7 +352,7 @@ switch opts.type
         ylim([-max(abs(fx))*1.1,max(abs(fx))*1.1])
         ylabel("$x$-axis force $(\mathrm{N}\mathrm{m}^{-1})$", "Interpreter","latex")
         yyaxis right
-        plot(out_pp.tout, out_pp.V)
+        plot(out_pp.tout, out_pp.VAPP)
         ylabel("voltage $(\mathrm{V})$", "Interpreter","latex")
         grid on
         xlim([out_pp.tout(1), out_pp.tout(end)])
@@ -341,16 +371,20 @@ switch opts.type
             ylim(ax,[-max(abs(out_pp.y_nodes)),max(abs(out_pp.y_nodes))])
             hold off
         end
-        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-        ax.TickLabelInterpreter = "latex";
-        ax.FontSize = 15;
-        cb = colorbar("TickLabelInterpreter","latex");
-        clim([min(fxk), max(fxk)]);
-        cb.Label.Interpreter = "latex";
-        cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
-        cb.Label.FontSize = 15;
+        plot_settings(...
+            "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$",...
+            [min(fxk), max(fxk)],...
+            "lin")
+        % xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        % ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        % ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+        % ax.TickLabelInterpreter = "latex";
+        % ax.FontSize = 15;
+        % cb = colorbar("TickLabelInterpreter","latex");
+        % clim([min(fxk), max(fxk)]);
+        % cb.Label.Interpreter = "latex";
+        % cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
+        % cb.Label.FontSize = 15;
 
     case "fxc_log"
         fxk = out_pp.RHO_CELLS(:,opts.k) .* out_pp.EX_CELLS_MATRIX(:,opts.k);
@@ -407,17 +441,21 @@ switch opts.type
             hold off
         end
         shading interp
+        plot_settings(...
+            "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$",...
+            [min(fxk), max(fxk)],...
+            "lin")
         view([0,90])
-        xlabel("x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel("y $(\mathrm{m})$", "Interpreter","latex")
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-        ax.TickLabelInterpreter = "latex";
-        ax.FontSize = 15;
-        cb = colorbar("TickLabelInterpreter","latex");
-        clim([min(fxk), max(fxk)]);
-        cb.Label.Interpreter = "latex";
-        cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
-        cb.Label.FontSize = 15;
+        % xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+        % ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+        % ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+        % ax.TickLabelInterpreter = "latex";
+        % ax.FontSize = 15;
+        % cb = colorbar("TickLabelInterpreter","latex");
+        % clim([min(fxk), max(fxk)]);
+        % cb.Label.Interpreter = "latex";
+        % cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
+        % cb.Label.FontSize = 15;
 
     case "fxn_log"
         fxk = out_pp.RHO_NODES(:,opts.k) .* out_pp.EX_NODES_MATRIX(:,opts.k);
@@ -541,4 +579,21 @@ switch opts.type
         view(2)
         AxisEqual3D
        
+end
+
+function plot_settings(title,clims,col_scale)
+    view([0,90])
+    xlabel("x $(\mathrm{m})$", "Interpreter","latex")
+    ylabel("y $(\mathrm{m})$", "Interpreter","latex")
+    ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
+    ax.TickLabelInterpreter = "latex";
+    ax.ColorScale = col_scale;
+    ax.FontSize = 15;
+    cb = colorbar("TickLabelInterpreter","latex");
+    clim(clims);
+    cb.Label.Interpreter = "latex";
+    cb.Label.String = title;
+    cb.Label.FontSize = 15;
+end
+
 end

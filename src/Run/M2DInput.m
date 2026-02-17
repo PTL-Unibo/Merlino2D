@@ -8,6 +8,7 @@ arguments
     extra.BCEL_FLAG
     extra.BCEL_VAL
     extra.V_APPLIED
+    extra.DV_APPLIED
     extra.BC_FLAG
     extra.BC_VAL
     extra.TIME_INSTANTS
@@ -16,8 +17,8 @@ arguments
     extra.D
     extra.V_TH_COEFF
     extra.CONST_OMEGA
-    extra.CHEMICAL_MODEL
     extra.PHOTOIONIZATION
+    extra.CHEMICAL_MODEL
     extra.CONST_SPECIES
     extra.LOKI_INPUT
     extra.ELECTRON_TEMPERATURE
@@ -28,6 +29,7 @@ arguments
     extra.SURF_CHARGE_COEFF
     extra.GAMMA_II_DIEL
     extra.SAVE_EACH_K_TIMESTEPS
+    extra.COORDINATES (1,:) char {mustBeMember(extra.COORDINATES,{'cartesian','cylindrical'})}
     extra.ODE_TYPE (1,:) char {mustBeMember(extra.ODE_TYPE,{'ode15s','idas'})}
     extra.OPEN_GMSH (1,1) double {mustBeMember(extra.OPEN_GMSH,[0,1])}
     extra.REORDERING (1,1) double {mustBeMember(extra.REORDERING,[0,1])}

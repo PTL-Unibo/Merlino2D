@@ -1,5 +1,6 @@
 function [tout,yout,wall_clock_time,statsout,Sph_nodes] = M2DRun(p,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo)
 global tout_sparse yout_sparse %#ok<GVMIS>
+global BentoCaraca %#ok<GVMIS>
 
 statsout = [-1,-1,-1,-1,-1,-1];
 % Solving with DAE --------------------------------------------------------
@@ -51,6 +52,17 @@ fprintf("%s\n","Simulation finished");
 
 if isfolder(GetPath("data")+"/"+"func")
     rmpath(GetPath("data")+"/"+"func")
+end
+
+if BentoCaraca
+    % do nothing
+else
+    % removing the .m mesh file
+    mat_mesh_file = GetPath("geo") + "/" + p.MSH + ".m";
+    if isfile(mat_mesh_file)
+        delete(mat_mesh_file)
+        fprintf("%s\n","Deleted " + p.MSH + ".m");
+    end
 end
 
 end

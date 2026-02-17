@@ -29,7 +29,6 @@ rho_sigma_eps = [rho; sigma] / eps0;
 aux_BC_el = M_get_aux_BC_el * BCEL_VAL * V_APPLIED(t);
 Ex = phi2Ex * phi + aux2Ex * aux_BC_el;
 Ey = phi2Ey * phi + aux2Ey * aux_BC_el;
-
 Ecx = Eint2Ec * Ex;
 Ecy = Eint2Ec * Ey;
 E_int = sqrt(Ex.^2 + Ey.^2);

@@ -14,7 +14,7 @@ opts.BC_VAL = {
     'O2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'O2-', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'N2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0}};
-opts.TIME_INSTANTS = logspace(-12,-9,100);
+opts.TIME_INSTANTS = logspace(-12,-6,100);
 opts.INITIAL_CONDITION = {
     'N2+',0.8e13;
     'O2-',0.999e13;
@@ -26,10 +26,10 @@ opts.MU = {
     'O2+', "(1/Ngas) * min(1.18e23 * (T)^(-0.5), 3.61e12 * (E/1e21)^(-0.5))";
     'O2-', "(1/Ngas) * min(0.97e23 * (T)^(-0.5), 3.56e19 * (E/1e21)^(-0.1))"};
 opts.D = {
-    "O2+", '(muO2+)*T/11600';
+    "O2+", '<<muO2+>>*T/11600';
     "e",   "Loki_D(E)/Ngas";
-    "N2+", '(muN2+)*T/11600';
-    "O2-", "(muO2-)*T/11600"};
+    "N2+", '<<muN2+>>*T/11600';
+    "O2-", "<<muO2->>*T/11600"};
 opts.V_TH_COEFF = {
     "N2+", 1;
     "e",   1;
@@ -50,6 +50,7 @@ opts.CONST_SPECIES = {
 opts.LOKI_INPUT = "Air";
 opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
+% opts.SAVE_EACH_K_TIMESTEPS = 10;
 
 out = Merlino2D(M2DInput(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0));
 out_pp = PostProcessing(out,'full');

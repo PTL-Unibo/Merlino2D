@@ -36,7 +36,7 @@ end
 strMu = AddDot(strMu);
 strD = AddDot(strD);
 for i = 1:numel(species)
-    strD = strrep(strD,"(mu"+species(i)+")","mu(:," + i + ")"); % replace, i.e., muO2+ with mu(:,7)
+    strD = strrep(strD,"<<mu"+species(i)+">>","mu(:," + i + ")"); % replace, i.e., muO2+ with mu(:,7)
 end
 strKr = AddDot(strKr);
 
