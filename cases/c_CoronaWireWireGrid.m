@@ -14,7 +14,7 @@ opts.BC_VAL = {
     'O2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'O2-', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'N2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0}};
-opts.TIME_INSTANTS = logspace(-12,-3,100);
+opts.TIME_INSTANTS = logspace(-12,-9,100);
 opts.INITIAL_CONDITION = {
     'N2+',0.8e13;
     'O2-',0.999e13;
@@ -35,14 +35,14 @@ opts.V_TH_COEFF = {
     "e",   1;
     "O2+", 1;
     "O2-", 1};
-opts.PHOTOIONIZATION.REACTIONS = {
-    'e + N2 -> 2e + N2+';
-    "e + O2 -> 2e + O2+"};
-opts.PHOTOIONIZATION.SPECIES_COEFF = {
-    'N2+',0.8;
-    'O2+',0.2};
-opts.PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 1, 0, 1, 1];
-opts.PHOTOIONIZATION.UPDATE_FREQUENCY = 5;
+% opts.PHOTOIONIZATION.REACTIONS = {
+%     'e + N2 -> 2e + N2+';
+%     "e + O2 -> 2e + O2+"};
+% opts.PHOTOIONIZATION.SPECIES_COEFF = {
+%     'N2+',0.8;
+%     'O2+',0.2};
+% opts.PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 1, 0, 1, 1];
+% opts.PHOTOIONIZATION.UPDATE_FREQUENCY = 5;
 opts.CHEMICAL_MODEL = 's_Parent';
 opts.CONST_SPECIES = {
     "N2", 0.7884, "rel";
@@ -51,7 +51,7 @@ opts.LOKI_INPUT = "Air";
 opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
 
-out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0);
+out = Merlino2D(M2DInput(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0));
 out_pp = PostProcessing(out,'full');
 Save(out_pp,"CoronaWireWireGrid.mat")
 

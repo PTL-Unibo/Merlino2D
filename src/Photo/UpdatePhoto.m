@@ -1,4 +1,4 @@
-function UpdatePhoto(y,t,p)
+function [Sph_nodes] = UpdatePhoto(y,t,p)
 global Sph %#ok<GVMIS>
 
 y = y(p.inv_ppp); % converts y into normal ordering
@@ -20,6 +20,8 @@ p.M(p.Mindices) = n_c(p.Nindices);
 reaction_rates = reshape(prod(p.M),p.Nc,[]);
 E_c_Td(E_c_Td == 0) = 1e-3;
 Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,p.indices_src_reactions_ph),2);
-Sph = p.CellFromNodesPh * (p.Ks \ (p.Si2RHS*(Si+1e5)));
+Sph_nodes = p.Ks \ (p.Si2RHS*(Si+1e5));
+Sph = p.CellFromNodesPh * Sph_nodes;
+Sph_nodes = sum(reshape(Sph_nodes,p.Nn,3),2);
 
 end

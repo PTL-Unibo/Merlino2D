@@ -13,7 +13,8 @@ opts.BC_VAL = {
     "I+",{NaN, NaN, 0, 0, 0};
     "e", {NaN, NaN, 0, 0, 0};
     'I-',{NaN, NaN, 0, 0, 0}};
-opts.TIME_INSTANTS = linspace(0,0.25/100e3,2501);
+% opts.TIME_INSTANTS = linspace(0,0.25/100e3,2501);
+opts.TIME_INSTANTS = linspace(0,1e-12,11);
 opts.INITIAL_CONDITION = {
     "I+",1e13;
     "I-",0.999e13;
@@ -42,7 +43,7 @@ opts.GAMMA_II = 5e-2;
 opts.SURF_CHARGE_COEFF = [0.1, 0.1, 0.1];
 opts.GAMMA_II_DIEL = 1e-2;
 
-out = Merlino2D(opts,"ODE_TYPE","idas");
+out = Merlino2D(M2DInput(opts,"ODE_TYPE","idas"));
 out_pp = PostProcessing(out);
 Save(out_pp,"DBD.mat")
 
