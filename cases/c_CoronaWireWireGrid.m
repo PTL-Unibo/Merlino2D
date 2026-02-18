@@ -1,4 +1,5 @@
 clearvars, close, clc
+%<<<<<
 opts.MSH = 'WireWireGrid';
 opts.MSH_PARAMETERS.k = 1;
 opts.BCEL_FLAG = [0; 0; 0; 0; 0; 1; 1; 1; 1];
@@ -14,7 +15,7 @@ opts.BC_VAL = {
     'O2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'O2-', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'N2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0}};
-opts.TIME_INSTANTS = logspace(-12,-3,100);
+opts.TIME_INSTANTS = logspace(-12,-9,100);
 opts.INITIAL_CONDITION = {
     'N2+',0.8e13;
     'O2-',0.999e13;
@@ -52,11 +53,9 @@ opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
 % opts.SAVE_EACH_K_TIMESTEPS = 10;
 
-out = Merlino2D(M2DInput(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0));
-out_pp = PostProcessing(out,'full');
-Save(out_pp,"CoronaWireWireGrid.mat")
+p = M2DInput(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0);
+%>>>>>
 
-%%
-out_pp = Load('CoronaWireWireGrid.mat');
-Plot(out_pp,"type","nn","species_index",1,"flip_y",1);
-Plot(out_pp,"type","rhon_log","flip_y",1,"log10_zero_val",-4);
+out = Merlino2D(matlab.desktop.editor.getActiveFilename,"run");
+Save(out,"CoronaWireWireGrid")
+out = Load("CoronaWireWireGrid");

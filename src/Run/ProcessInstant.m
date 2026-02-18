@@ -27,7 +27,7 @@ VAPP = out.p.V_APPLIED(out.tout(k));
 
 [~,DIRICHLET_NODES,BFVAL,EX,EY,OMEGA,GAMMA_X,GAMMA_Y,I,RATES] = odefun(out.tout(k), out.yout(:,k));
 
-I_SATO = I + I_s(k);
+I_SATO = I + I_s(out.tout(k));
 
 % Electric potential at nodes
 PHI_NODES(Dirichlet_nodes_indices) = DIRICHLET_NODES;
