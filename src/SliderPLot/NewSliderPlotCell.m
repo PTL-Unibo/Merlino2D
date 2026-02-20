@@ -1,8 +1,16 @@
 function [sld, ed_xlim_inf, ed_xlim_sup, ed_ylim_inf, ed_ylim_sup] = NewSliderPlotCell(out)
 
 fig = figure("WindowStyle","normal");
+
 ax = axes(fig);
 cb = colorbar(ax);
+
+fig.WindowKeyPressFcn  = @(~,event)KeyPressed(event);
+
+ax.XLim = [min(out.msh.xn),max(out.msh.xn)];
+ax.YLim = [min(out.msh.yn),max(out.msh.yn)];
+addlistener(ax, 'XLim', 'PostSet', @(src, event) AxisEqual3D(ax));
+addlistener(ax, 'YLim', 'PostSet', @(src, event) AxisEqual3D(ax));
 
 % Setting properties that will not be changed in the future
 ax.TickLabelInterpreter = "latex";
@@ -12,10 +20,6 @@ cb.Label.Interpreter = "latex";
 cb.Label.FontSize = 15;
 xlabel(ax,"x $(\mathrm{m})$", "Interpreter","latex")
 ylabel(ax,"y $(\mathrm{m})$", "Interpreter","latex")
-
-z = zoom(fig);
-z.Enable = 'on';
-z.ActionPostCallback = @myZoomCallback;
 
 cmbbox_names_list = cell(1,out.ns+numel(out.reactions)+2);
 for j = 1:out.ns
@@ -29,9 +33,20 @@ end
 cmbbox_names_list{out.ns+numel(out.reactions)+1} = 'E';
 cmbbox_names_list{out.ns+numel(out.reactions)+2} = 'Rho';
 
-N_CELLS = [];
-REACTION_RATES = [];
-E = [];
+Ngas = out.p.PRESSURE/(out.p.TEMPERATURE*kB);
+i_specific_cell = -1;
+out_pp_k = struct;
+patch_handle = gobjects(1,1);
+
+fig2 = gobjects(1,1);
+E_txt = gobjects(1,1);
+Rho_txt = gobjects(1,1);
+N_txt = gobjects(1,1);
+O_txt = gobjects(1,1);
+K_txt = gobjects(1,1);
+R_txt = gobjects(1,1);
+popmen_species = gobjects(1,1);
+popmen_reactions = gobjects(1,1);
 
 popmen = uicontrol(fig, ...
     'Style','popupmenu', ...
@@ -39,178 +54,145 @@ popmen = uicontrol(fig, ...
     'Units','normalized', ...
     'Position',[0.3 0.95 0.4 0.04], ...
     'Value',1,...
-    'Callback',@(src,~)PlotCell(round(src.Value)));
+    'Callback',@(src,~)PlotCell);
 
 sld = uicontrol(fig, ...
     'Style','slider', ...
     'Min',1, 'Max',numel(out.tout), 'Value',1,...
     'Units','normalized', ...
     'Visible','off',...
-    'Position',[0, 1, 1, 0], ......
+    'Position',[0, 1, 1, 0], ...
     'Callback', @(src,~)UpdateTimeInstant(round(src.Value)));
 
-tgl_btn = uicontrol(fig, ...
+tgl_btn_scale = uicontrol(fig, ...
     'Style','togglebutton', ...
     'String','lin', ...
     'Units','normalized', ... 
     'Value',0,...
-    'Position',[0.96 0.81 0.03 0.04], ...
-    'Callback',@(src,~)tgl_btn_pressed);
+    'Position',[0.01 0.95 0.03 0.04], ...
+    'Callback',@(src,~)tgl_btn_pressed(src));
 
-% btn = uicontrol(fig, ...
-%     'Style','pushbutton', ...
-%     'String','global', ...
-%     'Units','normalized', ... 
-%     'UserData',0,...
-%     'Position',[0.93 0.95 0.06 0.04], ...
-%     'Callback',@(src,~)btn_pressed);
-% 
+tgl_btn_mesh = uicontrol(fig,'Style','togglebutton', ...
+    'String','off', ...
+    'Units','normalized', ... 
+    'Value',0,...
+    'UserData','none',...
+    'Position',[0.96 0.95 0.03 0.04], ...
+    'Callback',@(src,~)tgl_btn_mesh_pressed(src));
 
-% ed_clim_inf = uicontrol(fig,"Style","edit","Units","normalized","Position",[0.94,0.86,0.05,0.04]);
-% ed_clim_sup = uicontrol(fig,"Style","edit","Units","normalized","Position",[0.94,0.9,0.05,0.04]);
-
-ed_xlim_inf = uicontrol(fig,"Style","edit","Units","normalized","Position",[0.89,0.01,0.05,0.04],"String",sprintf("%.2e",min(out.msh.xn)));
-ed_xlim_sup = uicontrol(fig,"Style","edit","Units","normalized","Position",[0.94,0.01,0.05,0.04],"String",sprintf("%.2e",max(out.msh.xn)));
-
-ed_ylim_inf = uicontrol(fig,"Style","edit","Units","normalized","Position",[0.005,0.91,0.05,0.04],"String",sprintf("%.2e",min(out.msh.yn)));
-ed_ylim_sup = uicontrol(fig,"Style","edit","Units","normalized","Position",[0.005,0.95,0.05,0.04],"String",sprintf("%.2e",max(out.msh.yn)));
-
+ed_xlim_inf = [];
+ed_xlim_sup = [];
+ed_ylim_inf = [];
+ed_ylim_sup = [];
     
-    % function PlotCell(k)
-    %     UpdateTimeInstant
-    %     axes(ax)
-    %     patch( ...
-    %         out.msh.xn(out.ns_from_c'), ...
-    %         out.msh.yn(out.ns_from_c'), ...
-    %         GetUk(k), ...
-    %         "EdgeColor","none");
-    %     inf_x = str2double(ed_xlim_inf.String);
-    %     sup_x = str2double(ed_xlim_sup.String);
-    %     if ~(isnan(inf_x) || isnan(sup_x))
-    %         xlim(ax,[inf_x, sup_x])
-    %     else
-    %         xlim(ax,[min(out.msh.xn),max(out.msh.xn)])
-    %     end
-    %     inf_y = str2double(ed_ylim_inf.String);
-    %     sup_y = str2double(ed_ylim_sup.String);
-    %     if ~(isnan(inf_y) || isnan(sup_y))
-    %         ylim(ax,[inf_y, sup_y])
-    %     else
-    %         ylim(ax,[min(out.msh.yn),max(out.msh.yn)])
-    %     end
-    % 
-    %     cb.Label.String = label_string;
-    %     ax.ColorScale = tgl_btn.String;
-    %     if btn.String == "global"
-    %         clim([bottom_lim, top_lim]);
-    %         ed_clim_inf.String = sprintf("%.2e",bottom_lim);
-    %         ed_clim_sup.String = sprintf("%.2e",top_lim);
-    %     elseif btn.String == "auto"
-    %         if max(u_k) ~= min(u_k)
-    %             clim([min(u_k), max(u_k)])
-    %             ed_clim_inf.String = sprintf("%.2e",min(u_k));
-    %             ed_clim_sup.String = sprintf("%.2e",max(u_k));
-    %         end
-    %     elseif btn.String == "manual"
-    %         inf = str2double(ed_clim_inf.String);
-    %         sup = str2double(ed_clim_sup.String);
-    %         if ~(isnan(inf) || isnan(sup))
-    %             clim([inf, sup])
-    %         end
-    %     end
-    %     ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
-    % end
+    function UpdateTimeInstant(k)
+        % Call this function every time the slider is moved
+        out_pp_k = ProcessInstant(out,k);
+        PlotCell()
+        if ishandle(fig2) && i_specific_cell > 0
+            UpdateSpecificCell()
+        end
+    end
 
+    function PlotCell()
+        [Uk,cb.Label.String] = SelectWhatPlot(popmen.Value);
+        axes(ax)
+        previous_xlim = ax.XLim;
+        previous_ylim = ax.YLim;
+        patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,"EdgeColor",tgl_btn_mesh.UserData,"PickableParts","none");
+        if i_specific_cell > 0
+            DrawSelectedCell()
+        end
+        SetColorBarLimits(Uk)
+        ax.ColorScale = tgl_btn_scale.String;
+        xlim(ax,previous_xlim)
+        ylim(ax,previous_ylim)
+    end
 
-    % function btn_pressed()
-    %     btn.UserData = btn.UserData + 1;
-    %     btn.UserData = mod(btn.UserData,3); 
-    %     switch btn.UserData
-    %         case 0
-    %             btn.String = "global";
-    %         case 1
-    %             btn.String = "auto";
-    %         case 2
-    %             btn.String = "manual";
-    %     end
-    %     PlotCell(round(sld.Value))
-    % end
+    function SetColorBarLimits(Uk)
+        if max(Uk) ~= min(Uk)
+            clim(ax,[min(Uk), max(Uk)])
+        else
+            if max(Uk) ~= 0
+                clim(ax,min(Uk)+[-1,1]*1e-3*abs(max(Uk)))
+            else
+                clim(ax,[-1,1])
+            end
+        end
+    end
 
+    function tgl_btn_pressed(src)
+        if src.Value == 1
+            src.String = "log";
+        else
+            src.String = "lin";
+        end
+        PlotCell()
+    end
 
-    function PlotCell(i)
+    function tgl_btn_mesh_pressed(src)
+        if src.Value == 1
+            src.String = "on";
+            src.UserData = 'k';
+        else
+            src.String = "off";
+            src.UserData = 'none';
+        end
+        PlotCell()
+    end
+
+    function KeyPressed(event)
+        if event.Key == "i"
+            pt = ax.CurrentPoint;
+            [~,i_specific_cell] = min((out.msh.xc - pt(1,1)).^2 + (out.msh.yc - pt(1,2)).^2);
+            DrawSelectedCell()
+            if ~ishandle(fig2)
+                [fig2,E_txt,Rho_txt,N_txt,O_txt,K_txt,R_txt,popmen_species,popmen_reactions] = InitializeCellInspector(out.s_names, out.reactions);
+                popmen_species.Callback = @(src,~)UpdateSpecificCell;
+                popmen_reactions.Callback = @(src,~)UpdateSpecificCell;
+            end
+            UpdateSpecificCell()
+        elseif event.Key == "x"
+            i_specific_cell = -1;
+            delete(patch_handle)
+        end
+    end
+
+    function DrawSelectedCell()
+        delete(patch_handle)
+        patch_handle = patch(out.msh.xn(out.msh.ns_from_c(i_specific_cell,:)), out.msh.yn(out.msh.ns_from_c(i_specific_cell,:)), [1 0 0], "FaceAlpha",0.5, "PickableParts","none");
+    end
+
+    function UpdateSpecificCell()
+        is = popmen_species.Value;
+        ir = popmen_reactions.Value;
+        E_txt.String = sprintf("%.3e, %.2f", ...
+            sqrt(out_pp_k.EX_CELLS(i_specific_cell).^2 + out_pp_k.EY_CELLS(i_specific_cell).^2),...
+            sqrt(out_pp_k.EX_CELLS(i_specific_cell).^2 + out_pp_k.EY_CELLS(i_specific_cell).^2)*1e21/Ngas);
+        Rho_txt.String = sprintf("%.3e",out_pp_k.RHO_CELLS(i_specific_cell));
+        N_txt.String = sprintf("%.3e",out_pp_k.N_CELLS(i_specific_cell+(is-1)*out.msh.Nc));
+        O_txt.String = sprintf("%.3e",out_pp_k.OMEGA(i_specific_cell+(is-1)*out.msh.Nc));
+        K_txt.String = sprintf("%.3e",out_pp_k.RATE_COEFF(i_specific_cell,ir));
+        R_txt.String = sprintf("%.3e",out_pp_k.RATES(i_specific_cell,ir));
+    end
+
+    function [Uk,label_string] = SelectWhatPlot(i)
         if i <= out.ns
-            Uk = N_CELLS((i-1)*out.msh.Nc+1:i*out.msh.Nc);
+            Uk = out_pp_k.N_CELLS((i-1)*out.msh.Nc+1:i*out.msh.Nc);
             label_string = out.s_names(i) + " number density $(\mathrm{m}^{-3})$";
-        elseif (i > out.ns) && (i < out.ns+numel(out.reactions))
-            Uk = REACTION_RATES(:,i-out.ns);
+        elseif (i > out.ns) && (i <= out.ns+numel(out.reactions))
+            Uk = out_pp_k.RATES(:,i-out.ns);
             label_string = "reaction rate $(\mathrm{m}^{-3}\mathrm{s}^{-1})$";
         else
             if i == out.ns+numel(out.reactions)+1
-                Uk = E;
+                Uk = sqrt(out_pp_k.EX_CELLS.^2 + out_pp_k.EY_CELLS.^2);
+                Uk = Uk * 1e21 / Ngas;
                 label_string = "electric field $(\mathrm{V}\mathrm{m}^{-1})$";
             elseif i == out.ns+numel(out.reactions)+2
-                Uk = e*sum(out.qs.*reshape(N_CELLS,out.msh.Nc,[]),2);
+                Uk = out_pp_k.RHO_CELLS;
                 label_string = "charge density $(\mathrm{C}\mathrm{m}^{-3})$"; 
             end
         end
-        axes(ax)
-        patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,"EdgeColor","none");
-        cb.Label.String = label_string;
-        if max(Uk) ~= min(Uk)
-            clim([min(Uk), max(Uk)])
-        else
-            clim(min(Uk)+[-1,1]*1e-3*abs(max(Uk)))
-        end
-        ax.ColorScale = tgl_btn.String;
-        inf_x = str2double(ed_xlim_inf.String);
-        sup_x = str2double(ed_xlim_sup.String);
-        if ~(isnan(inf_x) || isnan(sup_x))
-            xlim(ax,[inf_x, sup_x])
-        else
-            xlim(ax,[min(out.msh.xn),max(out.msh.xn)])
-        end
-        inf_y = str2double(ed_ylim_inf.String);
-        sup_y = str2double(ed_ylim_sup.String);
-        if ~(isnan(inf_y) || isnan(sup_y))
-            ylim(ax,[inf_y, sup_y])
-        else
-            ylim(ax,[min(out.msh.yn),max(out.msh.yn)])
-        end
-        ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
     end
-
-    function UpdateTimeInstant(k)
-        [~,aux_BC_el,~,~,~,~,~,~,~,reaction_rates] = out.odefun(out.tout(k),out.yout(:,k));
-        N_CELLS = out.yout(:,k);
-        REACTION_RATES = reaction_rates;
-        PHI_NODES(out.Dirichlet_nodes_indices) = aux_BC_el;
-        PHI_NODES(out.non_Dirichlet_nodes_indices) = out.yout(out.ns*out.msh.Nc+out.msh.Nd+1:end,k);
-        EX_CELLS_MATRIX = out.Phi2Ex_c * PHI_NODES';
-        EY_CELLS_MATRIX = out.Phi2Ey_c * PHI_NODES';
-        E = sqrt(EX_CELLS_MATRIX.^2 + EY_CELLS_MATRIX.^2);
-        PlotCell(popmen.Value)
-    end
-
-    function tgl_btn_pressed()
-        if tgl_btn.Value == 1
-            tgl_btn.String = "log";
-        else
-            tgl_btn.String = "lin";
-        end
-        PlotCell(round(popmen.Value))
-    end
-
-
-    function myZoomCallback(~, ~)
-        newXLimits = ax.XLim;
-        newYLimits = ax.YLim;
-        
-        ed_xlim_inf.String = sprintf("%.2e",newXLimits(1));
-        ed_xlim_sup.String = sprintf("%.2e",newXLimits(2));
-        
-        ed_ylim_inf.String = sprintf("%.2e",newYLimits(1));
-        ed_ylim_sup.String = sprintf("%.2e",newYLimits(2));
-    end
-
-
+       
 end

@@ -1,6 +1,4 @@
-function [N_CELLS,SIGMA,RHO_CELLS,VAPP,I_SATO,PHI_NODES,EX_CELLS,EY_CELLS,...
-    EX,EY,OMEGA,GAMMA_X,GAMMA_Y,RATES,N_NODES,...
-    RHO_NODES,EX_NODES,EY_NODES,I_bID] = ProcessInstant(out,k)
+function [out_pp_k] = ProcessInstant(out,k)
 
 msh = out.msh;
 A = out.A;
@@ -25,7 +23,7 @@ SIGMA = out.yout(ns*Nc+1:ns*Nc+Nd,k);
 RHO_CELLS = e*sum(reshape(N_CELLS,Nc,ns).*qs,2);
 VAPP = out.p.V_APPLIED(out.tout(k));
 
-[~,DIRICHLET_NODES,BFVAL,EX,EY,OMEGA,GAMMA_X,GAMMA_Y,I,RATES] = odefun(out.tout(k), out.yout(:,k));
+[~,DIRICHLET_NODES,BFVAL,EX,EY,OMEGA,GAMMA_X,GAMMA_Y,I,RATES,RATE_COEFF] = odefun(out.tout(k), out.yout(:,k));
 
 I_SATO = I + I_s(out.tout(k));
 
@@ -55,5 +53,26 @@ for i = 1:msh.dim_bID
  indices = msh.f_from_b(msh.bs_from_bID{i});
  I_bID(i,:) = sum(J_faces(indices,:) .* msh.areaf(indices),1);
 end
+
+out_pp_k.N_CELLS    = N_CELLS;
+out_pp_k.SIGMA      = SIGMA;
+out_pp_k.RHO_CELLS  = RHO_CELLS;
+out_pp_k.VAPP       = VAPP;
+out_pp_k.I_SATO     = I_SATO;
+out_pp_k.PHI_NODES  = PHI_NODES;
+out_pp_k.EX_CELLS   = EX_CELLS;
+out_pp_k.EY_CELLS   = EY_CELLS;
+out_pp_k.EX         = EX;
+out_pp_k.EY         = EY;
+out_pp_k.OMEGA      = OMEGA;
+out_pp_k.GAMMA_X    = GAMMA_X;
+out_pp_k.GAMMA_Y    = GAMMA_Y;
+out_pp_k.RATES      = RATES;
+out_pp_k.RATE_COEFF = RATE_COEFF;
+out_pp_k.N_NODES    = N_NODES;
+out_pp_k.RHO_NODES  = RHO_NODES;
+out_pp_k.EX_NODES   = EX_NODES;
+out_pp_k.EY_NODES   = EY_NODES;
+out_pp_k.I_bID      = I_bID;
 
 end

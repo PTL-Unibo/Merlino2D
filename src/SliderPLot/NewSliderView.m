@@ -94,12 +94,12 @@ MasterSliderCallBack(1);
     end
 
     function SetAll
-        for i = 1:numel(ed_xlim_inf_cell)
-            ed_xlim_inf_cell{i}.String = ed_xlim_inf_master.String;
-            ed_xlim_sup_cell{i}.String = ed_xlim_sup_master.String;
-            ed_ylim_inf_cell{i}.String = ed_ylim_inf_master.String;
-            ed_ylim_sup_cell{i}.String = ed_ylim_sup_master.String;
-        end
+        % for i = 1:numel(ed_xlim_inf_cell)
+        %     ed_xlim_inf_cell{i}.String = ed_xlim_inf_master.String;
+        %     ed_xlim_sup_cell{i}.String = ed_xlim_sup_master.String;
+        %     ed_ylim_inf_cell{i}.String = ed_ylim_inf_master.String;
+        %     ed_ylim_sup_cell{i}.String = ed_ylim_sup_master.String;
+        % end
     end
 
 end
