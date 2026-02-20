@@ -2,7 +2,7 @@ reactions = {
     % gs iz
     'e + He(gnd) -> e + e + He(+,gnd)',                                     'k_He_iz(E)'; % R1
     % metastable iz
-    'e + He(*) -> e + e + He(+,gnd)',                                       '1.5E-13*sqrt(Te)*exp(-4.77/Te)' % --- k_iz_from_meta(E(t)) % R2 - ok Shon 1994
+    'e + He(*) -> e + e + He(+,gnd)',                                       '1.5E-13*sqrt(Te)*exp(-4.77/Te)'; % --- k_iz_from_meta(E(t)) % R2 - ok Shon 1994
     % dissociative recombination
     'e + He2(+,X) -> He(gnd) + He(*)',                                      5e-15; % R3 - ok Shon 1994
     % recombination
@@ -21,11 +21,11 @@ reactions = {
     'He2(*) + He(*) -> He(+,gnd) + e + He(gnd) + He(gnd)',                  '0.3 * 2.9E-15*sqrt(T/(11600*0.025))'; % R11
     'He2(*) + He(*) -> He2(+,X) + e + He(gnd)',                             '0.7 * 2.9E-15*sqrt(T/(11600*0.025))'; % R12
     % Penning 2
-    'He(*) + He(*) -> He(+,gnd) + e + He(gnd)',                             '0.3 * 2.9E-15*sqrt(T/(11600*0.025))' % R13 - ok Martens 2009 R16
-    'He(*) + He(*) -> He2(+,X) + e',                                        '0.7 * 2.9E-15*sqrt(T/(11600*0.025))' % R14 - ok Martens 2009 R17
+    'He(*) + He(*) -> He(+,gnd) + e + He(gnd)',                             '0.3 * 2.9E-15*sqrt(T/(11600*0.025))'; % R13 - ok Martens 2009 R16
+    'He(*) + He(*) -> He2(+,X) + e',                                        '0.7 * 2.9E-15*sqrt(T/(11600*0.025))'; % R14 - ok Martens 2009 R17
     % Penning 3
-    'He2(*) + He2(*) -> He(+,gnd) + e + He(gnd) + He(gnd) + He(gnd)',       '0.3 * 2.9E-15*sqrt(T/(11600*0.025))' % R15
-    'He2(*) + He2(*) -> He2(+,X) + e + He(gnd) + He(gnd)',                  '0.7 * 2.9E-15*sqrt(T/(11600*0.025))' % R16 - ok Martens 2009 R20
+    'He2(*) + He2(*) -> He(+,gnd) + e + He(gnd) + He(gnd) + He(gnd)',       '0.3 * 2.9E-15*sqrt(T/(11600*0.025))'; % R15
+    'He2(*) + He2(*) -> He2(+,X) + e + He(gnd) + He(gnd)',                  '0.7 * 2.9E-15*sqrt(T/(11600*0.025))'; % R16 - ok Martens 2009 R20
     % mol metastable iz
     'e + He2(*) -> e + e + He2(+,X)',                                       '9.75E-16*Te^0.71*exp(-3.4/Te)'; % R17
     % metastable de-exc

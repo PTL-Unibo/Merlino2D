@@ -67,7 +67,6 @@ if isa(p.ELECTRIC_FIELD_0D,"function_handle")
     ode15s(odefun_mixed,[p.TIME_INSTANTS(1),p.TIME_INSTANTS(end)],y0)
     legend(species)
     yscale("log")
-    xscale("log")
     grid on
 end
 

@@ -15,7 +15,7 @@ opts.BC_VAL = {
     'O2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'O2-', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'N2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0}};
-opts.TIME_INSTANTS = logspace(-12,-9,100);
+opts.TIME_INSTANTS = logspace(-12,-3,100);
 opts.INITIAL_CONDITION = {
     'N2+',0.8e13;
     'O2-',0.999e13;
@@ -58,4 +58,4 @@ p = M2DInput(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0);
 
 out = Merlino2D(matlab.desktop.editor.getActiveFilename,"run");
 Save(out,"CoronaWireWireGrid")
-out = Load("CoronaWireWireGrid");
+% out = Load("CoronaWireWireGrid");

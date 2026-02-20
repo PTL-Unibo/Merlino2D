@@ -39,6 +39,7 @@ out_pp_k = struct;
 patch_handle = gobjects(1,1);
 
 fig2 = gobjects(1,1);
+cell_txt = gobjects(1,1);
 E_txt = gobjects(1,1);
 Rho_txt = gobjects(1,1);
 N_txt = gobjects(1,1);
@@ -147,7 +148,7 @@ ed_ylim_sup = [];
             [~,i_specific_cell] = min((out.msh.xc - pt(1,1)).^2 + (out.msh.yc - pt(1,2)).^2);
             DrawSelectedCell()
             if ~ishandle(fig2)
-                [fig2,E_txt,Rho_txt,N_txt,O_txt,K_txt,R_txt,popmen_species,popmen_reactions] = InitializeCellInspector(out.s_names, out.reactions);
+                [fig2,cell_txt,E_txt,Rho_txt,N_txt,O_txt,K_txt,R_txt,popmen_species,popmen_reactions] = InitializeCellInspector(out.s_names, out.reactions);
                 popmen_species.Callback = @(src,~)UpdateSpecificCell;
                 popmen_reactions.Callback = @(src,~)UpdateSpecificCell;
             end
@@ -166,6 +167,7 @@ ed_ylim_sup = [];
     function UpdateSpecificCell()
         is = popmen_species.Value;
         ir = popmen_reactions.Value;
+        cell_txt.String = sprintf("%d",i_specific_cell);
         E_txt.String = sprintf("%.3e, %.2f", ...
             sqrt(out_pp_k.EX_CELLS(i_specific_cell).^2 + out_pp_k.EY_CELLS(i_specific_cell).^2),...
             sqrt(out_pp_k.EX_CELLS(i_specific_cell).^2 + out_pp_k.EY_CELLS(i_specific_cell).^2)*1e21/Ngas);

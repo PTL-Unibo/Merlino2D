@@ -1,4 +1,5 @@
 clearvars, close, clc
+%<<<<<
 opts.MSH = 'PointPlane';
 
 opts.BCEL_FLAG = [0; 0; 1; 1];
@@ -21,15 +22,15 @@ opts.BC_VAL = {
     "He(*)",     {0,   0,   0, 0};
     "He2(+,X)",  {NaN, NaN, 0, 0};
     "He2(*)",    {0,   0,   0, 0}};
-opts.TIME_INSTANTS = linspace(0,1e-2,101);
-opts.INITIAL_CONDITION = "CoronaPointPlane_He_500V_5deg_Tok.mat";
-% opts.INITIAL_CONDITION = {
-%     "e",         1e13;
-%     "He(gnd)",   2.45e25;
-%     "He(+,gnd)", 1e13/2;
-%     "He(*)",     1e10;
-%     "He2(+,X)",  1e13/2;
-%     "He2(*)",    1e10;};
+opts.TIME_INSTANTS = linspace(0,1e-6,101);
+% opts.INITIAL_CONDITION = "CoronaPointPlane_He_500V_5deg_Tok.mat";
+opts.INITIAL_CONDITION = {
+    "e",         1e13;
+    "He(gnd)",   2.45e25;
+    "He(+,gnd)", 1e13/2;
+    "He(*)",     1e10;
+    "He2(+,X)",  1e13/2;
+    "He2(*)",    1e10;};
 opts.MU = {
     "e",         'Loki_mu(E)/Ngas';
     "He(gnd)",   0;
@@ -51,18 +52,24 @@ opts.V_TH_COEFF = {
     "He(*)",     0;
     "He2(+,X)",  1;
     "He2(*)",    0};
-opts.CONST_OMEGA = {
-    "e",         1e15;
-    "He(gnd)",   0;
-    "He(+,gnd)", 1e15;
-    "He(*)",     0;
-    "He2(+,X)",  0;
-    "He2(*)",    0};
+% opts.CONST_OMEGA = {
+%     "e",         -1e20;
+%     "He(gnd)",   0;
+%     "He(+,gnd)", -1e20/2;
+%     "He(*)",     0;
+%     "He2(+,X)",  -1e20/2;
+%     "He2(*)",    0};
 opts.CHEMICAL_MODEL = 's_Helium';
 opts.LOKI_INPUT = "Hel";
 opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
+opts.TEMPERATURE = 293;
 
-out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","lin","COORDINATES","cylindrical");
-out_pp = PostProcessing(out);
+p = M2DInput(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","lin","COORDINATES","cylindrical","ELECTRIC_FIELD_0D",@(t)20);
+%>>>>>
+
+out = Merlino2D(matlab.desktop.editor.getActiveFilename,"run");
+% Save(out,"PointPlaneHelium")
+% out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","lin","COORDINATES","cylindrical");
+% out_pp = PostProcessing(out);
 % Save(out_pp,"CoronaPointPlane_4kV.mat")
