@@ -37,4 +37,5 @@ p.T_START_STEADY_STATE = 0;
 p.ABS_TOL = 1e-6;
 p.REL_TOL = 1e-3;
 p.SPECIES_NO_CHEM = [];
+p.ELECTRIC_FIELD_0D = 0;
 end

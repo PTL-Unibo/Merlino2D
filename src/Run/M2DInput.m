@@ -40,6 +40,7 @@ arguments
     extra.ABS_TOL
     extra.REL_TOL
     extra.SPECIES_NO_CHEM
+    extra.ELECTRIC_FIELD_0D
 end
 
 % setting all parameters to default values

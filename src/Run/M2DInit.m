@@ -283,7 +283,7 @@ odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one us
 
 if flag == "run"
     odefun_mixed = @(t,y) odefun_perm(t,y,ppp,inv_ppp); % this is the one considering reordering
-
+    
     % Setting Output Function ---------------------------------------------
     if p.OUTPUT_FUNCTION == "none"
         % no output function
@@ -298,8 +298,15 @@ if flag == "run"
     
     fprintf("%s\n","Initialization finished");
 elseif flag == "init"
-    % do nothing
-end
+    if isa(p.ELECTRIC_FIELD_0D,"function_handle")
+        % This is the 0D case
+        [~,~,fKr0D] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),1,1,Loki,species);
+        [M0D, Mindices0D, Nindices0D] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), 1); 
+        odefun_mixed = @(t,n)OdeFunc0D(t,n,p.ELECTRIC_FIELD_0D,fTe,fKr0D,p.TEMPERATURE,Ngas,M0D,Mindices0D,Nindices0D,stoichiometric_matrix,Ordered_const_omega);
+        y0 = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0);
+    end
+else
+
 
 end
 

@@ -36,11 +36,6 @@ if flag == "run"
     delete_list(delete_list>l) = [];
     processed_input = input_file_content(k_start+1:k_end-1);
     processed_input(delete_list) = [];
-
-    % print input on screen
-    fprintf("Running input:\n")
-    fprintf("%s\n",processed_input)
-    fprintf("\n")
 elseif flag == "init"
     processed_input = input_file_content;
 end
