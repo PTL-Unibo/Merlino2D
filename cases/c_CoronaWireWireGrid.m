@@ -57,5 +57,5 @@ p = M2DInput(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0);
 %>>>>>
 
 out = Merlino2D(matlab.desktop.editor.getActiveFilename,"run");
-Save(out,"CoronaWireWireGrid")
+Save(out,"r_CoronaWireWireGrid")
 % out = Load("CoronaWireWireGrid");
