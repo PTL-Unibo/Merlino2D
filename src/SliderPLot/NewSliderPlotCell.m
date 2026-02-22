@@ -13,18 +13,6 @@ addlistener(ax, 'YLim', 'PostSet', @(src, event) AxisEqual3D(ax));
 
 AxCbProperties()
 
-cmbbox_names_list = cell(1,out.ns+numel(out.reactions)+2);
-for j = 1:out.ns
-    cmbbox_names_list{j} = char(out.s_names(j));
-end
-jj = 1;
-for j = (out.ns+1):(out.ns+numel(out.reactions))
-    cmbbox_names_list{j} = char(out.reactions(jj));
-    jj = jj + 1;
-end
-cmbbox_names_list{out.ns+numel(out.reactions)+1} = 'E';
-cmbbox_names_list{out.ns+numel(out.reactions)+2} = 'Rho';
-
 Ngas = out.p.PRESSURE/(out.p.TEMPERATURE*kB);
 i_specific_cell = -1;
 out_pp_k = struct;
@@ -45,7 +33,7 @@ popmen_reactions = gobjects(1,1);
 
 popmen = uicontrol(fig, ...
     'Style','popupmenu', ...
-    'String',cmbbox_names_list, ...
+    'String',InitializeCmbboxList(out), ...
     'Units','normalized', ...
     'Position',[0.3 0.95 0.4 0.04], ...
     'Value',1,...
@@ -203,23 +191,40 @@ ed_ylim_sup = [];
     % end
 
     function [] = PlotSelected(id)
+        delete(main_plot)
         if id <= out.ns % species-------------------------------------------------------------------
             is = id;
-            if popmen_specific.Value == 1 || popmen_specific.Value == 2
-                delete(main_plot)
-                if popmen_specific.Value == 1
-                    Uk = out_pp_k.N_CELLS((is-1)*out.msh.Nc+1:is*out.msh.Nc);
-                    main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
-                        "PickableParts","none",...
-                        "EdgeColor",tgl_btn_mesh.UserData);
-                elseif popmen_specific.Value == 2
-                    Uk = out_pp_k.N_NODES((is-1)*out.msh.Nn+1:is*out.msh.Nn);
-                    main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk,...
-                        "PickableParts","none");
-                    shading interp
-                    main_plot.EdgeColor = tgl_btn_mesh.UserData;
-                    view(2)
+            if popmen_specific.Value == 1
+                Uk = out_pp_k.N_CELLS((is-1)*out.msh.Nc+1:is*out.msh.Nc);
+                if tgl_btn_scale.String == "log"
+                    [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk);
                 end
+                main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
+                    "PickableParts","none",...
+                    "EdgeColor",tgl_btn_mesh.UserData);
+                AxCbProperties()
+                cb.Label.String = out.s_names(is) + " number density $(\mathrm{m}^{-3})$";
+                ax.ColorScale = "lin";
+
+                if tgl_btn_scale.String == "log"
+                    ax.CLim = ax_clim;
+                    cb.Ticks = ticks;
+                    cb.TickLabels = ticklabels;
+                    colormap(mapJetK)
+                elseif tgl_btn_scale.String == "lin"
+                    SetColorBarLimits(Uk)
+                    cb.TicksMode = 'auto';
+                    cb.TickLabelsMode = 'auto';
+                    colormap("parula")
+                end
+               
+            elseif popmen_specific.Value == 2
+                Uk = out_pp_k.N_NODES((is-1)*out.msh.Nn+1:is*out.msh.Nn);
+                main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk,...
+                    "PickableParts","none");
+                shading interp
+                main_plot.EdgeColor = tgl_btn_mesh.UserData;
+                view(2)
                 AxCbProperties()
                 ax.ColorScale = tgl_btn_scale.String;
                 cb.Label.String = out.s_names(is) + " number density $(\mathrm{m}^{-3})$";
@@ -234,7 +239,6 @@ ed_ylim_sup = [];
             elseif popmen_specific.Value == 3
                 Uk = out_pp_k.OMEGA((is-1)*out.msh.Nc+1:is*out.msh.Nc);
                 [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,10);
-                delete(main_plot)
                 main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
                     "PickableParts","none",...
                     "EdgeColor",tgl_btn_mesh.UserData);
@@ -248,10 +252,44 @@ ed_ylim_sup = [];
             end
         elseif id == out.ns + 1 % rho---------------------------------------------------------------
         elseif id == out.ns + 2 % phi---------------------------------------------------------------
+            Uk = out_pp_k.PHI_NODES;
+            main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk,...
+                "PickableParts","none");
+            shading interp
+            main_plot.EdgeColor = tgl_btn_mesh.UserData;
+            view(2)
+            AxCbProperties()
+            cb.Label.String = "electric potential $(\mathrm{V})$";
+            cb.TicksMode = 'auto';
+            cb.TickLabelsMode = 'auto';
+            SetColorBarLimits(Uk)
+            colormap("parula")
         elseif id == out.ns + 3 % E-----------------------------------------------------------------
         elseif id == out.ns + 4 % f-----------------------------------------------------------------
-        elseif id == out.ns + 5 % msh---------------------------------------------------------------
         else % reactions----------------------------------------------------------------------------
+            ir = id - out.ns - 4;
+            Uk = out_pp_k.RATES(:,ir);
+            if tgl_btn_scale.String == "log"
+                [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk);
+            end
+            main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
+                "PickableParts","none",...
+                "EdgeColor",tgl_btn_mesh.UserData);
+            AxCbProperties()
+            cb.Label.String = "reaction rate $(\mathrm{m}^{-3}\mathrm{s}^{-1})$";
+            ax.ColorScale = "lin";
+
+            if tgl_btn_scale.String == "log"
+                ax.CLim = ax_clim;
+                cb.Ticks = ticks;
+                cb.TickLabels = ticklabels;
+                colormap(mapJetK)
+            elseif tgl_btn_scale.String == "lin"
+                SetColorBarLimits(Uk)
+                cb.TicksMode = 'auto';
+                cb.TickLabelsMode = 'auto';
+                colormap("parula")
+            end
         end
     end
 

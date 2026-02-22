@@ -1,5 +1,8 @@
 function [u,tck_val,tck_lbl,scale_lim] = CreateLogPlot(u)
 
+log10_zero_val = -3;
+
+u(u<=(10^log10_zero_val)) = 0;
 ii_zero = (u == 0);
 ii_non_zero = ~ii_zero;
 
