@@ -151,24 +151,29 @@ if flag == "run"
     % Setting Initial Condition -------------------------------------------
     % InitialCondition can be a string, a struct or an array
     if isstring(p.INITIAL_CONDITION)
+        % load(p.INITIAL_CONDITION,"y_end","Nc","Nd");
+        % if Nc ~= msh.Nc
+        %     % different mesh, interpolation needed
+        %     load(p.INITIAL_CONDITION,"x_cells","y_cells");
+        %     N0 = InterpInitialCondition(x_cells,y_cells,...
+        %         y_end(1:ns*Nc),msh.xc,msh.yc,ns,msh.Nc);
+        %     sigma0 = zeros(0,1);
+        %     if Nd ~= msh.Nd
+        %         load(p.INITIAL_CONDITION,"input");
+        %         old_msh = GetMesh(input.geo_file_content, p.COORDINATES, input.p.MSH_PARAMETERS);
+        %         sigma0 = InterpInitialConditionSigma(old_msh.xf(old_msh.f_from_d),old_msh.yf(old_msh.f_from_d),y_end(ns*Nc+1:ns*Nc+Nd),msh.xf(msh.f_from_d),msh.yf(msh.f_from_d),msh.Nd);
+        %     end
+        %     fprintf("%s\n","Interpolated to new mesh");
+        % else
+        %     N0 = y_end(1:ns*msh.Nc);
+        %     sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
+        % end
+
         % string - loading previous result
-        load(p.INITIAL_CONDITION,"y_end","Nc","Nd");
-        if Nc ~= msh.Nc
-            % different mesh, interpolation needed
-            load(p.INITIAL_CONDITION,"x_cells","y_cells");
-            N0 = InterpInitialCondition(x_cells,y_cells,...
-                y_end(1:ns*Nc),msh.xc,msh.yc,ns,msh.Nc);
-            sigma0 = zeros(0,1);
-            if Nd ~= msh.Nd
-                load(p.INITIAL_CONDITION,"input");
-                old_msh = GetMesh(input.geo_file_content, p.COORDINATES, input.p.MSH_PARAMETERS);
-                sigma0 = InterpInitialConditionSigma(old_msh.xf(old_msh.f_from_d),old_msh.yf(old_msh.f_from_d),y_end(ns*Nc+1:ns*Nc+Nd),msh.xf(msh.f_from_d),msh.yf(msh.f_from_d),msh.Nd);
-            end
-            fprintf("%s\n","Interpolated to new mesh");
-        else
-            N0 = y_end(1:ns*msh.Nc);
-            sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
-        end
+        split_array = strsplit(p.INITIAL_CONDITION,"/");
+        load(p.INITIAL_CONDITION + "/" + split_array(end) + ".mat", "y_end");
+        N0 = y_end(1:ns*msh.Nc);
+        sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
         fprintf("%s\n","Loaded from previous save: "+p.INITIAL_CONDITION);
     elseif isstruct(p.INITIAL_CONDITION)
         if upper(p.CHEMICAL_MODEL) == "OFF"
