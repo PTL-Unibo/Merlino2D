@@ -24,10 +24,6 @@ function [pseudo_log,tck_val,tkz_lbl,scale_lim] = CreateNegativeLogPlot(u,m)
     end
     tkz_lbl{(dim+1)/2} = "$0$";
 
-    pseudo_log = 10.^pseudo_log;
-    tck_val = 10.^tck_val;
-    scale_lim = 10.^scale_lim;
-
     % if too many ticks
     max_allowed_dim = 20;
     halve_times = floor(log(dim/max_allowed_dim)/log(2)+1);

@@ -1,12 +1,18 @@
-function [u,tck_val,tck_lbl,scale_lim] = CreateLogPlot(u)
+function [u,tck_val,tck_lbl,scale_lim] = CreateLogPlot(u,m)
 
-log10_zero_val = -3;
-
-u(u<=(10^log10_zero_val)) = 0;
 ii_zero = (u == 0);
 ii_non_zero = ~ii_zero;
 
 u = log10(u);
+original_down_lim_val = min(u(ii_non_zero));
+original_int_top_lim_val = floor(max(u));
+if original_down_lim_val + m >= original_int_top_lim_val
+    m = 0;
+end
+
+log10_zero_val = original_down_lim_val + m;
+
+u(u>(-Inf) & u<=log10_zero_val) = log10_zero_val;
 
 max_val = max(u);
 min_val = min(u(ii_non_zero));
