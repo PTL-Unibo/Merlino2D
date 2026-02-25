@@ -8,6 +8,7 @@ arguments
 end
 
 [p,processed_input] = ProcessInput(input_script,flag);
+geo_file_content = readlines(GetPath("geo") + "/" + p.MSH + ".geo");
 
 if isa(p.ELECTRIC_FIELD_0D,"function_handle")
     flag = "init";
@@ -55,6 +56,7 @@ if flag == "run"
     stats.LU_decompositions = statsout(5);
     stats.solutions_of_linear_systems = statsout(6);
     % Appending to Output Structure
+    out.temp_geo_file_content = geo_file_content;
     out.temp_input = processed_input;
     out.tout = tout;
     out.yout = yout;

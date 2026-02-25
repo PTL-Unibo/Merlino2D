@@ -25,7 +25,7 @@ copyfile(GetPath('src'), folder_name+"/src")
 
 % geo
 mkdir(folder_name+"/geo")
-copyfile(GetPath("geo") + "/" + out.p.MSH + ".geo", folder_name + "/geo/" + out.p.MSH + ".geo")
+writelines(out.temp_geo_file_content, folder_name + "/geo/" + out.p.MSH + ".geo")
 
 % kinetic
 if upper(out.p.CHEMICAL_MODEL) ~= "OFF"
