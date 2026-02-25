@@ -1,17 +1,25 @@
 SetFactory("OpenCASCADE");
 
 HEIGHT = 10e-3;
-PP_DISTANCE = 5e-3;
 CURVE_RADIUS = 0.2e-3;
 NEEDLE_HEIGHT = 1.5e-3;
 NEEDLE_LENGTH = 8e-3;
 ANGLE = 12;
-BIG_MSH_SIZE = 5e-4;
-SMALL_MSH_SIZE = 1e-5;
-MEDIUM_MESH_SIZE = 1e-4;
 
 L_PARAM_SMOOTH = 0.6e-3;
 DX_CONTROL_CIRC = 0.5e-3; 
+
+If (!Exists(g))
+  g = 5e-3;  // default if not passed from command line
+EndIf
+PP_DISTANCE = g; // point-plane distance
+
+If (!Exists(k))
+  k = 1;  // default if not passed from command line
+EndIf
+BIG_MSH_SIZE = 5e-4 * k;
+SMALL_MSH_SIZE = 1e-5 * k;
+MEDIUM_MESH_SIZE = 1e-4 * k;
 
 sphere_point_length = CURVE_RADIUS * (1 - Sin(ANGLE*Pi/180));
 needle_point_length = (NEEDLE_HEIGHT - CURVE_RADIUS * Cos(ANGLE*Pi/180)) / Tan(ANGLE*Pi/180);
@@ -97,9 +105,10 @@ Transfinite Curve {Lc_control} = Round(Length_circ_control/SMALL_MSH_SIZE) Using
 
 
 Physical Curve(1) = {L_B_Cleft, Lc_Cleft_Cright, L_Cright_Dleft, L_Dleft_D, Lc_D_E}; // anode
-Physical Curve(4) = {L_E_F, L_F_G}; // axis
+Physical Curve(3) = {L_E_F, L_F_G}; // axis
 Physical Curve(2) = {L_G_H, L_H_I}; // cathode
-Physical Curve(3) = {L_I_A, L_A_B}; // external boundaries
+Physical Curve(4) = {L_I_A}; // external boundaries
+Physical Curve(5) = {L_A_B}; // external boundaries
 
 
 Physical Surface(1) = {S_1};
