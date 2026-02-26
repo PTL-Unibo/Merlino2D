@@ -41,6 +41,6 @@ save_struct.y_end = out.yout(:,end);
 
 folder_name_split = strsplit(folder_name,"/");
 
-SaveStruct(folder_name+"/"+folder_name_split(end),save_struct)
+SaveStruct(folder_name+"/"+folder_name_split(end)+".mat",save_struct)
 
 end
