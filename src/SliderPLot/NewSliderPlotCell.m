@@ -208,12 +208,36 @@ ed_ylim_sup = [];
         PlotCell
     end
 
+    function AxCbProperties()
+        % Setting properties
+        cb = colorbar(ax);
+        ax.TickLabelInterpreter = "latex";
+        ax.FontSize = 15;
+        cb.TickLabelInterpreter = "latex";
+        cb.Label.Interpreter = "latex";
+        cb.Label.FontSize = 15;
+        xlabel(ax,"x $(\mathrm{m})$", "Interpreter","latex")
+        ylabel(ax,"y $(\mathrm{m})$", "Interpreter","latex")
+    end
+
+    function MainPlot(Uk,flag)
+        delete(main_plot)
+        if flag == "patch"
+            main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk);
+        elseif flag == "trisurf"
+            main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk);
+            shading interp
+            view(2)
+            AxCbProperties()
+        end
+        main_plot.EdgeColor = tgl_btn_mesh.UserData;
+        main_plot.PickableParts = "none";
+    end
+
     function [] = PlotSelected(id)
         axes(ax)
         previous_xlim = ax.XLim;
         previous_ylim = ax.YLim;
-        delete(main_plot)
-        delete(quiver_trisurf)
         if id <= out.ns %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SPECIES
             is = id;
             if popmen_specific.Value == 1 % species cells ------------------------------------------
@@ -221,10 +245,7 @@ ed_ylim_sup = [];
                 if tgl_btn_scale.String == "log"
                     [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
                 end
-                main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
-                    "PickableParts","none",...
-                    "EdgeColor",tgl_btn_mesh.UserData);
-                AxCbProperties()
+                MainPlot(Uk,"patch")
                 cb.Label.String = out.s_names(is) + " number density $(\mathrm{m}^{-3})$";
                 ax.ColorScale = "lin";
                 if tgl_btn_scale.String == "log"
@@ -244,12 +265,7 @@ ed_ylim_sup = [];
                 if tgl_btn_scale.String == "log"
                     [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
                 end
-                main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk,...
-                    "PickableParts","none");
-                shading interp
-                main_plot.EdgeColor = tgl_btn_mesh.UserData;
-                view(2)
-                AxCbProperties()
+                MainPlot(Uk,"trisurf")
                 cb.Label.String = out.s_names(is) + " number density $(\mathrm{m}^{-3})$";
                 ax.ColorScale = "lin";
                 if tgl_btn_scale.String == "log"
@@ -266,10 +282,7 @@ ed_ylim_sup = [];
             elseif popmen_specific.Value == 3 % species omega --------------------------------------
                 Uk = out_pp_k.OMEGA((is-1)*out.msh.Nc+1:is*out.msh.Nc);
                 [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
-                main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
-                    "PickableParts","none",...
-                    "EdgeColor",tgl_btn_mesh.UserData);
-                AxCbProperties()
+                MainPlot(Uk,"patch")
                 cb.Label.String = out.s_names(is) + " source term $(\mathrm{m^{-3}s^{-1}})$";
                 ax.ColorScale = "lin";
                 ax.CLim = ax_clim;
@@ -283,10 +296,7 @@ ed_ylim_sup = [];
                 if tgl_btn_scale.String == "log"
                     [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
                 end
-                main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
-                    "PickableParts","none",...
-                    "EdgeColor",tgl_btn_mesh.UserData);
-                AxCbProperties()
+                MainPlot(Uk,"patch")
                 cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
                 ax.ColorScale = "lin";
                 if tgl_btn_scale.String == "log"
@@ -305,12 +315,7 @@ ed_ylim_sup = [];
                 if tgl_btn_scale.String == "log"
                     [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
                 end
-                main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk,...
-                    "PickableParts","none");
-                shading interp
-                main_plot.EdgeColor = tgl_btn_mesh.UserData;
-                view(2)
-                AxCbProperties()
+                MainPlot(Uk,"trisurf")
                 cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
                 ax.ColorScale = "lin";
                 if tgl_btn_scale.String == "log"
@@ -327,12 +332,7 @@ ed_ylim_sup = [];
             end
         elseif id == out.ns + 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PHI
             Uk = out_pp_k.PHI_NODES;
-            main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk,...
-                "PickableParts","none");
-            shading interp
-            main_plot.EdgeColor = tgl_btn_mesh.UserData;
-            view(2)
-            AxCbProperties()
+            MainPlot(Uk,"trisurf")
             cb.Label.String = "electric potential $(\mathrm{V})$";
             ax.ColorScale = "lin";
             cb.TicksMode = 'auto';
@@ -342,9 +342,7 @@ ed_ylim_sup = [];
         elseif id == out.ns + 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% E
             if popmen_specific.Value == 1 % E cells ------------------------------------------------
                 Uk = sqrt(out_pp_k.EX_CELLS.^2 + out_pp_k.EY_CELLS.^2);
-                main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
-                    "PickableParts","none",...
-                    "EdgeColor",tgl_btn_mesh.UserData);
+                MainPlot(Uk,"patch")
                 AxCbProperties()
                 cb.Label.String = "electric field $(\mathrm{V}\mathrm{m}^{-1})$";
                 ax.ColorScale = tgl_btn_scale.String;
@@ -354,12 +352,7 @@ ed_ylim_sup = [];
                 colormap("parula")
             elseif popmen_specific.Value == 2 % E nodes --------------------------------------------
                 Uk = sqrt(out_pp_k.EX_NODES.^2 + out_pp_k.EY_NODES.^2);
-                main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk,...
-                    "PickableParts","none");
-                shading interp
-                main_plot.EdgeColor = tgl_btn_mesh.UserData;
-                view(2)
-                AxCbProperties()
+                MainPlot(Uk,"trisurf")
                 cb.Label.String = "electric field $(\mathrm{V}\mathrm{m}^{-1})$";
                 ax.ColorScale = tgl_btn_scale.String;
                 SetColorBarLimits(Uk)
@@ -369,6 +362,7 @@ ed_ylim_sup = [];
             elseif popmen_specific.Value == 3 % E quiver -------------------------------------------
                 Uk = 1;
                 if tgl_btn_mesh.Value == 1
+                    delete(quiver_trisurf)
                     quiver_trisurf = trisurf(out.msh.ns_from_c, out.msh.xn, out.msh.yn, zeros(size(out.msh.yn)),...
                         "FaceColor","w",...
                         "EdgeColor",[0.7 0.7 0.7],...
@@ -380,8 +374,13 @@ ed_ylim_sup = [];
                 end
                 ii = (out.msh.xf > previous_xlim(1) & out.msh.xf < previous_xlim(2)) & ...
                     (out.msh.yf > previous_ylim(1) & out.msh.yf < previous_ylim(2));
+                delete(main_plot)
                 main_plot = quiver(out.msh.xf(ii), out.msh.yf(ii), out_pp_k.EX(ii), out_pp_k.EY(ii), "Color",[13,69,26]/255);
                 main_plot.PickableParts = "none";
+                ax.TickLabelInterpreter = "latex";
+                ax.FontSize = 15;
+                xlabel(ax,"x $(\mathrm{m})$", "Interpreter","latex")
+                ylabel(ax,"y $(\mathrm{m})$", "Interpreter","latex")
                 hold off
             end
         elseif id == out.ns + 4 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FX
@@ -390,10 +389,7 @@ ed_ylim_sup = [];
                 if tgl_btn_scale.String == "log"
                     [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
                 end
-                main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
-                    "PickableParts","none",...
-                    "EdgeColor",tgl_btn_mesh.UserData);
-                AxCbProperties()
+                MainPlot(Uk,"patch")
                 cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
                 ax.ColorScale = "lin";
                 if tgl_btn_scale.String == "log"
@@ -412,12 +408,7 @@ ed_ylim_sup = [];
                 if tgl_btn_scale.String == "log"
                     [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
                 end
-                main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk,...
-                    "PickableParts","none");
-                shading interp
-                main_plot.EdgeColor = tgl_btn_mesh.UserData;
-                view(2)
-                AxCbProperties()
+                MainPlot(Uk,"trisurf")
                 cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
                 ax.ColorScale = "lin";
                 if tgl_btn_scale.String == "log"
@@ -438,10 +429,7 @@ ed_ylim_sup = [];
             if tgl_btn_scale.String == "log"
                 [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
             end
-            main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk,...
-                "PickableParts","none",...
-                "EdgeColor",tgl_btn_mesh.UserData);
-            AxCbProperties()
+            MainPlot(Uk,"patch")
             cb.Label.String = "reaction rate $(\mathrm{m}^{-3}\mathrm{s}^{-1})$";
             ax.ColorScale = "lin";
             if tgl_btn_scale.String == "log"
@@ -459,18 +447,6 @@ ed_ylim_sup = [];
         global_max_Uk_val = max(Uk);
         xlim(ax,previous_xlim)
         ylim(ax,previous_ylim)
-    end
-
-    function AxCbProperties()
-        % Setting properties
-        cb = colorbar(ax);
-        ax.TickLabelInterpreter = "latex";
-        ax.FontSize = 15;
-        cb.TickLabelInterpreter = "latex";
-        cb.Label.Interpreter = "latex";
-        cb.Label.FontSize = 15;
-        xlabel(ax,"x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel(ax,"y $(\mathrm{m})$", "Interpreter","latex")
     end
        
 end
