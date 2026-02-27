@@ -4,6 +4,8 @@ fig = figure("WindowStyle","normal");
 ax = axes(fig);
 cb = colorbar(ax);
 
+global_colormap_resolution = 10;
+
 fig.WindowKeyPressFcn  = @(~,event)KeyPressed(event);
 
 ax.XLim = [min(out.msh.xn),max(out.msh.xn)];
@@ -111,18 +113,6 @@ ed_ylim_sup = [];
         end
     end
 
-    function SetColorBarLimits(Uk)
-        if max(Uk) ~= min(Uk)
-            clim(ax,[min(Uk), max(Uk)])
-        else
-            if max(Uk) ~= 0
-                clim(ax,min(Uk)+[-1,1]*1e-3*abs(max(Uk)))
-            else
-                clim(ax,[-1,1])
-            end
-        end
-    end
-
     function tgl_btn_pressed(src)
         if src.Value == 1
             src.String = "log";
@@ -208,22 +198,57 @@ ed_ylim_sup = [];
         PlotCell
     end
 
+    function SetColorBar(ax_clim,ticks,ticklabels,map_name)
+        if isnan(ax_clim)
+            ax.CLimMode = "auto";
+        else
+            ax.CLim = ax_clim;
+        end
+        if isnan(ticks)
+            cb.TicksMode = "auto";
+        else
+            cb.Ticks = ticks;
+        end
+        if isnan(ticks)
+            cb.TickLabelsMode = "auto";
+        else
+            cb.TickLabels = ticklabels;
+        end
+        if nargin > 3
+            if map_name == "CBKRY"
+                colormap(mapCBKRY(global_colormap_resolution))
+            else
+                colormap(mapAddK(map_name,global_colormap_resolution))
+            end
+        else
+            colormap(parula(global_colormap_resolution*20))
+        end
+    end
+
     function AxCbProperties()
-        % Setting properties
-        cb = colorbar(ax);
+        AxProperties()
+        CbProperties()
+    end
+
+    function AxProperties()
         ax.TickLabelInterpreter = "latex";
         ax.FontSize = 15;
+        xlabel(ax,"x $(\mathrm{m})$", "Interpreter","latex")
+        ylabel(ax,"y $(\mathrm{m})$", "Interpreter","latex")
+    end
+
+    function CbProperties()
+        cb = colorbar(ax);
         cb.TickLabelInterpreter = "latex";
         cb.Label.Interpreter = "latex";
         cb.Label.FontSize = 15;
-        xlabel(ax,"x $(\mathrm{m})$", "Interpreter","latex")
-        ylabel(ax,"y $(\mathrm{m})$", "Interpreter","latex")
     end
 
     function MainPlot(Uk,flag)
         delete(main_plot)
         if flag == "patch"
             main_plot = patch(out.msh.xn(out.msh.ns_from_c'),out.msh.yn(out.msh.ns_from_c'),Uk);
+            CbProperties()
         elseif flag == "trisurf"
             main_plot = trisurf(out.msh.ns_from_c,out.msh.xn,out.msh.yn,Uk);
             shading interp
@@ -234,131 +259,102 @@ ed_ylim_sup = [];
         main_plot.PickableParts = "none";
     end
 
+    function bool = CheckIsUniform(Uk)
+        if min(Uk) == 0
+            if max(Uk) == 0
+                bool = true;
+            else
+                bool = flase; 
+            end
+        else
+            bool = abs((max(Uk)-min(Uk))/min(Uk)) < 1e-10;
+        end
+    end
+
+    function LinLog(is_uniform,ax_clim,ticks,ticklabels,map_name)
+        ax.ColorScale = "lin";
+        if tgl_btn_scale.String == "log"
+                if ~is_uniform
+                    SetColorBar(ax_clim,ticks,ticklabels,map_name)
+                else
+                    SetColorBar(NaN,NaN,NaN,map_name)
+                end
+            else
+                SetColorBar(NaN,NaN,NaN)
+        end
+    end
+
     function [] = PlotSelected(id)
+        ax_clim = [];
+        ticks = [];
+        ticklabels = {};
         axes(ax)
         previous_xlim = ax.XLim;
         previous_ylim = ax.YLim;
         if id <= out.ns %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SPECIES
             is = id;
-            if popmen_specific.Value == 1 % species cells ------------------------------------------
-                Uk = out_pp_k.N_CELLS((is-1)*out.msh.Nc+1:is*out.msh.Nc);
-                if tgl_btn_scale.String == "log"
+            if popmen_specific.Value == 1 || popmen_specific.Value == 2 % species cells/nodes-------
+                if popmen_specific.Value == 1 
+                    Uk = out_pp_k.N_CELLS((is-1)*out.msh.Nc+1:is*out.msh.Nc);
+                elseif popmen_specific.Value == 2 
+                    Uk = out_pp_k.N_NODES((is-1)*out.msh.Nn+1:is*out.msh.Nn);
+                end
+                is_uniform = CheckIsUniform(Uk);
+                if ~is_uniform && tgl_btn_scale.String == "log"
                     [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
                 end
-                MainPlot(Uk,"patch")
+                if popmen_specific.Value == 1 
+                    MainPlot(Uk,"patch")
+                elseif popmen_specific.Value == 2 
+                    MainPlot(Uk,"trisurf")
+                end
                 cb.Label.String = out.s_names(is) + " number density $(\mathrm{m}^{-3})$";
-                ax.ColorScale = "lin";
-                if tgl_btn_scale.String == "log"
-                    ax.CLim = ax_clim;
-                    cb.Ticks = ticks;
-                    cb.TickLabels = ticklabels;
-                    colormap(mapTurboK)
-                elseif tgl_btn_scale.String == "lin"
-                    SetColorBarLimits(Uk)
-                    cb.TicksMode = 'auto';
-                    cb.TickLabelsMode = 'auto';
-                    colormap("parula")
-                end
-               
-            elseif popmen_specific.Value == 2 % species nodes --------------------------------------
-                Uk = out_pp_k.N_NODES((is-1)*out.msh.Nn+1:is*out.msh.Nn);
-                if tgl_btn_scale.String == "log"
-                    [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
-                end
-                MainPlot(Uk,"trisurf")
-                cb.Label.String = out.s_names(is) + " number density $(\mathrm{m}^{-3})$";
-                ax.ColorScale = "lin";
-                if tgl_btn_scale.String == "log"
-                    ax.CLim = ax_clim;
-                    cb.Ticks = ticks;
-                    cb.TickLabels = ticklabels;
-                    colormap(mapTurboK)
-                elseif tgl_btn_scale.String == "lin"
-                    SetColorBarLimits(Uk)
-                    cb.TicksMode = 'auto';
-                    cb.TickLabelsMode = 'auto';
-                    colormap("parula")
-                end
+                LinLog(is_uniform,ax_clim,ticks,ticklabels,"turbo")
             elseif popmen_specific.Value == 3 % species omega --------------------------------------
                 Uk = out_pp_k.OMEGA((is-1)*out.msh.Nc+1:is*out.msh.Nc);
-                [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
+                is_uniform = CheckIsUniform(Uk);
+                if ~is_uniform && tgl_btn_scale.String == "log"
+                    [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
+                end
                 MainPlot(Uk,"patch")
                 cb.Label.String = out.s_names(is) + " source term $(\mathrm{m^{-3}s^{-1}})$";
-                ax.ColorScale = "lin";
-                ax.CLim = ax_clim;
-                cb.Ticks = ticks;
-                cb.TickLabels = ticklabels;
-                colormap(mapCBKRY)
+                LinLog(is_uniform,ax_clim,ticks,ticklabels,"CBKRY")
             end
         elseif id == out.ns + 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% RHO
-            if popmen_specific.Value == 1 % rho cells ----------------------------------------------
+            if popmen_specific.Value == 1 % rho cells/nodes ----------------------------------------
                 Uk = out_pp_k.RHO_CELLS;
-                if tgl_btn_scale.String == "log"
-                    [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
-                end
-                MainPlot(Uk,"patch")
-                cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
-                ax.ColorScale = "lin";
-                if tgl_btn_scale.String == "log"
-                    ax.CLim = ax_clim;
-                    cb.Ticks = ticks;
-                    cb.TickLabels = ticklabels;
-                    colormap(mapCBKRY)
-                elseif tgl_btn_scale.String == "lin"
-                    SetColorBarLimits(Uk)
-                    cb.TicksMode = 'auto';
-                    cb.TickLabelsMode = 'auto';
-                    colormap("parula")
-                end
-            elseif popmen_specific.Value == 2 % rho nodes ------------------------------------------
+            elseif popmen_specific.Value == 2 
                 Uk = out_pp_k.RHO_NODES;
-                if tgl_btn_scale.String == "log"
-                    [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
-                end
-                MainPlot(Uk,"trisurf")
-                cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
-                ax.ColorScale = "lin";
-                if tgl_btn_scale.String == "log"
-                    ax.CLim = ax_clim;
-                    cb.Ticks = ticks;
-                    cb.TickLabels = ticklabels;
-                    colormap(mapCBKRY)
-                elseif tgl_btn_scale.String == "lin"
-                    SetColorBarLimits(Uk)
-                    cb.TicksMode = 'auto';
-                    cb.TickLabelsMode = 'auto';
-                    colormap("parula")
-                end
             end
+            is_uniform = CheckIsUniform(Uk);
+            if ~is_uniform && tgl_btn_scale.String == "log"
+                [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
+            end
+            if popmen_specific.Value == 1 
+                MainPlot(Uk,"patch")
+            elseif popmen_specific.Value == 2 
+                MainPlot(Uk,"trisurf")
+            end
+            cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
+            LinLog(is_uniform,ax_clim,ticks,ticklabels,"CBKRY")
         elseif id == out.ns + 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PHI
             Uk = out_pp_k.PHI_NODES;
             MainPlot(Uk,"trisurf")
             cb.Label.String = "electric potential $(\mathrm{V})$";
             ax.ColorScale = "lin";
-            cb.TicksMode = 'auto';
-            cb.TickLabelsMode = 'auto';
-            SetColorBarLimits(Uk)
-            colormap("parula")
+            SetColorBar(NaN,NaN,NaN)
         elseif id == out.ns + 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% E
-            if popmen_specific.Value == 1 % E cells ------------------------------------------------
-                Uk = sqrt(out_pp_k.EX_CELLS.^2 + out_pp_k.EY_CELLS.^2);
-                MainPlot(Uk,"patch")
-                AxCbProperties()
+            if popmen_specific.Value == 1 || popmen_specific.Value == 2 % E cells/nodes ------------
+                if popmen_specific.Value == 1
+                    Uk = sqrt(out_pp_k.EX_CELLS.^2 + out_pp_k.EY_CELLS.^2);
+                    MainPlot(Uk,"patch")
+                elseif popmen_specific.Value == 2
+                    Uk = sqrt(out_pp_k.EX_NODES.^2 + out_pp_k.EY_NODES.^2);
+                    MainPlot(Uk,"trisurf")
+                end
                 cb.Label.String = "electric field $(\mathrm{V}\mathrm{m}^{-1})$";
                 ax.ColorScale = tgl_btn_scale.String;
-                SetColorBarLimits(Uk)
-                cb.TicksMode = 'auto';
-                cb.TickLabelsMode = 'auto';
-                colormap("parula")
-            elseif popmen_specific.Value == 2 % E nodes --------------------------------------------
-                Uk = sqrt(out_pp_k.EX_NODES.^2 + out_pp_k.EY_NODES.^2);
-                MainPlot(Uk,"trisurf")
-                cb.Label.String = "electric field $(\mathrm{V}\mathrm{m}^{-1})$";
-                ax.ColorScale = tgl_btn_scale.String;
-                SetColorBarLimits(Uk)
-                cb.TicksMode = 'auto';
-                cb.TickLabelsMode = 'auto';
-                colormap("parula")
+                SetColorBar(NaN,NaN,NaN)
             elseif popmen_specific.Value == 3 % E quiver -------------------------------------------
                 Uk = 1;
                 if tgl_btn_mesh.Value == 1
@@ -377,72 +373,36 @@ ed_ylim_sup = [];
                 delete(main_plot)
                 main_plot = quiver(out.msh.xf(ii), out.msh.yf(ii), out_pp_k.EX(ii), out_pp_k.EY(ii), "Color",[13,69,26]/255);
                 main_plot.PickableParts = "none";
-                ax.TickLabelInterpreter = "latex";
-                ax.FontSize = 15;
-                xlabel(ax,"x $(\mathrm{m})$", "Interpreter","latex")
-                ylabel(ax,"y $(\mathrm{m})$", "Interpreter","latex")
+                AxProperties()
                 hold off
             end
         elseif id == out.ns + 4 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FX
-            if popmen_specific.Value == 1 % fx cells -----------------------------------------------
+            if popmen_specific.Value == 1 % fx cells/nodes -----------------------------------------
                 Uk = out_pp_k.RHO_CELLS .* out_pp_k.EX_CELLS;
-                if tgl_btn_scale.String == "log"
-                    [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
-                end
-                MainPlot(Uk,"patch")
-                cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
-                ax.ColorScale = "lin";
-                if tgl_btn_scale.String == "log"
-                    ax.CLim = ax_clim;
-                    cb.Ticks = ticks;
-                    cb.TickLabels = ticklabels;
-                    colormap(mapCBKRY)
-                elseif tgl_btn_scale.String == "lin"
-                    SetColorBarLimits(Uk)
-                    cb.TicksMode = 'auto';
-                    cb.TickLabelsMode = 'auto';
-                    colormap("parula")
-                end
-            elseif popmen_specific.Value == 2 % fx nodes -------------------------------------------
+            elseif popmen_specific.Value == 2 
                 Uk = out_pp_k.RHO_NODES .* out_pp_k.EX_NODES;
-                if tgl_btn_scale.String == "log"
-                    [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
-                end
-                MainPlot(Uk,"trisurf")
-                cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
-                ax.ColorScale = "lin";
-                if tgl_btn_scale.String == "log"
-                    ax.CLim = ax_clim;
-                    cb.Ticks = ticks;
-                    cb.TickLabels = ticklabels;
-                    colormap(mapCBKRY)
-                elseif tgl_btn_scale.String == "lin"
-                    SetColorBarLimits(Uk)
-                    cb.TicksMode = 'auto';
-                    cb.TickLabelsMode = 'auto';
-                    colormap("parula")
-                end
             end
+            is_uniform = CheckIsUniform(Uk);
+            if ~is_uniform && tgl_btn_scale.String == "log"
+                [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
+            end
+            if popmen_specific.Value == 1 
+                MainPlot(Uk,"patch")
+            elseif popmen_specific.Value == 2 
+                MainPlot(Uk,"trisurf")
+            end
+            cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
+            LinLog(is_uniform,ax_clim,ticks,ticklabels,"CBKRY")
         else %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% REACTIONS
             ir = id - out.ns - 4;
             Uk = out_pp_k.RATES(:,ir);
-            if tgl_btn_scale.String == "log"
+            is_uniform = CheckIsUniform(Uk);
+            if ~is_uniform && tgl_btn_scale.String == "log"
                 [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
             end
             MainPlot(Uk,"patch")
             cb.Label.String = "reaction rate $(\mathrm{m}^{-3}\mathrm{s}^{-1})$";
-            ax.ColorScale = "lin";
-            if tgl_btn_scale.String == "log"
-                ax.CLim = ax_clim;
-                cb.Ticks = ticks;
-                cb.TickLabels = ticklabels;
-                colormap(mapTurboK)
-            elseif tgl_btn_scale.String == "lin"
-                SetColorBarLimits(Uk)
-                cb.TicksMode = 'auto';
-                cb.TickLabelsMode = 'auto';
-                colormap("parula")
-            end
+            LinLog(is_uniform,ax_clim,ticks,ticklabels,"turbo")
         end
         global_max_Uk_val = max(Uk);
         xlim(ax,previous_xlim)
