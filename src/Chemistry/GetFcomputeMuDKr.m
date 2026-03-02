@@ -1,4 +1,4 @@
-function [fComputeMu,fComputeD,fComputeKr] = GetFcomputeMuDKr(Mu,D,Kr,Nc,Nf,Loki,species)
+function [fComputeMu,fComputeD,fComputeKr] = GetFcomputeMuDKr(Mu,D,Kr,Nc,Nf,Loki,species,flag)
 
 flag_loki = 0;
 if ~isempty(Loki)
@@ -21,8 +21,10 @@ Mu_str = CellExpressionToStringArray(Mu,Nf);
 D_str = CellExpressionToStringArray(D,Nf);
 Kr_str = CellExpressionToStringArray(Kr,Nc);
 
-if isfolder(GetPath("data")+"/"+"func")
-    addpath(GetPath("data")+"/"+"func")
+if flag == "run"
+    if isfolder(GetPath("data")+"/"+"func")
+        addpath(GetPath("data")+"/"+"func")
+    end
 end
 
 strMu = "@(E,Te,T,Ngas)[" + join(Mu_str,",") + "]";
@@ -41,7 +43,7 @@ end
 strKr = AddDot(strKr);
 
 % creating griddedInterpolants --------------------------------------------
-file_names_str = GetCSVfilesInData();
+file_names_str = GetFilesInDir(".csv",GetPath("data"));
 num_files = numel(file_names_str);
 for i = 1:num_files
     if contains(strMu,file_names_str(i)) || contains(strD,file_names_str(i)) || contains(strKr,file_names_str(i))

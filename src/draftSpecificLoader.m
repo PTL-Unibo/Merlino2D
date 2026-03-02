@@ -19,10 +19,7 @@ addpath(genpath(current_path)) % + current
 try
     % Load save -----------------------------------------------------------
     out = Merlino2D(Merlino2D_path+"/input_script.m","init");            %|
-                                                                         %|
-    split_merlino_path = strsplit(Merlino2D_path,"/");                   %|
-    result_folder_name = split_merlino_path(end);                        %|
-    out2 = load(Merlino2D_path+"/"+result_folder_name+".mat");           %|
+    out2 = load(Merlino2D_path+"/results.mat");                          %|
                                                                          %|
     % merge the 2 struct                                                 %|
     fn = fieldnames(out2);                                               %|

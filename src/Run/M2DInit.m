@@ -83,7 +83,7 @@ else
     fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
 end
 
-[fMu,fD,fKr] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),msh.Nc,msh.Nf,Loki,species);
+[fMu,fD,fKr] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),msh.Nc,msh.Nf,Loki,species,flag);
 
 BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
 fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
@@ -147,33 +147,27 @@ ode_dim = ns*msh.Nc+msh.Nd;
 dae_dim = Nphi;
 dim_Jac = ode_dim + dae_dim;
 
+
 if flag == "run"
     % Setting Initial Condition -------------------------------------------
     % InitialCondition can be a string, a struct or an array
     if isstring(p.INITIAL_CONDITION)
-        % load(p.INITIAL_CONDITION,"y_end","Nc","Nd");
-        % if Nc ~= msh.Nc
-        %     % different mesh, interpolation needed
-        %     load(p.INITIAL_CONDITION,"x_cells","y_cells");
-        %     N0 = InterpInitialCondition(x_cells,y_cells,...
-        %         y_end(1:ns*Nc),msh.xc,msh.yc,ns,msh.Nc);
-        %     sigma0 = zeros(0,1);
-        %     if Nd ~= msh.Nd
-        %         load(p.INITIAL_CONDITION,"input");
-        %         old_msh = GetMesh(input.geo_file_content, p.COORDINATES, input.p.MSH_PARAMETERS);
-        %         sigma0 = InterpInitialConditionSigma(old_msh.xf(old_msh.f_from_d),old_msh.yf(old_msh.f_from_d),y_end(ns*Nc+1:ns*Nc+Nd),msh.xf(msh.f_from_d),msh.yf(msh.f_from_d),msh.Nd);
-        %     end
-        %     fprintf("%s\n","Interpolated to new mesh");
-        % else
-        %     N0 = y_end(1:ns*msh.Nc);
-        %     sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
-        % end
-
-        % string - loading previous result
-        split_array = strsplit(p.INITIAL_CONDITION,"/");
-        load(p.INITIAL_CONDITION + "/" + split_array(end) + ".mat", "y_end");
-        N0 = y_end(1:ns*msh.Nc);
-        sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
+        load(p.INITIAL_CONDITION + "/results.mat", "y_end");
+        p_previous_initial_condition = ProcessInput(p.INITIAL_CONDITION + "/input_script.m");
+        old_msh = GetMesh(readlines(p.INITIAL_CONDITION + "/geo/" + p_previous_initial_condition.MSH + ".geo"), p_previous_initial_condition.COORDINATES, p_previous_initial_condition.MSH_PARAMETERS);
+        if old_msh.Nc ~= msh.Nc
+            % different mesh, interpolation needed
+            N0 = InterpInitialCondition(old_msh.xc,old_msh.yc,...
+                y_end(1:ns*old_msh.Nc),msh.xc,msh.yc,ns,msh.Nc);
+            sigma0 = zeros(0,1);
+            if old_msh.Nd ~= msh.Nd
+                sigma0 = InterpInitialConditionSigma(old_msh.xf(old_msh.f_from_d),old_msh.yf(old_msh.f_from_d),y_end(ns*old_msh.Nc+1:ns*old_msh.Nc+old_msh.Nd),msh.xf(msh.f_from_d),msh.yf(msh.f_from_d),msh.Nd);
+            end
+            fprintf("%s\n","Interpolated to new mesh");
+        else
+            N0 = y_end(1:ns*msh.Nc);
+            sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
+        end
         fprintf("%s\n","Loaded from previous save: "+p.INITIAL_CONDITION);
     elseif isstruct(p.INITIAL_CONDITION)
         if upper(p.CHEMICAL_MODEL) == "OFF"

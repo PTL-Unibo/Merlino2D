@@ -3,6 +3,7 @@
 
 /geo/*.m
 /BentoCaraca
+r_*/
 
 *.avi
 *.gif
