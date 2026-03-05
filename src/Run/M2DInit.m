@@ -182,6 +182,9 @@ if flag == "run"
     else
         % array - setting uniform number density
         Ordered_initial_condition = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0)';
+        if isstring(Ordered_initial_condition)
+            Ordered_initial_condition = arrayfun(@eval,Ordered_initial_condition);
+        end
         N0 = ones(msh.Nc,ns) .* Ordered_initial_condition;
         sigma0 = zeros(msh.Nd,1);
     end

@@ -264,7 +264,7 @@ ed_ylim_sup = [];
             if max(Uk) == 0
                 bool = true;
             else
-                bool = flase; 
+                bool = false; 
             end
         else
             bool = abs((max(Uk)-min(Uk))/min(Uk)) < 1e-10;
