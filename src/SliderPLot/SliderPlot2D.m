@@ -1,4 +1,4 @@
-function [sld, ax] = MviewCore(out)
+function [sld, ax] = SliderPlot2D(out)
 
 fig = figure("WindowStyle","normal");
 ax = axes(fig);
