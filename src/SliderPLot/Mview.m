@@ -3,16 +3,19 @@ function Mview(out,types_array)
 num_figs = numel(types_array);
 
 axes_array = gobjects(1, sum(ismember(types_array,"2"),2));
+axes_array_sigma = gobjects(1, sum(ismember(types_array,"s"),2));
 sld_array = gobjects(1, num_figs);
 old_cb_cell = cell(1, num_figs);
 
-cont = 1;
+cont_2 = 1;
+cont_s = 1;
 for k = 1:num_figs    
     if types_array(k) == "2"
-        [sld_array(k), axes_array(cont)] = SliderPlot2D(out);
-        cont = cont + 1;
+        [sld_array(k), axes_array(cont_2)] = SliderPlot2D(out);
+        cont_2 = cont_2 + 1;
     elseif types_array(k) == "s"
-        sld_array(k) = SliderPlotSigma(out);
+        [sld_array(k), axes_array_sigma(cont_s)] = SliderPlotSigma(out);
+        cont_s = cont_s + 1;
     end
     sld_array(k).UserData = k;
     old_cb_cell{k} = sld_array(k).Callback;
@@ -20,6 +23,9 @@ for k = 1:num_figs
 end
 if numel(axes_array) > 0
     linkaxes(axes_array,"xy")
+    if numel(axes_array_sigma) > 0
+        linkaxes([axes_array_sigma, axes_array(1)],"x")
+    end
 end
 MasterSliderCallBack(sld_array(1));
 

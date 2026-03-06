@@ -1,4 +1,4 @@
-function sld = SliderPlotSigma(out)
+function [sld, ax] = SliderPlotSigma(out)
 
 fig = figure("WindowStyle","normal");
 ax = axes(fig,"Position",[0.13,0.15,0.775,0.8]);
