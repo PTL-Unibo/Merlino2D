@@ -1,4 +1,15 @@
-function [u,tck_val,tck_lbl,scale_lim] = CreateLogPlot(u_original,m)
+function [u,tck_val,tck_lbl,scale_lim] = CreateLogPlot(u_original,m,max_global,min_global)
+arguments
+    u_original 
+    m 
+    max_global = NaN
+    min_global = NaN
+end
+
+if ~(isnan(max_global) || isnan(min_global))
+    max_val = log10(max_global);
+    min_val = log10(min_global) + m;
+end
 
 u = u_original;
 
@@ -16,8 +27,10 @@ log10_zero_val = original_down_lim_val + m;
 
 u(u>(-Inf) & u<=log10_zero_val) = log10_zero_val;
 
-max_val = max(u);
-min_val = min(u(ii_non_zero));
+if isnan(max_global) || isnan(min_global)
+    max_val = max(u);
+    min_val = min(u(ii_non_zero));
+end
 
 int_top_lim_val = floor(max_val);
 int_down_lim_val = ceil(min_val);

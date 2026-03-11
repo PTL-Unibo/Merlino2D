@@ -36,6 +36,14 @@ R_txt = gobjects(1,1);
 popmen_species = gobjects(1,1);
 popmen_reactions = gobjects(1,1);
 
+species_global_max = zeros(1,out.ns);
+species_global_min = zeros(1,out.ns);
+for species_index = 1:out.ns
+    all_s = out.yout((species_index-1)*out.msh.Nc+1:species_index*out.msh.Nc,:);
+    species_global_max(species_index) = max(all_s,[],"all");
+    species_global_min(species_index) = min(all_s(all_s>0),[],"all");
+end
+
 popmen = uicontrol(fig, ...
     'Style','popupmenu', ...
     'String',InitializeCmbboxList(out), ...
@@ -96,7 +104,7 @@ uicontrol(fig, ...
     'Position',[0.01 0.905 0.03 0.04], ...
     'Callback',@(src,~)restore_full_view);
 
-uicontrol(fig, ...
+m_edit = uicontrol(fig, ...
     'Style','edit', ...
     'String',0,...
     'Units','normalized', ... 
@@ -108,15 +116,22 @@ tgl_btn_mesh = uicontrol(fig,'Style','togglebutton', ...
     'Units','normalized', ... 
     'Value',0,...
     'UserData','none',...
-    'Position',[0.96 0.95 0.03 0.04], ...
+    'Position',[0.96 0.9 0.03 0.04], ...
     'Callback',@(src,~)tgl_btn_mesh_pressed(src));
+
+tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
+    'String','auto', ...
+    'Units','normalized', ... 
+    'Value',0,...
+    'UserData','none',...
+    'Position',[0.95 0.95 0.04 0.04], ...
+    'Callback',@(src,~)tgl_btn_limits_pressed(src));
     
     function UpdateTimeInstant(k)
         % Call this function every time the slider is moved
         sld.Value = k;
         lbl_indices.String = num2str(k) + " / " + numel(out.tout);
         lbl_time_instant.String = sprintf("t = %.5e s", out.tout(k));
-        global_m_value = 0;
         out_pp_k = ProcessInstant(out,k);
         PlotCell()
         if ishandle(fig2) && i_specific_cell > 0
@@ -136,6 +151,15 @@ tgl_btn_mesh = uicontrol(fig,'Style','togglebutton', ...
             src.String = "log";
         else
             src.String = "lin";
+        end
+        PlotCell()
+    end
+
+    function tgl_btn_limits_pressed(src)
+        if src.Value == 1
+            src.String = "global";
+        else
+            src.String = "auto";
         end
         PlotCell()
     end
@@ -204,6 +228,7 @@ tgl_btn_mesh = uicontrol(fig,'Style','togglebutton', ...
 
     function UpdatedMainCmbbox(src)
         global_m_value = 0;
+        m_edit.String = "0";
         [visible,list] = InitializeSpecificCmbboxList(src.Value, out.ns);
         popmen_specific.Visible = visible;
         popmen_specific.String = list;
@@ -212,7 +237,6 @@ tgl_btn_mesh = uicontrol(fig,'Style','togglebutton', ...
     end
 
     function UpdatedSpecificCmbbox()
-        global_m_value = 0;
         PlotCell
     end
 
@@ -292,13 +316,17 @@ tgl_btn_mesh = uicontrol(fig,'Style','togglebutton', ...
     function LinLog(is_uniform,ax_clim,ticks,ticklabels,map_name)
         ax.ColorScale = "lin";
         if tgl_btn_scale.String == "log"
-                if ~is_uniform
-                    SetColorBar(ax_clim,ticks,ticklabels,map_name)
-                else
-                    SetColorBar(NaN,NaN,NaN,map_name)
-                end
+            if ~is_uniform
+                SetColorBar(ax_clim,ticks,ticklabels,map_name)
+            else
+                SetColorBar(NaN,NaN,NaN,map_name)
+            end
+        else
+            if tgl_btn_limits.String == "global" && popmen.Value<=out.ns && popmen_specific.Value<=2
+                SetColorBar([species_global_min(popmen.Value),species_global_max(popmen.Value)],NaN,NaN)
             else
                 SetColorBar(NaN,NaN,NaN)
+            end
         end
     end
 
@@ -319,7 +347,11 @@ tgl_btn_mesh = uicontrol(fig,'Style','togglebutton', ...
                 end
                 is_uniform = CheckIsUniform(Uk);
                 if ~is_uniform && tgl_btn_scale.String == "log"
-                    [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
+                    if tgl_btn_limits.String == "global"
+                        [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value,species_global_max(is),species_global_min(is));
+                    elseif tgl_btn_limits.String == "auto"
+                        [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
+                    end
                 end
                 if popmen_specific.Value == 1 
                     MainPlot(Uk,"patch")
