@@ -1,9 +1,8 @@
 MSH = 'mesh_rods_half_rsmall';
 PPP_const = 1/10; % rapporto con pressione atmosferica
-% MSH_PARAMETERS.r = 0.2e-3;
 BCEL_FLAG = [0; 0; 1];
 BCEL_VAL = [1; 0; 0];
-V_APPLIED = @(t) 645;%LinRamp(t,2,2e3,4e3);
+V_APPLIED = @(t) 635;%LinRamp(t,2,2e3,4e3);
 BC_FLAG = {
     "e",         {'GorinLike', "GorinLike", 'Flux'};
     "He(gnd)",   {'Flux',      "Flux",      'Flux'};
@@ -19,7 +18,6 @@ BC_VAL = {
     "He2(+,X)",  {NaN, NaN, 0};
     "He2(*)",    {0,   0,   0}};
 TIME_INSTANTS = [0,1e-3];%linspace(0,100,1001);
-% INITIAL_CONDITION = "r_part1";
 INITIAL_CONDITION = {
     "e",         1e10;
     "He(gnd)",   "Ngas";
@@ -49,7 +47,7 @@ V_TH_COEFF = {
     "He2(+,X)",  1;
     "He2(*)",    0};
 CONST_OMEGA = {
-    "e",         1E15;
+    "e",         0;
     "He(gnd)",   0;
     "He(+,gnd)", 0;
     "He(*)",     0;
@@ -64,5 +62,3 @@ PRESSURE = 101325*PPP_const;
 OUTPUT_FUNCTION = "bar";
 BAR_SCALE = "lin";
 COORDINATES = "cartesian";
-
-% out = Merlino2D("HeliumRod_i","run");
