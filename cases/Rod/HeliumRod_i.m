@@ -1,5 +1,6 @@
 MSH = 'mesh_rods_half_rsmall';
 PPP_const = 1/10; % rapporto con pressione atmosferica
+CHEMICAL_MODEL = 's_Helium_AP';
 % MSH_PARAMETERS.r = 0.2e-3;
 BCEL_FLAG = [0; 0; 1];
 BCEL_VAL = [1; 0; 0];
@@ -55,7 +56,6 @@ CONST_OMEGA = {
     "He(*)",     0;
     "He2(+,X)",  0;
     "He2(*)",    0};
-CHEMICAL_MODEL = 's_Helium';
 LOKI_INPUT = "Hel";
 ELECTRON_TEMPERATURE = 'LoKI';
 GAMMA_II = 1e-2;
