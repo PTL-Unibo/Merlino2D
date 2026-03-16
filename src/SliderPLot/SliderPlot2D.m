@@ -21,11 +21,17 @@ Ngas = out.p.PRESSURE/(out.p.TEMPERATURE*kB);
 i_specific_cell = -1;
 out_pp_k = struct;
 patch_handle = gobjects(1,1);
+cutline_handle = gobjects(1,1);
+A_point = [];
+B_point = [];
+MatrixInterpCutLine = [];
 
 quiver_trisurf = gobjects(1,1);
 main_plot = gobjects(1,1);
 
 fig2 = gobjects(1,1);
+fig3 = gobjects(1,1);
+ax3 = gobjects(1,1);
 cell_txt = gobjects(1,1);
 E_txt = gobjects(1,1);
 Rho_txt = gobjects(1,1);
@@ -144,6 +150,9 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
         if i_specific_cell > 0
             DrawSelectedCell()
         end
+        if ~(isempty(A_point) || isempty(B_point))
+            DrawCutLine()
+        end
     end
 
     function tgl_btn_pressed(src)
@@ -191,7 +200,27 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
                 popmen_reactions.Callback = @(src,~)UpdateSpecificCell;
             end
             UpdateSpecificCell()
+        elseif event.Key == "a"
+            pt = ax.CurrentPoint;
+            A_point = [pt(1,1), pt(1,2)];
+        elseif event.Key == "b"
+            pt = ax.CurrentPoint;
+            B_point = [pt(1,1), pt(1,2)];
+            MatrixInterpCutLine = CreateMatrixInterpCutLine(A_point,B_point,out.msh);
+            if ~ishandle(fig3)
+                fig3 = figure;
+                ax3 = axes(fig3);
+            end
+            PlotSelected(popmen.Value)
+            DrawCutLine()
         elseif event.Key == "x"
+            A_point = [];
+            B_point = [];
+            delete(cutline_handle)
+            delete(ax3)
+            if ishandle(fig3)
+                close(fig3)
+            end
             i_specific_cell = -1;
             delete(patch_handle)
         end
@@ -202,6 +231,13 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
         patch_handle = patch('XData',out.msh.xn(out.msh.ns_from_c(i_specific_cell,:)),...
             'YData', out.msh.yn(out.msh.ns_from_c(i_specific_cell,:)),...
             'ZData', [1,1,1]*(global_max_Uk_val+(1e-10)*abs(global_max_Uk_val)), "FaceAlpha",0.4, "PickableParts","none");
+    end
+
+    function DrawCutLine()
+        delete(cutline_handle)
+        hold on
+        cutline_handle = plot3([A_point(1),B_point(1)],[A_point(2),B_point(2)],[1,1]*(global_max_Uk_val+(1e-10)*abs(global_max_Uk_val)),"k");
+        hold off
     end
 
     function UpdateSpecificCell()
@@ -457,6 +493,10 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
         global_max_Uk_val = max(Uk);
         xlim(ax,previous_xlim)
         ylim(ax,previous_ylim)
+
+        if ishandle(ax3) && size(Uk,1) == out.msh.Nn
+            plot(ax3,linspace(0,1,1e3),MatrixInterpCutLine*Uk)
+        end
     end
        
 end

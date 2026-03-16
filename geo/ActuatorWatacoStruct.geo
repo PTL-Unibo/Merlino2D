@@ -2,10 +2,10 @@ SetFactory("OpenCASCADE");
 
 LENGTH_ANODE = 1e-3;
 LENGTH_CATODE = 3e-3;
-WIDTH_ANODE = 0.1e-3;
+WIDTH_ANODE = 1e-5;
 WIDTH_DIELECTRIC = 0.495e-3;
 TOTAL_H = 2e-3;
-CURV_RADIUS = 3e-5;
+CURV_RADIUS = 3e-6;
 
 If (!Exists(k))
   k = 1;  // default if not passed from command line
@@ -17,9 +17,13 @@ EndIf
 INTERELECTRODE_GAP = g;
 
 MESH_SIZE = 2e-4*k;
-LMS_DIEL_INT = 0.2e-4*k;
+LMS_DIEL_INT = 1e-6*k;
 
 H_STRUCT = LMS_DIEL_INT;
+
+Np = Round(LENGTH_CATODE/LMS_DIEL_INT);
+k = 1.001;
+L0 = LENGTH_CATODE / ((1 - k^(Np)) / (1 - k));
 
 P_A = newp;
 Point(P_A) = {0,0,0,MESH_SIZE};
@@ -36,17 +40,17 @@ Point(P_F) = {0,TOTAL_H,0,MESH_SIZE};
 P_G = newp;
 Point(P_G) = {0,WIDTH_DIELECTRIC+WIDTH_ANODE,0,MESH_SIZE};
 P_H = newp;
-Point(P_H) = {LENGTH_ANODE-CURV_RADIUS,WIDTH_DIELECTRIC+WIDTH_ANODE,0,LMS_DIEL_INT};
+Point(P_H) = {LENGTH_ANODE-CURV_RADIUS,WIDTH_DIELECTRIC+WIDTH_ANODE,0,L0};
 P_I = newp;
-Point(P_I) = {LENGTH_ANODE,WIDTH_DIELECTRIC+WIDTH_ANODE-CURV_RADIUS,0,LMS_DIEL_INT};
+Point(P_I) = {LENGTH_ANODE,WIDTH_DIELECTRIC+WIDTH_ANODE-CURV_RADIUS,0,L0};
 P_Z = newp;
-Point(P_Z) = {LENGTH_ANODE,WIDTH_DIELECTRIC+H_STRUCT,0,LMS_DIEL_INT};
+Point(P_Z) = {LENGTH_ANODE,WIDTH_DIELECTRIC+H_STRUCT,0,L0};
 P_J = newp;
 Point(P_J) = {LENGTH_ANODE,WIDTH_DIELECTRIC,0,LMS_DIEL_INT};
 P_K = newp;
 Point(P_K) = {0,WIDTH_DIELECTRIC,0,MESH_SIZE};
 P_L = newp;
-Point(P_L) = {LENGTH_ANODE+LENGTH_CATODE,WIDTH_DIELECTRIC+H_STRUCT,0,LMS_DIEL_INT};
+Point(P_L) = {LENGTH_ANODE+LENGTH_CATODE,WIDTH_DIELECTRIC+H_STRUCT,0,L0*k^(Np-1)};
 
 P_center = newp;
 Point(P_center) = {LENGTH_ANODE-CURV_RADIUS,WIDTH_DIELECTRIC+WIDTH_ANODE-CURV_RADIUS,0,MESH_SIZE};
@@ -102,7 +106,7 @@ Plane Surface(S_air_struct) = {CL_air_struct};
 S_diel = news;
 Plane Surface(S_diel) = {CL_diel};
 
-Transfinite Curve {L_Z_L,L_J_D} = Round(LENGTH_CATODE/LMS_DIEL_INT) Using Progression 1;
+Transfinite Curve {L_Z_L,L_J_D} = Np Using Progression k;
 Transfinite Curve {L_Z_J,L_D_L} = 5 Using Progression 1;
 Transfinite Surface {S_air_struct};
 
