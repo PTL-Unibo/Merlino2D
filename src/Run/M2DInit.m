@@ -307,7 +307,7 @@ elseif flag == "init"
         odefun_mixed = @(t,n)OdeFunc0D(t,n,p.ELECTRIC_FIELD_0D,fTe,fKr0D,p.TEMPERATURE,Ngas,M0D,Mindices0D,Nindices0D,stoichiometric_matrix,Ordered_const_omega);
         y0 = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0);
     end
-else
+end
 
 
 end

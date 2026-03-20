@@ -1,5 +1,5 @@
 clearvars, close, clc
-out = Merlino2D("i_Diffusion","run");
+out = Merlino2D("Diffusion_i","run");
 
 %%
 cells = out.msh.cs_from_f(out.msh.xf == 0,:);
