@@ -16,8 +16,8 @@ elseif i == ns + 4 % fx
     visible = 'on';
     list = {"cells","nodes"};
 else % reactions
-    visible = 'off';
-    list = {};
+    visible = 'on';
+    list = {"rate","coefficient"};
 end
 
 end

@@ -12,6 +12,10 @@ y = linspace(Ay,By,1e3);
 TR = triangulation(msh.ns_from_c,[msh.xn,msh.yn]);
 c = pointLocation(TR,[x(:),y(:)]);
 
+i_nan = isnan(c);
+
+c(i_nan) = 1;
+
 X = msh.xn(msh.ns_from_c);
 Y = msh.yn(msh.ns_from_c);
 
@@ -22,6 +26,10 @@ L3 = abs(0.5 * ((X(c,2)-x(:)).*Y(c,1) + (x(:)-X(c,1)).*Y(c,2) + (X(c,1)-X(c,2)).
 L1 = L1 .* msh.inv_vol(c);
 L2 = L2 .* msh.inv_vol(c);
 L3 = L3 .* msh.inv_vol(c);
+
+L1(i_nan) = NaN;
+L2(i_nan) = NaN;
+L3(i_nan) = NaN;
 
 I = repmat(1:numel(c),1,3)';
 J = reshape(msh.ns_from_c(c,:),[],1);

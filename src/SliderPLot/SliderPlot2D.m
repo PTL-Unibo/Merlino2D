@@ -1,5 +1,7 @@
 function [sld, ax] = SliderPlot2D(out)
 
+A = CreateAmatrixInterpCell2Nodes(out.msh);
+
 fig = figure("WindowStyle","normal");
 ax = axes(fig);
 cb = colorbar(ax);
@@ -132,6 +134,36 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
     'UserData','none',...
     'Position',[0.95 0.95 0.04 0.04], ...
     'Callback',@(src,~)tgl_btn_limits_pressed(src));
+
+    function UkCutLine = GetUkForCutLine(id)
+        if id <= out.ns %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SPECIES
+            is = id;
+            if popmen_specific.Value == 1 || popmen_specific.Value == 2 % species cells/nodes-------
+                UkCutLine = out_pp_k.N_NODES((is-1)*out.msh.Nn+1:is*out.msh.Nn);
+            elseif popmen_specific.Value == 3 % species omega --------------------------------------
+                UkCutLine = A*(out_pp_k.OMEGA((is-1)*out.msh.Nc+1:is*out.msh.Nc));
+            end
+        elseif id == out.ns + 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% RHO
+            UkCutLine = out_pp_k.RHO_NODES;
+        elseif id == out.ns + 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PHI
+            UkCutLine = out_pp_k.PHI_NODES;
+        elseif id == out.ns + 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% E
+            if popmen_specific.Value == 1 || popmen_specific.Value == 2 % E cells/nodes ------------
+                UkCutLine = sqrt(out_pp_k.EX_NODES.^2 + out_pp_k.EY_NODES.^2);
+            elseif popmen_specific.Value == 3 % E quiver -------------------------------------------
+                UkCutLine = sqrt(out_pp_k.EX_NODES.^2 + out_pp_k.EY_NODES.^2);
+            end
+        elseif id == out.ns + 4 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FX
+            UkCutLine = out_pp_k.RHO_NODES .* out_pp_k.EX_NODES;
+        else %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% REACTIONS
+            ir = id - out.ns - 4;
+            if popmen_specific.Value == 1
+                UkCutLine = A*(out_pp_k.RATES(:,ir));
+            elseif popmen_specific.Value == 2
+                UkCutLine = A*(out_pp_k.RATE_COEFF(:,ir));
+            end
+        end
+    end
     
     function UpdateTimeInstant(k)
         % Call this function every time the slider is moved
@@ -206,6 +238,8 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
         elseif event.Key == "b"
             pt = ax.CurrentPoint;
             B_point = [pt(1,1), pt(1,2)];
+            DrawCutLine()
+            [A_point,B_point] = SetAB(A_point,B_point);
             MatrixInterpCutLine = CreateMatrixInterpCutLine(A_point,B_point,out.msh);
             if ~ishandle(fig3)
                 fig3 = figure;
@@ -213,6 +247,13 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
             end
             PlotSelected(popmen.Value)
             DrawCutLine()
+        elseif event.Key == "e"
+            if ishandle(fig3)
+                [A_point,B_point] = SetAB(A_point,B_point);
+                MatrixInterpCutLine = CreateMatrixInterpCutLine(A_point,B_point,out.msh);
+                PlotSelected(popmen.Value)
+                DrawCutLine()
+            end
         elseif event.Key == "x"
             A_point = [];
             B_point = [];
@@ -235,8 +276,9 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
 
     function DrawCutLine()
         delete(cutline_handle)
+        axes(ax)
         hold on
-        cutline_handle = plot3([A_point(1),B_point(1)],[A_point(2),B_point(2)],[1,1]*(global_max_Uk_val+(1e-10)*abs(global_max_Uk_val)),"k");
+        cutline_handle = plot3(ax,[A_point(1),B_point(1)],[A_point(2),B_point(2)],[1,1]*(global_max_Uk_val+(1e-10)*abs(global_max_Uk_val)),"k");
         hold off
     end
 
@@ -481,22 +523,37 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
             LinLog(is_uniform,ax_clim,ticks,ticklabels,"CBKRY")
         else %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% REACTIONS
             ir = id - out.ns - 4;
-            Uk = out_pp_k.RATES(:,ir);
+            if popmen_specific.Value == 1
+                Uk = out_pp_k.RATES(:,ir);
+            elseif popmen_specific.Value == 2
+                Uk = out_pp_k.RATE_COEFF(:,ir);
+            end
             is_uniform = CheckIsUniform(Uk);
             if ~is_uniform && tgl_btn_scale.String == "log"
                 [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
             end
             MainPlot(Uk,"patch")
-            cb.Label.String = "reaction rate $(\mathrm{m}^{-3}\mathrm{s}^{-1})$";
+            if popmen_specific.Value == 1
+                cb.Label.String = "reaction rate $(\mathrm{m}^{-3}\mathrm{s}^{-1})$";
+            elseif popmen_specific.Value == 2
+                cb.Label.String = "rate coefficient $("+GetUnitRateCoeff(popmen.String{id})+")$";
+            end
             LinLog(is_uniform,ax_clim,ticks,ticklabels,"turbo")
+            if is_uniform
+                val = Uk(1);
+                delta = abs(val)*1e-3;
+                ax.CLim = [val-delta, val+delta];
+            end
         end
-        global_max_Uk_val = max(Uk);
+        global_max_Uk_val = abs(max(Uk));
         xlim(ax,previous_xlim)
         ylim(ax,previous_ylim)
 
-        if ishandle(ax3) && size(Uk,1) == out.msh.Nn
-            plot(ax3,linspace(0,1,1e3),MatrixInterpCutLine*Uk)
+        if ishandle(ax3)
+            plot(ax3,linspace(0,1,1e3),MatrixInterpCutLine*GetUkForCutLine(id))
+            ax3.TickLabelInterpreter = "latex";
+            ax3.FontSize = 15;
         end
     end
-       
+
 end
