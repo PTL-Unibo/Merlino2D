@@ -102,7 +102,7 @@ weights = 1./sqrt((msh.xf(msh.fs_from_c) - msh.xc).^2 + (msh.yf(msh.fs_from_c) -
 normalized_weights = weights ./ sum(weights,2);
 Eint2Ec = sparse(repmat(1:msh.Nc,1,3), msh.fs_from_c(:), normalized_weights(:), msh.Nc, msh.Nf);
 
-[I_s, ~, Ex_1, Ey_1, g2Is] = ComputeStaticSato(p.TIME_INSTANTS(1), p.TIME_INSTANTS(end), p.BCEL_VAL, p.V_APPLIED, p.DV_APPLIED, p.EPSR_VAL,...
+[I_s, C_s, Ex_1, Ey_1, g2Is] = ComputeStaticSato(p.TIME_INSTANTS(1), p.TIME_INSTANTS(end), p.BCEL_VAL, p.V_APPLIED, p.DV_APPLIED, p.EPSR_VAL,...
     M_get_aux_BC_el, Kelet_d, aux2RHS,...
     Dirichlet_nodes_indices, non_Dirichlet_nodes_indices, Phi2Ex_c, Phi2Ey_c,...
     phi2Ex, phi2Ey, aux2Ex, aux2Ey, full_msh.cID_from_c, full_msh.vol, eps0, e, Eint2Ec, msh.vol);
@@ -143,7 +143,7 @@ v_th_single = v_th_single .* Ordered_v_th_coeff;
 [indices_faces_Absorbent, indices_cells_Absorbent] = AbsorbentBC(GetBfaces, GetBcells, Ordered_bc_flag');
 
 Nphi = size(non_Dirichlet_nodes_indices,1);
-ode_dim = ns*msh.Nc+msh.Nd;
+ode_dim = ns*msh.Nc+msh.Nd+1;
 dae_dim = Nphi;
 dim_Jac = ode_dim + dae_dim;
 
@@ -193,19 +193,20 @@ if flag == "run"
     n_matrix = reshape(N0,[],ns);
     rho0 = e * sum(n_matrix.*qs, 2);
     rho_sigma_eps = [rho0; sigma0] / eps0;
-    aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * p.V_APPLIED(p.TIME_INSTANTS(1));
+    vc0 = p.V_APPLIED(p.TIME_INSTANTS(1));
+    aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * vc0;
     phi0 = Kelet_d \ (rho2RHS * rho_sigma_eps + aux2RHS * aux_BC_el);
-    y0 = [N0(:); sigma0; phi0]; % initial condition
+    y0 = [N0(:); sigma0; phi0; vc0]; % initial condition
 
     % Create Jacobian sparsity pattern ----------------------------------------
-    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS);
+    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, aux2RHS, M_get_aux_BC_el, p.BCEL_VAL);
     [i,j,s] = find(JPattern);
     JPattern = sparse(i,j,ones(size(s)),size(JPattern,1),size(JPattern,2)); % replace each number with a 1
     
     % Setting Mass Matrix -----------------------------------------------------
     ode_options = odeset();
     ode_options.MassSingular = "yes";
-    ode_options.Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), ode_dim+dae_dim, ode_dim+dae_dim);
+    ode_options.Mass = sparse([1:ode_dim-1,dim_Jac], [1:ode_dim-1,dim_Jac], ones(1,ode_dim), dim_Jac, dim_Jac);
     
     % Reordering --------------------------------------------------------------
     if p.REORDERING == 1
@@ -280,7 +281,7 @@ odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
     surf_charge_accum_flux_coeff, perm, inv_perm,...
     Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, p.ELECTRON_REF_COEFF, zeros(msh.Nf*ns,1), zeros(msh.Nf*ns,1), ph_coeff);
+    Ex_1, Ey_1, g2Is, p.ELECTRON_REF_COEFF, zeros(msh.Nf*ns,1), zeros(msh.Nf*ns,1), ph_coeff, C_s);
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
 
 if flag == "run"

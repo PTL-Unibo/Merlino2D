@@ -21,6 +21,7 @@ Nd = out.msh.Nd;
 N_CELLS = out.yout(1:ns*Nc,k);
 SIGMA = out.yout(ns*Nc+1:ns*Nc+Nd,k);
 RHO_CELLS = e*sum(reshape(N_CELLS,Nc,ns).*qs,2);
+VP = out.yout(end,k);
 VAPP = out.p.V_APPLIED(out.tout(k));
 
 [~,DIRICHLET_NODES,BFVAL,EX,EY,OMEGA,GAMMA_X,GAMMA_Y,I,RATES,RATE_COEFF] = odefun(out.tout(k), out.yout(:,k));
@@ -29,7 +30,7 @@ I_SATO = I + I_s(out.tout(k));
 
 % Electric potential at nodes
 PHI_NODES(Dirichlet_nodes_indices) = DIRICHLET_NODES;
-PHI_NODES(non_Dirichlet_nodes_indices) = out.yout(ns*Nc+Nd+1:end,k);
+PHI_NODES(non_Dirichlet_nodes_indices) = out.yout(ns*Nc+Nd+1:end-1,k);
 PHI_NODES = PHI_NODES';
 % now PHI_NODES contains the values of the full mesh
 EX_CELLS = Phi2Ex_c * PHI_NODES;

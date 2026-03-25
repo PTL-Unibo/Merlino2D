@@ -3,10 +3,11 @@ global Sph %#ok<GVMIS>
 
 y = y(p.inv_ppp); % converts y into normal ordering
 n_c = y(1:p.ns*p.Nc);
-phi = y(p.ns*p.Nc+p.Nd+1:end);
+phi = y(p.ns*p.Nc+p.Nd+1:end-1);
+sc = y(end);
 
 % Compute electric field in Td
-aux_BC_el = p.M_get_aux_BC_el * p.BCEL_VAL * p.V_APPLIED(t);
+aux_BC_el = p.M_get_aux_BC_el * p.BCEL_VAL * sc;
 Ecx = p.Eint2Ec * (p.phi2Ex * phi + p.aux2Ex * aux_BC_el);
 Ecy = p.Eint2Ec * (p.phi2Ey * phi + p.aux2Ey * aux_BC_el);
 E_c_Td = sqrt(Ecx.^2 + Ecy.^2)/p.Ngas*1e21;

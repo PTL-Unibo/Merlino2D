@@ -1,8 +1,9 @@
-function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS)
+function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, aux2RHS, M_get_aux_BC_el, BCEL_VAL)
 
 ns = numel(qs);
 Nc = msh.Nc;
 Nd = msh.Nd;
+Nphi = size(Kelet,1);
 
 % P_full
 I = [];
@@ -47,8 +48,8 @@ for i = 1:ns
 end
 RS = [[R, zeros(Nc,Nd)]; [zeros(Nd,Nc*ns), speye(Nd)]];
 
-DAE = [rho2RHS * RS, Kelet];
+DAE = [rho2RHS * RS, Kelet, aux2RHS*M_get_aux_BC_el*BCEL_VAL];
 
-Jpattern = [[DnsDns,[DnDphi;DsDphi]] ; DAE];
+Jpattern = [[DnsDns,[DnDphi;DsDphi],zeros(ns*Nc+Nd,1)] ; DAE ; [reshape(ones(Nc,1).*qs,1,[]), zeros(1,Nd), ones(1,Nphi+1)]];
 
 end
