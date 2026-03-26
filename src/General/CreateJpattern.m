@@ -1,8 +1,9 @@
-function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS)
+function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, phi2Ex, phi2Ey)
 
 ns = numel(qs);
 Nc = msh.Nc;
 Nd = msh.Nd;
+Nf = msh.Nf;
 
 % P_full
 I = [];
@@ -45,10 +46,12 @@ R = [];
 for i = 1:ns
     R = [R, speye(Nc)*qs(i)]; %#ok<AGROW>
 end
-RS = [[R, zeros(Nc,Nd)]; [zeros(Nd,Nc*ns), speye(Nd)]];
+RS = [[R, zeros(Nc,Nd)]; [sparse(Nd,Nc*ns), speye(Nd)]];
 
-DAE = [rho2RHS * RS, Kelet];
+DAE = [rho2RHS * RS, sparse(size(rho2RHS,1),2*Nf), Kelet];
 
-Jpattern = [[DnsDns,[DnDphi;DsDphi]] ; DAE];
+JJJ = [repmat(CreateCurrentDensityPatternN(msh.cs_from_f,Nc,ns,qs),2,1), speye(2*Nf), [phi2Ex;phi2Ey]];
+
+Jpattern = [[DnsDns,sparse(size(DnsDns,1),2*Nf),[DnDphi;DsDphi]] ; JJJ ; DAE];
 
 end

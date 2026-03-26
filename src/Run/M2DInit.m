@@ -105,7 +105,7 @@ Eint2Ec = sparse(repmat(1:msh.Nc,1,3), msh.fs_from_c(:), normalized_weights(:), 
 [I_s, ~, Ex_1, Ey_1, g2Is] = ComputeStaticSato(p.TIME_INSTANTS(1), p.TIME_INSTANTS(end), p.BCEL_VAL, p.V_APPLIED, p.DV_APPLIED, p.EPSR_VAL,...
     M_get_aux_BC_el, Kelet_d, aux2RHS,...
     Dirichlet_nodes_indices, non_Dirichlet_nodes_indices, Phi2Ex_c, Phi2Ey_c,...
-    phi2Ex, phi2Ey, aux2Ex, aux2Ey, full_msh.cID_from_c, full_msh.vol, eps0, e, Eint2Ec, msh.vol);
+    phi2Ex, phi2Ey, aux2Ex, aux2Ey, full_msh.cID_from_c, full_msh.vol, eps0, Eint2Ec, msh.vol);
 
 Flux2N = CreateMultiFlux2N(msh, ns);
 
@@ -144,7 +144,7 @@ v_th_single = v_th_single .* Ordered_v_th_coeff;
 
 Nphi = size(non_Dirichlet_nodes_indices,1);
 ode_dim = ns*msh.Nc+msh.Nd;
-dae_dim = Nphi;
+dae_dim = Nphi + 2*msh.Nf;
 dim_Jac = ode_dim + dae_dim;
 
 
@@ -195,10 +195,10 @@ if flag == "run"
     rho_sigma_eps = [rho0; sigma0] / eps0;
     aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * p.V_APPLIED(p.TIME_INSTANTS(1));
     phi0 = Kelet_d \ (rho2RHS * rho_sigma_eps + aux2RHS * aux_BC_el);
-    y0 = [N0(:); sigma0; phi0]; % initial condition
+    y0 = [N0(:); sigma0; zeros(2*msh.Nf,1); phi0]; % wrong initial condition
 
     % Create Jacobian sparsity pattern ----------------------------------------
-    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS);
+    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, phi2Ex, phi2Ey);
     [i,j,s] = find(JPattern);
     JPattern = sparse(i,j,ones(size(s)),size(JPattern,1),size(JPattern,2)); % replace each number with a 1
     
@@ -218,7 +218,6 @@ if flag == "run"
     end
     ode_options.JPattern = JPattern(ppp,ppp);
     ode_options.Mass = ode_options.Mass(ppp,ppp);
-    y0 = y0(ppp);
     
     % Photoionization --------------------------------------------------------
     ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
@@ -233,6 +232,7 @@ if flag == "run"
         input_photo.Nn = msh.Nn;
         input_photo.ns = ns;
         input_photo.Nd = msh.Nd;
+        input_photo.Nf = msh.Nf;
         input_photo.M_get_aux_BC_el = M_get_aux_BC_el;
         input_photo.BCEL_VAL = p.BCEL_VAL;
         input_photo.V_APPLIED = p.V_APPLIED;
@@ -268,7 +268,7 @@ elseif flag == "init"
     ph_coeff = 0;
 end
 
-InitializePhoto(y0,p.TIME_INSTANTS(1),input_photo,ph_is_on);
+InitializePhoto(y0(ppp),p.TIME_INSTANTS(1),input_photo,ph_is_on);
 
 % Creating Ode Function ---------------------------------------------------
 odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
@@ -284,7 +284,13 @@ odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
 
 if flag == "run"
+    dydt = odefun(p.TIME_INSTANTS(1),y0);
+    J0 = -dydt(ns*msh.Nc+msh.Nd+1:ns*msh.Nc+msh.Nd+2*msh.Nf);
+    y0 = [N0(:); sigma0; J0; phi0]; % consistent initial condition
+    y0 = y0(ppp);
+
     odefun_mixed = @(t,y) odefun_perm(t,y,ppp,inv_ppp); % this is the one considering reordering
+
     
     % Setting Output Function ---------------------------------------------
     if p.OUTPUT_FUNCTION == "none"

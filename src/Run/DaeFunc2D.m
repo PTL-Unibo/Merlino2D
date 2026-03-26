@@ -15,7 +15,9 @@ y = y(inv_ppp); % converts y into normal ordering
 
 n_c = y(1:ns*Nc);
 sigma = y(ns*Nc+1:ns*Nc+Nd);
-phi = y(ns*Nc+Nd+1:end);
+Jx = y(ns*Nc+Nd+1:ns*Nc+Nd+Nf);
+Jy = y(ns*Nc+Nd+Nf+1:ns*Nc+Nd+2*Nf);
+phi = y(ns*Nc+Nd+2*Nf+1:end);
 
 n_left(i_upwind) = n_c(i_n_left);
 n_right(i_upwind) = n_c(i_n_right);
@@ -90,16 +92,17 @@ Gamma_y(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_y(indices_faces_Ge) +...    
                                 - 2/(1+re) * gammaII * sum(Gamma_y(indices_faces_Gp),2);                                  %|
 % -------------------------------------------------------------------------------------------------------------------------|
 
-I = g2Is * (Ex_1 .* sum(reshape(surf_charge_accum_flux_coeff*Gamma_x,Nf,ns).*qs,2) +...
-            Ey_1 .* sum(reshape(surf_charge_accum_flux_coeff*Gamma_y,Nf,ns).*qs,2));
+I = g2Is * (Ex_1 .* Jx + Ey_1 .* Jy);
 
 Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
 
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
+Jx_dae = Jx - e*sum(reshape(surf_charge_accum_flux_coeff*Gamma_x,Nf,ns).*qs,2);
+Jy_dae = Jy - e*sum(reshape(surf_charge_accum_flux_coeff*Gamma_y,Nf,ns).*qs,2);
 phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
 
-dydt = [dndt; dsdt; phi_dae];
+dydt = [dndt; dsdt; Jx_dae; Jy_dae; phi_dae];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
 
