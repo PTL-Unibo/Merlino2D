@@ -1,9 +1,10 @@
-function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, phi2Ex, phi2Ey)
+function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, phi2Ex, phi2Ey, aux2RHS, M_get_aux_BC_el, BCEL_VAL, coeff_x, coeff_y)
 
 ns = numel(qs);
 Nc = msh.Nc;
 Nd = msh.Nd;
 Nf = msh.Nf;
+Nphi = size(Kelet,1);
 
 % P_full
 I = [];
@@ -53,5 +54,13 @@ DAE = [rho2RHS * RS, sparse(size(rho2RHS,1),2*Nf), Kelet];
 JJJ = [repmat(CreateCurrentDensityPatternN(msh.cs_from_f,Nc,ns,qs),2,1), speye(2*Nf), [phi2Ex;phi2Ey]];
 
 Jpattern = [[DnsDns,sparse(size(DnsDns,1),2*Nf),[DnDphi;DsDphi]] ; JJJ ; DAE];
+
+extra_right = [sparse(ns*Nc+Nd+2*Nf,1); aux2RHS * M_get_aux_BC_el * BCEL_VAL];
+extra_bottom = [sparse(1,ns*Nc+Nd),...
+    sparse(abs(coeff_x) < max(abs(coeff_x))*1e-1)',...
+    sparse(abs(coeff_y) < max(abs(coeff_y))*1e-1)',...
+    sparse(1,Nphi), 1]; 
+
+Jpattern = [[Jpattern, extra_right]; extra_bottom];
 
 end

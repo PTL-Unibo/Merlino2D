@@ -7,9 +7,12 @@ function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates,kr] 
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
     Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, re, n_left, n_right, ph_coeff)
+    Ex_1, Ey_1, g2Is, re, n_left, n_right, ph_coeff, C_s)
 
 global Sph %#ok<GVMIS>
+
+R = 100;
+L = 0.05;
 
 y = y(inv_ppp); % converts y into normal ordering
 
@@ -17,7 +20,8 @@ n_c = y(1:ns*Nc);
 sigma = y(ns*Nc+1:ns*Nc+Nd);
 Jx = y(ns*Nc+Nd+1:ns*Nc+Nd+Nf);
 Jy = y(ns*Nc+Nd+Nf+1:ns*Nc+Nd+2*Nf);
-phi = y(ns*Nc+Nd+2*Nf+1:end);
+phi = y(ns*Nc+Nd+2*Nf+1:end-1);
+vc = y(end);
 
 n_left(i_upwind) = n_c(i_n_left);
 n_right(i_upwind) = n_c(i_n_right);
@@ -28,7 +32,7 @@ rho = e * sum(n_matrix.*qs, 2);
 rho_sigma_eps = [rho; sigma] / eps0;
 
 % Compute electric field
-aux_BC_el = M_get_aux_BC_el * BCEL_VAL * V_APPLIED(t);
+aux_BC_el = M_get_aux_BC_el * BCEL_VAL * vc;
 Ex = phi2Ex * phi + aux2Ex * aux_BC_el;
 Ey = phi2Ey * phi + aux2Ey * aux_BC_el;
 Ecx = Eint2Ec * Ex;
@@ -101,8 +105,9 @@ dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfac
 Jx_dae = Jx - e*sum(reshape(surf_charge_accum_flux_coeff*Gamma_x,Nf,ns).*qs,2);
 Jy_dae = Jy - e*sum(reshape(surf_charge_accum_flux_coeff*Gamma_y,Nf,ns).*qs,2);
 phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
+dvcdt = ((V_APPLIED(t)-vc)/R - I*L)/C_s;
 
-dydt = [dndt; dsdt; Jx_dae; Jy_dae; phi_dae];
+dydt = [dndt; dsdt; Jx_dae; Jy_dae; phi_dae; dvcdt];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
 
