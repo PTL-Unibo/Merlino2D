@@ -29,11 +29,11 @@ elseif p.ODE_TYPE == "ode15s"
     ode_options.InitialStep = 1e-15;
     start_time_computation = tic();
     if sporadic_save_is_on
-        my_ode15s(odefun_mixed,[p.TIME_INSTANTS(1),p.TIME_INSTANTS(end)],y0,ode_options);
+        ode15s(odefun_mixed,[p.TIME_INSTANTS(1),p.TIME_INSTANTS(end)],y0,ode_options);
         tout = tout_sparse;
         yout = yout_sparse;
     else
-        [tout,yout,statsout] = my_ode15s(odefun_mixed,p.TIME_INSTANTS,y0,ode_options);
+        [tout,yout,statsout] = ode15s(odefun_mixed,p.TIME_INSTANTS,y0,ode_options);
     end
     wall_clock_time = toc(start_time_computation);
     tout = tout';
