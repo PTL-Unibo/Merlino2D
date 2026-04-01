@@ -1,5 +1,10 @@
 DIM = 1.1*1.2;
-MSH_SIZE = 1.8e-2;
+
+If (!Exists(k))
+  k = 1;
+EndIf
+
+MSH_SIZE = k * 1.8e-2;
 
 P_A = newp;
 Point(P_A) = {-DIM, -DIM, 0, MSH_SIZE};
