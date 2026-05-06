@@ -7,7 +7,7 @@ ns = out.ns;
 Dirichlet_nodes_indices = out.Dirichlet_nodes_indices;
 non_Dirichlet_nodes_indices = out.non_Dirichlet_nodes_indices;
 qs = out.qs;
-I_s = out.I_s;
+C_s = out.C_s;
 inv_mapping = out.inv_mapping;
 odefun = out.odefun;
 Phi2Ex_c = out.Phi2Ex_c;
@@ -21,15 +21,17 @@ Nd = out.msh.Nd;
 N_CELLS = out.yout(1:ns*Nc,k);
 SIGMA = out.yout(ns*Nc+1:ns*Nc+Nd,k);
 RHO_CELLS = e*sum(reshape(N_CELLS,Nc,ns).*qs,2);
-VAPP = out.p.V_APPLIED(out.tout(k));
+V = out.yout(end,k);
+VEXT = out.p.V_APPLIED(out.tout(k));
 
-[~,DIRICHLET_NODES,BFVAL,EX,EY,OMEGA,GAMMA_X,GAMMA_Y,I,RATES,RATE_COEFF] = odefun(out.tout(k), out.yout(:,k));
+[DYDT,DIRICHLET_NODES,BFVAL,EX,EY,OMEGA,GAMMA_X,GAMMA_Y,I,RATES,RATE_COEFF] = odefun(out.tout(k), out.yout(:,k));
+DVDT = DYDT(end);
 
-I_SATO = I + I_s(out.tout(k));
+I_TOT = I + C_s * DVDT;
 
 % Electric potential at nodes
 PHI_NODES(Dirichlet_nodes_indices) = DIRICHLET_NODES;
-PHI_NODES(non_Dirichlet_nodes_indices) = out.yout(ns*Nc+Nd+1:end,k);
+PHI_NODES(non_Dirichlet_nodes_indices) = out.yout(ns*Nc+Nd+1:end-1,k);
 PHI_NODES = PHI_NODES';
 % now PHI_NODES contains the values of the full mesh
 EX_CELLS = Phi2Ex_c * PHI_NODES;
@@ -57,8 +59,9 @@ end
 out_pp_k.N_CELLS    = N_CELLS;
 out_pp_k.SIGMA      = SIGMA;
 out_pp_k.RHO_CELLS  = RHO_CELLS;
-out_pp_k.VAPP       = VAPP;
-out_pp_k.I_SATO     = I_SATO;
+out_pp_k.V          = V;
+out_pp_k.VEXT       = VEXT;
+out_pp_k.I_TOT      = I_TOT;
 out_pp_k.PHI_NODES  = PHI_NODES;
 out_pp_k.EX_CELLS   = EX_CELLS;
 out_pp_k.EY_CELLS   = EY_CELLS;

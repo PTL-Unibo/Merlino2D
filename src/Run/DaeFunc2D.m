@@ -6,8 +6,7 @@ function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates,kr] 
     indices_faces_A,indices_cells_A,...
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
-    Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, re, n_left, n_right, ph_coeff)
+    Gx, Gy, nx_matrix, ny_matrix, re, n_left, n_right, ph_coeff, areaf, indices, Length, R, C_s)
 
 global Sph %#ok<GVMIS>
 
@@ -15,7 +14,8 @@ y = y(inv_ppp); % converts y into normal ordering
 
 n_c = y(1:ns*Nc);
 sigma = y(ns*Nc+1:ns*Nc+Nd);
-phi = y(ns*Nc+Nd+1:end);
+phi = y(ns*Nc+Nd+1:end-1);
+v = y(end);
 
 n_left(i_upwind) = n_c(i_n_left);
 n_right(i_upwind) = n_c(i_n_right);
@@ -26,7 +26,7 @@ rho = e * sum(n_matrix.*qs, 2);
 rho_sigma_eps = [rho; sigma] / eps0;
 
 % Compute electric field
-aux_BC_el = M_get_aux_BC_el * BCEL_VAL * V_APPLIED(t);
+aux_BC_el = M_get_aux_BC_el * BCEL_VAL * v;
 Ex = phi2Ex * phi + aux2Ex * aux_BC_el;
 Ey = phi2Ey * phi + aux2Ey * aux_BC_el;
 Ecx = Eint2Ec * Ex;
@@ -90,16 +90,16 @@ Gamma_y(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_y(indices_faces_Ge) +...    
                                 - 2/(1+re) * gammaII * sum(Gamma_y(indices_faces_Gp),2);                                  %|
 % -------------------------------------------------------------------------------------------------------------------------|
 
-I = g2Is * (Ex_1 .* sum(reshape(surf_charge_accum_flux_coeff*Gamma_x,Nf,ns).*qs,2) +...
-            Ey_1 .* sum(reshape(surf_charge_accum_flux_coeff*Gamma_y,Nf,ns).*qs,2));
-
 Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
+
+J_faces = e * reshape(Gamma_dot_n, Nf, ns) .* qs;
+I = -areaf(indices)' * sum(J_faces(indices,:),2);
 
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
 phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
 
-dydt = [dndt; dsdt; phi_dae];
+dydt = [dndt; dsdt; phi_dae; (V_APPLIED(t) - R*I*Length - v) / (R * C_s)];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
 

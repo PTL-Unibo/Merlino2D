@@ -1,4 +1,4 @@
-function [odefun,msh,A,B,inv_mapping,I_s,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions,...
+function [odefun,msh,A,B,inv_mapping,C_s,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions,...
     stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p,flag)
 
 global BentoCaraca %#ok<GVMIS>
@@ -102,10 +102,14 @@ weights = 1./sqrt((msh.xf(msh.fs_from_c) - msh.xc).^2 + (msh.yf(msh.fs_from_c) -
 normalized_weights = weights ./ sum(weights,2);
 Eint2Ec = sparse(repmat(1:msh.Nc,1,3), msh.fs_from_c(:), normalized_weights(:), msh.Nc, msh.Nf);
 
-[I_s, ~, Ex_1, Ey_1, g2Is] = ComputeStaticSato(p.TIME_INSTANTS(1), p.TIME_INSTANTS(end), p.BCEL_VAL, p.V_APPLIED, p.DV_APPLIED, p.EPSR_VAL,...
-    M_get_aux_BC_el, Kelet_d, aux2RHS,...
-    Dirichlet_nodes_indices, non_Dirichlet_nodes_indices, Phi2Ex_c, Phi2Ey_c,...
-    phi2Ex, phi2Ey, aux2Ex, aux2Ey, full_msh.cID_from_c, full_msh.vol, eps0, e, Eint2Ec, msh.vol);
+% Compute C_s
+dirichlet_nodes_1 = M_get_aux_BC_el * p.BCEL_VAL;
+phi1 = Kelet_d \ (aux2RHS * dirichlet_nodes_1);
+phi_full_1(Dirichlet_nodes_indices,:) = dirichlet_nodes_1;
+phi_full_1(non_Dirichlet_nodes_indices,:) = phi1;
+Ec_full_1_x = Phi2Ex_c * phi_full_1;
+Ec_full_1_y = Phi2Ey_c * phi_full_1;
+C_s = eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
 
 Flux2N = CreateMultiFlux2N(msh, ns);
 
@@ -143,10 +147,17 @@ v_th_single = v_th_single .* Ordered_v_th_coeff;
 [indices_faces_Absorbent, indices_cells_Absorbent] = AbsorbentBC(GetBfaces, GetBcells, Ordered_bc_flag');
 
 Nphi = size(non_Dirichlet_nodes_indices,1);
-ode_dim = ns*msh.Nc+msh.Nd;
+ode_dim = ns*msh.Nc + msh.Nd;
 dae_dim = Nphi;
-dim_Jac = ode_dim + dae_dim;
+dim_Jac = ode_dim + dae_dim + 1;
 
+% Find elements corresponding to anode
+indices_el = [];
+for anode_id = p.ANODE_IDS(:)'
+    indices_el = [indices_el; msh.f_from_b(msh.bs_from_bID{anode_id})]; %#ok<AGROW>
+end
+indices_cells_el = msh.cs_from_f(indices_el,1);
+el_nodes = unique(msh.ns_from_f(indices_el,:));
 
 if flag == "run"
     % Setting Initial Condition -------------------------------------------
@@ -193,19 +204,24 @@ if flag == "run"
     n_matrix = reshape(N0,[],ns);
     rho0 = e * sum(n_matrix.*qs, 2);
     rho_sigma_eps = [rho0; sigma0] / eps0;
-    aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * p.V_APPLIED(p.TIME_INSTANTS(1));
+    v0 = p.V_APPLIED(p.TIME_INSTANTS(1));
+    aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * v0;
     phi0 = Kelet_d \ (rho2RHS * rho_sigma_eps + aux2RHS * aux_BC_el);
-    y0 = [N0(:); sigma0; phi0]; % initial condition
+    y0 = [N0(:); sigma0; phi0; v0]; % initial condition
 
     % Create Jacobian sparsity pattern ----------------------------------------
-    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS);
-    [i,j,s] = find(JPattern);
-    JPattern = sparse(i,j,ones(size(s)),size(JPattern,1),size(JPattern,2)); % replace each number with a 1
+    dphidv = aux2RHS * M_get_aux_BC_el * p.BCEL_VAL;
+    phi_nodes = setdiff(unique(msh.ns_from_c(indices_cells_el,:)),el_nodes);
+    [~,phi_nodes] = ismember(phi_nodes,non_Dirichlet_nodes_indices);
+    indices_cells_el = indices_cells_el .* abs(qs);
+    indices_cells_el = indices_cells_el + (0:msh.Nc:(ns-1)*msh.Nc);
+    dvdn = sparse(ones(size(indices_cells_el)), indices_cells_el, 1, 1, ns*msh.Nc);
+    dvdphi = sparse(ones(size(phi_nodes)), phi_nodes, 1, 1, Nphi);
+    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi);
     
     % Setting Mass Matrix -----------------------------------------------------
-    ode_options = odeset();
-    ode_options.MassSingular = "yes";
-    ode_options.Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), ode_dim+dae_dim, ode_dim+dae_dim);
+    Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), dim_Jac, dim_Jac);
+    Mass(end,end) = 1; % external circuit ode equation
     
     % Reordering --------------------------------------------------------------
     if p.REORDERING == 1
@@ -216,9 +232,11 @@ if flag == "run"
         ppp = (1:dim_Jac)';
         inv_ppp = (1:dim_Jac)';
     end
-    ode_options.JPattern = JPattern(ppp,ppp);
-    ode_options.Mass = ode_options.Mass(ppp,ppp);
+    JPattern = JPattern(ppp,ppp);
+    Mass = Mass(ppp,ppp);
     y0 = y0(ppp);
+
+    ode_options = odeset("MassSingular","yes", "Mass",Mass, "JPattern",JPattern);
     
     % Photoionization --------------------------------------------------------
     ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
@@ -280,7 +298,7 @@ odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
     surf_charge_accum_flux_coeff, perm, inv_perm,...
     Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, p.ELECTRON_REF_COEFF, zeros(msh.Nf*ns,1), zeros(msh.Nf*ns,1), ph_coeff);
+    p.ELECTRON_REF_COEFF, zeros(msh.Nf*ns,1), zeros(msh.Nf*ns,1), ph_coeff, msh.areaf, indices_el, p.LENGTH, p.R, C_s);
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
 
 if flag == "run"

@@ -3,6 +3,9 @@ MSH_PARAMETERS.k = 1;
 BCEL_FLAG = [0; 0; 0; 0; 0; 1; 1; 1; 1];
 BCEL_VAL = [1; 0; 0; 0; 0; 0; 0; 0; 0];
 V_APPLIED = @(t) LinRamp(t,1e-4,7e3,20e3);
+ANODE_IDS = 1;
+R = 1e3;
+LENGTH = 0.2;
 BC_FLAG = {
     "N2+", {'GorinLike', "GorinLike", 'GorinLike', 'GorinLike', 'GorinLike', 'Flux', 'Flux', 'Flux', 'Flux'};
     "e",   {'GorinLike', "GorinLike", 'GorinLike', 'GorinLike', 'GorinLike', 'Flux', 'Flux', 'Flux', 'Flux'};
@@ -13,7 +16,7 @@ BC_VAL = {
     'O2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'O2-', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'N2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0}};
-TIME_INSTANTS = logspace(-12,-3,100);
+TIME_INSTANTS = [1e-12, 1e-2];
 INITIAL_CONDITION = {
     'N2+',0.8e13;
     'O2-',0.999e13;

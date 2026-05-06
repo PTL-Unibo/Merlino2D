@@ -4,6 +4,9 @@ EPSR_VAL = [1; 3.2];
 BCEL_FLAG = [0; 0; 0; 1; 1; 1; 1];
 BCEL_VAL = [1; 1; 0; 0; 0; 0; 0];
 V_APPLIED = @(t) 15e3*sin(2*pi*100e3*t);
+ANODE_IDS = [1, 2];
+R = 1e3;
+LENGTH = 0.2;
 BC_FLAG = {
     'I-',{"GorinLike",     "GorinLike", 'Flux', "Flux", "Flux"};
     'e', {'FreeDriftFlow', 'GorinLike', "Flux", 'Flux', 'Flux'};
@@ -12,8 +15,7 @@ BC_VAL = {
     "I+",{NaN, NaN, 0, 0, 0};
     "e", {NaN, NaN, 0, 0, 0};
     'I-',{NaN, NaN, 0, 0, 0}};
-TIME_INSTANTS = linspace(0,0.25/100e3,2501);
-% TIME_INSTANTS = linspace(0,1e-12,11);
+TIME_INSTANTS = [0, 0.25/100e3];
 INITIAL_CONDITION = {
     "I+",1e13;
     "I-",0.999e13;
@@ -41,4 +43,4 @@ ELECTRON_TEMPERATURE = "Te_Air";
 GAMMA_II = 5e-2;
 SURF_CHARGE_COEFF = [0.1, 0.1, 0.1];
 GAMMA_II_DIEL = 1e-2;
-ODE_TYPE = "idas";
+ODE_TYPE = "ode15s";
