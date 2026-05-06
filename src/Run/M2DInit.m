@@ -212,7 +212,7 @@ if flag == "run"
     % Create Jacobian sparsity pattern ----------------------------------------
     dphidv = aux2RHS * M_get_aux_BC_el * p.BCEL_VAL;
     phi_nodes = setdiff(unique(msh.ns_from_c(indices_cells_el,:)),el_nodes);
-    [~,phi_nodes] = ismember(phi_nodes,non_Dirichlet_nodes_indices);
+    phi_nodes = inv_mapping(phi_nodes);
     indices_cells_el = indices_cells_el .* abs(qs);
     indices_cells_el = indices_cells_el + (0:msh.Nc:(ns-1)*msh.Nc);
     dvdn = sparse(ones(size(indices_cells_el)), indices_cells_el, 1, 1, ns*msh.Nc);
