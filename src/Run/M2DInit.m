@@ -109,7 +109,7 @@ phi_full_1(Dirichlet_nodes_indices,:) = dirichlet_nodes_1;
 phi_full_1(non_Dirichlet_nodes_indices,:) = phi1;
 Ec_full_1_x = Phi2Ex_c * phi_full_1;
 Ec_full_1_y = Phi2Ey_c * phi_full_1;
-C_s = eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
+C_s = p.LENGTH * eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
 
 Flux2N = CreateMultiFlux2N(msh, ns);
 

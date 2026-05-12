@@ -94,12 +94,17 @@ Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
 
 J_faces = e * reshape(Gamma_dot_n, Nf, ns) .* qs;
 I = -areaf(indices)' * sum(J_faces(indices,:),2);
+I = I * Length;
 
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
+% dsdt = ones(size(dsdt)) * mean(dsdt);
+% if v > 0
+%     dsdt(dsdt<0 & sigma<=0) = 0;
+% end
 phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
 
-dydt = [dndt; dsdt; phi_dae; (V_APPLIED(t) - R*I*Length - v) / (R * C_s)];
+dydt = [dndt; dsdt; phi_dae; (V_APPLIED(t) - R*I - v) / (R * C_s)];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
 
