@@ -1,4 +1,4 @@
-function [odefun,msh,A,B,inv_mapping,C_s,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions,...
+function [odefun,msh,A,B,inv_mapping,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions,...
     stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p,flag)
 
 global BentoCaraca %#ok<GVMIS>
@@ -149,7 +149,7 @@ v_th_single = v_th_single .* Ordered_v_th_coeff;
 Nphi = size(non_Dirichlet_nodes_indices,1);
 ode_dim = ns*msh.Nc + msh.Nd;
 dae_dim = Nphi;
-dim_Jac = ode_dim + dae_dim + 1;
+dim_Jac = ode_dim + dae_dim + 2;
 
 % Find elements corresponding to anode
 indices_el = [];
@@ -205,11 +205,14 @@ if flag == "run"
     rho0 = e * sum(n_matrix.*qs, 2);
     rho_sigma_eps = [rho0; sigma0] / eps0;
     v0 = p.V_APPLIED(p.TIME_INSTANTS(1));
+    I0 = 0;
     aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * v0;
     phi0 = Kelet_d \ (rho2RHS * rho_sigma_eps + aux2RHS * aux_BC_el);
-    y0 = [N0(:); sigma0; phi0; v0]; % initial condition
+    y0 = [N0(:); sigma0; phi0; I0; v0]; % initial condition
 
     % Create Jacobian sparsity pattern ----------------------------------------
+    i_c_depend_on_v = find(sum(ismember(msh.ns_from_c,el_nodes),2));
+    i_sigma_depend_on_v = find(sum(ismember(msh.ns_from_d,el_nodes),2));
     dphidv = aux2RHS * M_get_aux_BC_el * p.BCEL_VAL;
     phi_nodes = setdiff(unique(msh.ns_from_c(indices_cells_el,:)),el_nodes);
     phi_nodes = inv_mapping(phi_nodes);
@@ -217,7 +220,7 @@ if flag == "run"
     indices_cells_el = indices_cells_el + (0:msh.Nc:(ns-1)*msh.Nc);
     dvdn = sparse(ones(size(indices_cells_el)), indices_cells_el, 1, 1, ns*msh.Nc);
     dvdphi = sparse(ones(size(phi_nodes)), phi_nodes, 1, 1, Nphi);
-    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi);
+    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v);
     
     % Setting Mass Matrix -----------------------------------------------------
     Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), dim_Jac, dim_Jac);

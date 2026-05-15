@@ -14,6 +14,12 @@ if p.ODE_TYPE == "idas"
     F.Solver = "idas";
     F.AbsoluteTolerance = p.ABS_TOL;
     F.RelativeTolerance = p.REL_TOL;
+    if ~isempty(p.MAX_STEP)
+        F.SolverOptions.MaxStep = p.MAX_STEP;
+    end
+    if ~isempty(p.INITIAL_STEP)
+        F.SolverOptions.InitialStep = p.INITIAL_STEP;
+    end
     start_time_computation = tic();
     if numel(p.TIME_INSTANTS) > 2
         S = solve(F,p.TIME_INSTANTS);
@@ -26,7 +32,12 @@ if p.ODE_TYPE == "idas"
 elseif p.ODE_TYPE == "ode15s"
     ode_options.AbsTol = p.ABS_TOL;
     ode_options.RelTol = p.REL_TOL;
-    ode_options.InitialStep = 1e-15;
+    if ~isempty(p.MAX_STEP)
+        ode_options.MaxStep = p.MAX_STEP;
+    end
+    if ~isempty(p.INITIAL_STEP)
+        ode_options.InitialStep = p.INITIAL_STEP;
+    end
     start_time_computation = tic();
     if sporadic_save_is_on
         ode15s(odefun_mixed,[p.TIME_INSTANTS(1),p.TIME_INSTANTS(end)],y0,ode_options);

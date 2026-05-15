@@ -1,8 +1,9 @@
-function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi)
+function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v)
 
 ns = numel(qs);
 Nc = msh.Nc;
 Nd = msh.Nd;
+Nphi = size(Kelet,1);
 
 % P_full
 I = [];
@@ -49,6 +50,12 @@ RS = [[R, zeros(Nc,Nd)]; [zeros(Nd,Nc*ns), speye(Nd)]];
 
 DAE = [rho2RHS * RS, Kelet];
 
-Jpattern = [[DnsDns,[DnDphi;DsDphi],zeros(ns*Nc+Nd,1)] ; [DAE, dphidv]; [dvdn, zeros(1,Nd), dvdphi, 1]];
+DnDv = repmat(sparse(i_c_depend_on_v,ones(size(i_c_depend_on_v)),1,Nc,1),ns,1);
+DsDv = sparse(i_sigma_depend_on_v,ones(size(i_sigma_depend_on_v)),1,Nd,1);
+
+Jpattern = [[DnsDns,[DnDphi;DsDphi],zeros(ns*Nc+Nd,1),[DnDv;DsDv]]; ...
+    [DAE, zeros(Nphi,1), dphidv]; ...
+    [zeros(1,Nc*ns+Nd+Nphi), 1, 1];...
+    [dvdn, zeros(1,Nd), dvdphi, 0, 1]];
 
 end
