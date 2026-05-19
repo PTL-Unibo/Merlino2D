@@ -219,6 +219,7 @@ if flag == "run"
     indices_cells_el = indices_cells_el .* abs(qs);
     indices_cells_el = indices_cells_el + (0:msh.Nc:(ns-1)*msh.Nc);
     dvdn = sparse(ones(size(indices_cells_el)), indices_cells_el, 1, 1, ns*msh.Nc);
+    [~,phi_nodes] = ismember(phi_nodes,non_Dirichlet_nodes_indices);
     dvdphi = sparse(ones(size(phi_nodes)), phi_nodes, 1, 1, Nphi);
     JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v);
     
