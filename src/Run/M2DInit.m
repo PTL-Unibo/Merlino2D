@@ -212,6 +212,8 @@ if flag == "run"
 
     % Create Jacobian sparsity pattern ----------------------------------------
     i_c_depend_on_v = find(sum(ismember(msh.ns_from_c,el_nodes),2));
+    i_c_depend_on_v = unique(msh.cs_from_f(unique(msh.fs_from_c(i_c_depend_on_v,:)),:)); % also cells that have a face in common with previous ones
+    i_c_depend_on_v(i_c_depend_on_v==0) = [];
     i_sigma_depend_on_v = find(sum(ismember(msh.ns_from_d,el_nodes),2));
     dphidv = aux2RHS * M_get_aux_BC_el * p.BCEL_VAL;
     phi_nodes = setdiff(unique(msh.ns_from_c(indices_cells_el,:)),el_nodes);
@@ -221,7 +223,7 @@ if flag == "run"
     dvdn = sparse(ones(size(indices_cells_el)), indices_cells_el, 1, 1, ns*msh.Nc);
     [~,phi_nodes] = ismember(phi_nodes,non_Dirichlet_nodes_indices);
     dvdphi = sparse(ones(size(phi_nodes)), phi_nodes, 1, 1, Nphi);
-    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v);
+    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v, inv_mapping, non_Dirichlet_nodes_indices);
     
     % Setting Mass Matrix -----------------------------------------------------
     Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), dim_Jac, dim_Jac);
