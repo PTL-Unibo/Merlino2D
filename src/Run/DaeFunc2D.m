@@ -1,6 +1,6 @@
 function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates,kr] = DaeFunc2D(t,y,Nf,Nc,Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
-    Kelet,rho2RHS,aux2RHS,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
+    Kelet,NcSigma2RHS,dphidv,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,T,qs,BCEL_VAL,V_APPLIED,...
     fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,const_omega,ns,...
     indices_faces_A,indices_cells_A,...
@@ -20,11 +20,6 @@ v = y(end);
 
 n_left(i_upwind) = n_c(i_n_left);
 n_right(i_upwind) = n_c(i_n_right);
-
-% Compute charge density
-n_matrix = reshape(n_c,[],ns);
-rho = e * sum(n_matrix.*qs, 2);
-rho_sigma_eps = [rho; sigma] / eps0;
 
 % Compute electric field
 aux_BC_el = M_get_aux_BC_el * BCEL_VAL * v;
@@ -99,7 +94,7 @@ Ip = Ip * Length;
 
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
-phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
+phi_dae = (Kelet * phi - NcSigma2RHS * [n_c;sigma] - dphidv * v);
 
 dydt = [dndt; dsdt; phi_dae; I-(V_APPLIED(t)-v)/R; (V_APPLIED(t) - R*Ip - v)/(R * C_s)];
 

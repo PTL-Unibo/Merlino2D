@@ -111,6 +111,9 @@ Ec_full_1_x = Phi2Ex_c * phi_full_1;
 Ec_full_1_y = Phi2Ey_c * phi_full_1;
 C_s = p.LENGTH * eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
 
+Get_rho_sigma_eps = CreateGetRhoSigmaEps(qs,msh.Nc,msh.Nd);
+NcSigma2RHS = rho2RHS*Get_rho_sigma_eps;
+
 Flux2N = CreateMultiFlux2N(msh, ns);
 
 [i_upwind,i_n_left,i_n_right] = CreateMultiUpwind(msh,ns);
@@ -201,13 +204,10 @@ if flag == "run"
     end
 
     % Compute consistent initial condition ------------------------------------
-    n_matrix = reshape(N0,[],ns);
-    rho0 = e * sum(n_matrix.*qs, 2);
-    rho_sigma_eps = [rho0; sigma0] / eps0;
+    dphidv = aux2RHS * M_get_aux_BC_el * p.BCEL_VAL;
     v0 = p.V_APPLIED(p.TIME_INSTANTS(1));
     I0 = 0;
-    aux_BC_el = M_get_aux_BC_el * p.BCEL_VAL * v0;
-    phi0 = Kelet_d \ (rho2RHS * rho_sigma_eps + aux2RHS * aux_BC_el);
+    phi0 = Kelet_d \ (NcSigma2RHS*[N0(:); sigma0] + dphidv * v0);
     y0 = [N0(:); sigma0; phi0; I0; v0]; % initial condition
 
     % Create Jacobian sparsity pattern ----------------------------------------
@@ -215,7 +215,6 @@ if flag == "run"
     i_c_depend_on_v = unique(msh.cs_from_f(unique(msh.fs_from_c(i_c_depend_on_v,:)),:)); % also cells that have a face in common with previous ones
     i_c_depend_on_v(i_c_depend_on_v==0) = [];
     i_sigma_depend_on_v = find(sum(ismember(msh.ns_from_d,el_nodes),2));
-    dphidv = aux2RHS * M_get_aux_BC_el * p.BCEL_VAL;
     phi_nodes = setdiff(unique(msh.ns_from_c(indices_cells_el,:)),el_nodes);
     phi_nodes = inv_mapping(phi_nodes);
     indices_cells_el = indices_cells_el .* abs(qs);
@@ -223,7 +222,7 @@ if flag == "run"
     dvdn = sparse(ones(size(indices_cells_el)), indices_cells_el, 1, 1, ns*msh.Nc);
     [~,phi_nodes] = ismember(phi_nodes,non_Dirichlet_nodes_indices);
     dvdphi = sparse(ones(size(phi_nodes)), phi_nodes, 1, 1, Nphi);
-    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v, inv_mapping, non_Dirichlet_nodes_indices);
+    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, NcSigma2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v, inv_mapping, non_Dirichlet_nodes_indices);
     
     % Setting Mass Matrix -----------------------------------------------------
     Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), dim_Jac, dim_Jac);
@@ -297,7 +296,7 @@ InitializePhoto(y0,p.TIME_INSTANTS(1),input_photo,ph_is_on);
 % Creating Ode Function ---------------------------------------------------
 odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
-    Kelet,rho2RHS,aux2RHS,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
+    Kelet,NcSigma2RHS,dphidv,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,p.TEMPERATURE,qs,p.BCEL_VAL,p.V_APPLIED,...
     fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,Ordered_const_omega,ns,...
     indices_faces_Absorbent,indices_cells_Absorbent,...

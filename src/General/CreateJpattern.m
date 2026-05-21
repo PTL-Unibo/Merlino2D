@@ -1,4 +1,4 @@
-function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, rho2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v, inv_mapping, non_Dirichlet_nodes_indices)
+function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, NcSigma2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v, inv_mapping, non_Dirichlet_nodes_indices)
 
 ns = numel(qs);
 Nc = msh.Nc;
@@ -65,13 +65,8 @@ end
 DnDphi = repmat(sparse(I_DnDphi,J_DnDphi,1,Nc,Nphi),ns,1);
 DsDphi = sparse(I_DsDphi,J_DsDphi,1,Nd,Nphi);
 
-R = [];
-for i = 1:ns
-    R = [R, speye(Nc)*qs(i)]; %#ok<AGROW>
-end
-RS = [[R, zeros(Nc,Nd)]; [zeros(Nd,Nc*ns), speye(Nd)]];
 
-DAE = [rho2RHS * RS, Kelet];
+DAE = [NcSigma2RHS, Kelet];
 
 DnDv = repmat(sparse(i_c_depend_on_v,ones(size(i_c_depend_on_v)),1,Nc,1),ns,1);
 DsDv = sparse(i_sigma_depend_on_v,ones(size(i_sigma_depend_on_v)),1,Nd,1);
