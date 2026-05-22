@@ -162,6 +162,8 @@ end
 indices_cells_el = msh.cs_from_f(indices_el,1);
 el_nodes = unique(msh.ns_from_f(indices_el,:));
 
+GetIp = CreateGetCurrent(msh.Nf,ns,qs,msh.areaf,indices_el,p.LENGTH);
+
 if flag == "run"
     % Setting Initial Condition -------------------------------------------
     % InitialCondition can be a string, a struct or an array
@@ -303,8 +305,7 @@ odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     indices_faces_Absorbent,indices_cells_Absorbent,...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
     surf_charge_accum_flux_coeff, perm, inv_perm,...
-    Gx, Gy, nx_matrix, ny_matrix,...
-    p.ELECTRON_REF_COEFF, ph_coeff, msh.areaf, indices_el, p.LENGTH, p.R, C_s);
+    Gx, Gy, nx_matrix, ny_matrix, p.ELECTRON_REF_COEFF, ph_coeff, GetIp, p.R, C_s);
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
 
 if flag == "run"

@@ -6,7 +6,7 @@ function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates,kr] 
     indices_faces_A,indices_cells_A,...
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
-    Gx, Gy, nx_matrix, ny_matrix, re, ph_coeff, areaf, indices, Length, R, C_s)
+    Gx, Gy, nx_matrix, ny_matrix, re, ph_coeff, GetIp, R, C_s)
 
 global Sph %#ok<GVMIS>
 
@@ -85,9 +85,7 @@ Gamma_y(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_y(indices_faces_Ge) +...    
 
 Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
 
-J_faces = e * reshape(Gamma_dot_n, Nf, ns) .* qs;
-Ip = -areaf(indices)' * sum(J_faces(indices,:),2);
-Ip = Ip * Length;
+Ip = GetIp * Gamma_dot_n;
 
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
