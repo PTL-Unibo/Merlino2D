@@ -2,6 +2,7 @@ MSH = "Square";
 BCEL_FLAG = [0;0;0;0];
 BCEL_VAL = [0;0;0;0];
 V_APPLIED = @(t) 0;
+ANODE_IDS = 1;
 BC_FLAG = {'N',{"FreeDriftFlow",'FreeDriftFlow',"FreeDriftFlow","FreeDriftFlow"}};
 BC_VAL = {"N", {0, 0, 0, 0}};
 TIME_INSTANTS = linspace(0,6e-3,601);
