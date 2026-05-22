@@ -1,12 +1,12 @@
 function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates,kr] = DaeFunc2D(t,y,Nf,Nc,Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
-    Kelet,NcSigma2RHS,dphidv,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
+    Kelet,NcSigma2RHS,dphidv,Flux2N,M_get_aux_BC_el,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,T,qs,BCEL_VAL,V_APPLIED,...
     fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,const_omega,ns,...
     indices_faces_A,indices_cells_A,...
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
-    Gx, Gy, nx_matrix, ny_matrix, re, n_left, n_right, ph_coeff, areaf, indices, Length, R, C_s)
+    Gx, Gy, nx_matrix, ny_matrix, re, ph_coeff, areaf, indices, Length, R, C_s)
 
 global Sph %#ok<GVMIS>
 
@@ -17,9 +17,6 @@ sigma = y(ns*Nc+1:ns*Nc+Nd);
 phi = y(ns*Nc+Nd+1:end-2);
 I = y(end-1);
 v = y(end);
-
-n_left(i_upwind) = n_c(i_n_left);
-n_right(i_upwind) = n_c(i_n_right);
 
 % Compute electric field
 aux_BC_el = M_get_aux_BC_el * BCEL_VAL * v;
@@ -61,7 +58,7 @@ M(Mindices) = n_c(Nindices);
 reaction_rates = reshape(prod(M),Nc,[]);
 omega = reshape(reaction_rates*stoichiometric_matrix + Sph.*ph_coeff + const_omega,[],1);
 
-n_up = n_left .* u_dot_n_max + n_right .* u_dot_n_min + Xmu * Bfval;
+n_up = (Get_nL * n_c) .* u_dot_n_max + (Get_nR * n_c) .* u_dot_n_min + Xmu * Bfval;
 
 diffusion_x = -Dmatrix * (Gx * n_c);
 diffusion_y = -Dmatrix * (Gy * n_c);

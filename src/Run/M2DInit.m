@@ -116,7 +116,7 @@ NcSigma2RHS = rho2RHS*Get_rho_sigma_eps;
 
 Flux2N = CreateMultiFlux2N(msh, ns);
 
-[i_upwind,i_n_left,i_n_right] = CreateMultiUpwind(msh,ns);
+[Get_nL, Get_nR] = CreateMultiUpwind(msh,ns);
 
 indices = CreateIndicesBCspecies(msh, Ordered_bc_flag', ns);
 
@@ -218,6 +218,7 @@ if flag == "run"
     phi_nodes = setdiff(unique(msh.ns_from_c(indices_cells_el,:)),el_nodes);
     phi_nodes = inv_mapping(phi_nodes);
     indices_cells_el = indices_cells_el .* abs(qs);
+    indices_cells_el(indices_cells_el==0) = [];
     indices_cells_el = indices_cells_el + (0:msh.Nc:(ns-1)*msh.Nc);
     dvdn = sparse(ones(size(indices_cells_el)), indices_cells_el, 1, 1, ns*msh.Nc);
     [~,phi_nodes] = ismember(phi_nodes,non_Dirichlet_nodes_indices);
@@ -296,14 +297,14 @@ InitializePhoto(y0,p.TIME_INSTANTS(1),input_photo,ph_is_on);
 % Creating Ode Function ---------------------------------------------------
 odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
-    Kelet,NcSigma2RHS,dphidv,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
+    Kelet,NcSigma2RHS,dphidv,Flux2N,M_get_aux_BC_el,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,p.TEMPERATURE,qs,p.BCEL_VAL,p.V_APPLIED,...
     fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,Ordered_const_omega,ns,...
     indices_faces_Absorbent,indices_cells_Absorbent,...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
     surf_charge_accum_flux_coeff, perm, inv_perm,...
     Gx, Gy, nx_matrix, ny_matrix,...
-    p.ELECTRON_REF_COEFF, zeros(msh.Nf*ns,1), zeros(msh.Nf*ns,1), ph_coeff, msh.areaf, indices_el, p.LENGTH, p.R, C_s);
+    p.ELECTRON_REF_COEFF, ph_coeff, msh.areaf, indices_el, p.LENGTH, p.R, C_s);
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
 
 if flag == "run"
