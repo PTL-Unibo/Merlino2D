@@ -1,4 +1,4 @@
-function [odefun,msh,A,B,inv_mapping,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions,...
+function [odefun,msh,A,B,inv_mapping,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,phi2ExFull,phi2EyFull,reactions,...
     stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p,flag)
 
 global BentoCaraca %#ok<GVMIS>
@@ -89,26 +89,24 @@ BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_b
 fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
 
 full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
-[Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, ...
- phi2Ex, phi2Ey, aux2Ex, aux2Ey, phi2En, ~, ...
- inv_mapping, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = EletStatFEM(msh, full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
 
-Kelet_d = decomposition(Kelet);
-
+% ELECTROSTATICS
+[Kelet, rho2RHS, bc2RHS, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = FullMeshEletStat(full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
 dNdz = [1,0;0,1;-1,-1]; % 2D triangles 1st order shape functions
-[Phi2Ex_c, Phi2Ey_c] = CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);
-
-weights = 1./sqrt((msh.xf(msh.fs_from_c) - msh.xc).^2 + (msh.yf(msh.fs_from_c) - msh.yc).^2);
-normalized_weights = weights ./ sum(weights,2);
-Eint2Ec = sparse(repmat(1:msh.Nc,1,3), msh.fs_from_c(:), normalized_weights(:), msh.Nc, msh.Nf);
+[phi2ExFull, phi2EyFull] = CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);
+[phi2Ex, phi2Ey] = CreateEMatricesFEM(msh.ns_from_c, msh.xn, msh.yn, msh.Nc, msh.Nn, dNdz);
+inv_mapping = find(msh.nodes_mapping);
+GetPhiSmall = sparse(1:numel(inv_mapping),inv_mapping,1,msh.Nn,full_msh.Nn);
+phi2Ex = phi2Ex * GetPhiSmall;
+phi2Ey = phi2Ey * GetPhiSmall;
+E2Faces = CreateE2FacesFEM(msh.inv_vol_standard, msh.cs_from_f, msh.Nf, msh.Nc);
+phi2En = msh.sn(:,1) .* E2Faces * phi2Ex + msh.sn(:,2) .* E2Faces * phi2Ey;
+dphidv = bc2RHS * p.BCEL_VAL;
 
 % Compute C_s
-dirichlet_nodes_1 = M_get_aux_BC_el * p.BCEL_VAL;
-phi1 = Kelet_d \ (aux2RHS * dirichlet_nodes_1);
-phi_full_1(Dirichlet_nodes_indices,:) = dirichlet_nodes_1;
-phi_full_1(non_Dirichlet_nodes_indices,:) = phi1;
-Ec_full_1_x = Phi2Ex_c * phi_full_1;
-Ec_full_1_y = Phi2Ey_c * phi_full_1;
+phi_full_1 = Kelet \ (bc2RHS * p.BCEL_VAL);
+Ec_full_1_x = phi2ExFull * phi_full_1;
+Ec_full_1_y = phi2EyFull * phi_full_1;
 C_s = p.LENGTH * eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
 
 Get_rho_sigma_eps = CreateGetRhoSigmaEps(qs,msh.Nc,msh.Nd);
@@ -149,10 +147,9 @@ v_th_single = v_th_single .* Ordered_v_th_coeff;
 
 [indices_faces_Absorbent, indices_cells_Absorbent] = AbsorbentBC(GetBfaces, GetBcells, Ordered_bc_flag');
 
-Nphi = size(non_Dirichlet_nodes_indices,1);
+Nphi = full_msh.Nn;
 ode_dim = ns*msh.Nc + msh.Nd;
-dae_dim = Nphi;
-dim_Jac = ode_dim + dae_dim + 2;
+dim_Jac = ode_dim + Nphi + 2;
 
 % Find elements corresponding to anode
 indices_el = [];
@@ -206,10 +203,9 @@ if flag == "run"
     end
 
     % Compute consistent initial condition ------------------------------------
-    dphidv = aux2RHS * M_get_aux_BC_el * p.BCEL_VAL;
     v0 = p.V_APPLIED(p.TIME_INSTANTS(1));
     I0 = 0;
-    phi0 = Kelet_d \ (NcSigma2RHS*[N0(:); sigma0] + dphidv * v0);
+    phi0 = Kelet \ (NcSigma2RHS*[N0(:); sigma0] + dphidv * v0);
     y0 = [N0(:); sigma0; phi0; I0; v0]; % initial condition
 
     % Create Jacobian sparsity pattern ----------------------------------------
@@ -299,8 +295,8 @@ InitializePhoto(y0,p.TIME_INSTANTS(1),input_photo,ph_is_on);
 % Creating Ode Function ---------------------------------------------------
 odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
-    Kelet,NcSigma2RHS,dphidv,Flux2N,M_get_aux_BC_el,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
-    phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,p.TEMPERATURE,qs,p.BCEL_VAL,p.V_APPLIED,...
+    Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
+    phi2Ex,phi2Ey,E2Faces,Ngas,p.TEMPERATURE,qs,p.V_APPLIED,...
     fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,Ordered_const_omega,ns,...
     indices_faces_Absorbent,indices_cells_Absorbent,...
     indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
