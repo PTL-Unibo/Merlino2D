@@ -100,7 +100,6 @@ GetPhiSmall = sparse(1:numel(inv_mapping),inv_mapping,1,msh.Nn,full_msh.Nn);
 phi2Ex = phi2Ex * GetPhiSmall;
 phi2Ey = phi2Ey * GetPhiSmall;
 E2Faces = CreateE2FacesFEM(msh.inv_vol_standard, msh.cs_from_f, msh.Nf, msh.Nc);
-phi2En = msh.sn(:,1) .* E2Faces * phi2Ex + msh.sn(:,2) .* E2Faces * phi2Ey;
 dphidv = bc2RHS * p.BCEL_VAL;
 
 % Compute C_s
@@ -209,19 +208,7 @@ if flag == "run"
     y0 = [N0(:); sigma0; phi0; I0; v0]; % initial condition
 
     % Create Jacobian sparsity pattern ----------------------------------------
-    i_c_depend_on_v = find(sum(ismember(msh.ns_from_c,el_nodes),2));
-    i_c_depend_on_v = unique(msh.cs_from_f(unique(msh.fs_from_c(i_c_depend_on_v,:)),:)); % also cells that have a face in common with previous ones
-    i_c_depend_on_v(i_c_depend_on_v==0) = [];
-    i_sigma_depend_on_v = find(sum(ismember(msh.ns_from_d,el_nodes),2));
-    phi_nodes = setdiff(unique(msh.ns_from_c(indices_cells_el,:)),el_nodes);
-    phi_nodes = inv_mapping(phi_nodes);
-    indices_cells_el = indices_cells_el .* abs(qs);
-    indices_cells_el(indices_cells_el==0) = [];
-    indices_cells_el = indices_cells_el + (0:msh.Nc:(ns-1)*msh.Nc);
-    dvdn = sparse(ones(size(indices_cells_el)), indices_cells_el, 1, 1, ns*msh.Nc);
-    [~,phi_nodes] = ismember(phi_nodes,non_Dirichlet_nodes_indices);
-    dvdphi = sparse(ones(size(phi_nodes)), phi_nodes, 1, 1, Nphi);
-    JPattern = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, NcSigma2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v, inv_mapping, non_Dirichlet_nodes_indices);
+    JPattern = CreateJpattern(msh, qs, Kelet, NcSigma2RHS, dphidv, indices_cells_el, inv_mapping);
     
     % Setting Mass Matrix -----------------------------------------------------
     Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), dim_Jac, dim_Jac);

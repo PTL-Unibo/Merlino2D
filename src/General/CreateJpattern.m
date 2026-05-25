@@ -1,79 +1,84 @@
-function [Jpattern] = CreateJpattern(msh, qs, Kelet, Flux2N, phi2En, NcSigma2RHS, dphidv, dvdn, dvdphi, i_c_depend_on_v, i_sigma_depend_on_v, inv_mapping, non_Dirichlet_nodes_indices)
+function [Jpattern] = CreateJpattern(msh, qs, Kelet, NcSigma2RHS, dphidv, indices_cells_el, inv_mapping)
 
 ns = numel(qs);
 Nc = msh.Nc;
 Nd = msh.Nd;
 Nphi = size(Kelet,1);
 
-% P_full
-I_DnDphi = [];
-J_DnDphi = [];
+I_DnDn = zeros(4*Nc,1);
+J_DnDn = zeros(4*Nc,1);
+k = 1;
 for ic = 1:Nc
-    jj = unique(vertcat(msh.cs_from_n{msh.ns_from_c(ic,:)}));
-    J_DnDphi = [J_DnDphi; jj];
-    I_DnDphi = [I_DnDphi; ic*ones(size(jj))];
+    jj = unique(msh.cs_from_f(msh.fs_from_c(ic,:),:));
+    jj(jj==0) = [];
+    dim = numel(jj);
+    I_DnDn(k:(k+dim-1)) = ic;
+    J_DnDn(k:(k+dim-1)) = jj;
+    k = k + dim;
 end
-P = sparse(I_DnDphi,J_DnDphi,ones(size(I_DnDphi)),Nc,Nc);
+I_DnDn(I_DnDn==0) = [];
+J_DnDn(J_DnDn==0) = [];
+I_DnDn_diag = reshape(I_DnDn + (0:Nc:(ns-1)*Nc),[],1);
+J_DnDn_diag = reshape(J_DnDn + (0:Nc:(ns-1)*Nc),[],1);
+P_full = sparse(I_DnDn_diag, J_DnDn_diag, 1, ns*Nc, ns*Nc);
+DnDn = P_full + spdiags(ones(Nc*ns,2*(ns-1)),[-(ns-1)*Nc:Nc:-Nc,Nc:Nc:(ns-1)*Nc],Nc*ns,Nc*ns);
 
-% P_sigma_n
-P_sigma_n = sparse(1:Nd, ...
-                   msh.cs_from_f(msh.f_from_d,1), ...
-                   ones(1,Nd), ...
-                   Nd, Nc);
+I_DsDn = (1:Nd)';
+J_DsDn = msh.cs_from_f(msh.f_from_d,1);
+I_DsDn_big = repmat(I_DsDn,1,ns);
+J_DsDn_big = J_DsDn + (0:Nc:(ns-1)*Nc);
+I_DsDn_big = I_DsDn_big .* abs(qs);
+J_DsDn_big = J_DsDn_big .* abs(qs);
+I_DsDn_big(I_DsDn_big==0) = [];
+J_DsDn_big(J_DsDn_big==0) = [];
+DsDn = sparse(I_DsDn_big, J_DsDn_big, 1, Nd, ns*Nc);
 
+DnsDns = [[DnDn; DsDn], zeros(ns*Nc+Nd,Nd)];
 
-M = spdiags(ones(Nc*ns,2*(ns-1)),[-(ns-1)*Nc:Nc:-Nc,Nc:Nc:(ns-1)*Nc],Nc*ns,Nc*ns);
-for is = 1:ns
-    M(1+(is-1)*Nc:is*Nc,1+(is-1)*Nc:is*Nc) = P;
-end
-
-S = repmat(P_sigma_n,1,ns);
-for is = 1:ns
-    if qs(is) == 0
-        S(:,1+(is-1)*Nc:is*Nc) = 0;
-    end
-end
-
-M = [M; S];
-
-DnsDns = [M, zeros(ns*Nc+Nd,Nd)];
-
-% DnDphi_old = Flux2N*repmat(phi2En,ns,1);
-% DsDphi = phi2En(msh.f_from_d,:);
-
-% New version of DnDphi and DsDphi
-diel_cells = msh.cs_from_f(msh.f_from_d,1);
-I_DnDphi = [];
-J_DnDphi = [];
-I_DsDphi = [];
-J_DsDphi = [];
-for ic = 1:msh.Nc
+I_DnDphi = zeros(6*Nc,1);
+J_DnDphi = zeros(6*Nc,1);
+k = 1;
+for ic = 1:Nc
     cells = unique(msh.cs_from_f(msh.fs_from_c(ic,:),:));
     cells(cells==0) = [];
     nodes = unique(msh.ns_from_c(cells,:));
-    nodes = inv_mapping(nodes);
-    [~,nodes] = ismember(nodes,non_Dirichlet_nodes_indices);
-    nodes(nodes==0) = [];
-    I_DnDphi = [I_DnDphi, repmat(ic,1,numel(nodes))];
-    J_DnDphi = [J_DnDphi; nodes];
-    [~,s_index] = ismember(ic,diel_cells);
-    if s_index>0
-        I_DsDphi = [I_DsDphi, repelem(s_index,1,numel(nodes))];
-        J_DsDphi = [J_DsDphi; nodes];
-    end
+    dim = numel(nodes);
+    I_DnDphi(k:(k+dim-1)) = ic;
+    J_DnDphi(k:(k+dim-1)) = inv_mapping(nodes);
+    k = k + dim;
 end
-DnDphi = repmat(sparse(I_DnDphi,J_DnDphi,1,Nc,Nphi),ns,1);
-DsDphi = sparse(I_DsDphi,J_DsDphi,1,Nd,Nphi);
+I_DnDphi(I_DnDphi==0) = [];
+J_DnDphi(J_DnDphi==0) = [];
+DnDphi = repmat(sparse(I_DnDphi, J_DnDphi, 1, Nc, Nphi), ns, 1);
 
+I_DsDphi = zeros(3*Nd,1);
+J_DsDphi = zeros(3*Nd,1);
+id = 1;
+diel_cells = msh.cs_from_f(msh.f_from_d,1);
+for ic_diel = diel_cells'
+    nodes = msh.ns_from_c(ic_diel,:);
+    I_DsDphi(1+(id-1)*3:id*3) = id;
+    J_DsDphi(1+(id-1)*3:id*3) = inv_mapping(nodes);
+    id = id + 1;
+end
+DsDphi = sparse(I_DsDphi, J_DsDphi, 1, Nd, Nphi);
 
-DAE = [NcSigma2RHS, Kelet];
+DnsphiDnsphi = [DnsDns, [DnDphi; DsDphi]];
 
-DnDv = repmat(sparse(i_c_depend_on_v,ones(size(i_c_depend_on_v)),1,Nc,1),ns,1);
-DsDv = sparse(i_sigma_depend_on_v,ones(size(i_sigma_depend_on_v)),1,Nd,1);
+dvdphi_nodes = unique(msh.ns_from_c(indices_cells_el,:));
+dvdphi_nodes = inv_mapping(dvdphi_nodes);
+dvdphi = sparse(ones(size(dvdphi_nodes)), dvdphi_nodes, 1, 1, Nphi);
 
-Jpattern = [[DnsDns,[DnDphi;DsDphi],zeros(ns*Nc+Nd,1),[DnDv;DsDv]]; ...
-    [DAE, zeros(Nphi,1), dphidv]; ...
+indices_cells_el = indices_cells_el + (0:msh.Nc:(ns-1)*msh.Nc);
+indices_cells_el = indices_cells_el .* abs(qs);
+indices_cells_el(indices_cells_el==0) = [];
+dvdn = sparse(ones(size(indices_cells_el)), indices_cells_el, 1, 1, ns*msh.Nc);
+
+Jpattern = [...
+    [DnsphiDnsphi, zeros(ns*Nc+Nd,2)]; ...
+    [[NcSigma2RHS, Kelet], zeros(Nphi,1), dphidv]; ...
     [zeros(1,Nc*ns+Nd+Nphi), 1, 1];...
-    [dvdn, zeros(1,Nd), dvdphi, 0, 1]];
+    [dvdn, zeros(1,Nd), dvdphi, 0, 1]...
+    ];
 
 end
