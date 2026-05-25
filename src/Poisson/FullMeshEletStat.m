@@ -1,4 +1,4 @@
-function [Kelet, rho2RHS, bc2RHS, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL, coordinates)
+function [Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL, coordinates)
 
 Nnel = 3;
 Nc = full_msh.Nc; % number of elements

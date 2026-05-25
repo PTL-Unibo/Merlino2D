@@ -4,13 +4,11 @@ msh = out.msh;
 A = out.A;
 B = out.B;
 ns = out.ns;
-Dirichlet_nodes_indices = out.Dirichlet_nodes_indices;
-non_Dirichlet_nodes_indices = out.non_Dirichlet_nodes_indices;
 qs = out.qs;
 inv_mapping = out.inv_mapping;
 odefun = out.odefun;
-Phi2Ex_c = out.Phi2Ex_c;
-Phi2Ey_c = out.Phi2Ey_c;
+phi2ExFull = out.phi2ExFull;
+phi2EyFull = out.phi2EyFull;
 
 Nn = out.msh.Nn;
 Nc = out.msh.Nc;
@@ -24,17 +22,13 @@ I_TOT = out.yout(end-1,k);
 V = out.yout(end,k);
 VEXT = out.p.V_APPLIED(out.tout(k));
 
-[~,DIRICHLET_NODES,BFVAL,EX,EY,OMEGA,GAMMA_X,GAMMA_Y,~,RATES,RATE_COEFF] = odefun(out.tout(k), out.yout(:,k));
+[~,BFVAL,EX,EY,OMEGA,GAMMA_X,GAMMA_Y,~,RATES,RATE_COEFF] = odefun(out.tout(k), out.yout(:,k));
 
 % Electric potential at nodes
-PHI_NODES(Dirichlet_nodes_indices) = DIRICHLET_NODES;
-PHI_NODES(non_Dirichlet_nodes_indices) = out.yout(ns*Nc+Nd+1:end-2,k);
-PHI_NODES = PHI_NODES';
-% now PHI_NODES contains the values of the full mesh
-EX_CELLS = Phi2Ex_c * PHI_NODES;
-EY_CELLS = Phi2Ey_c * PHI_NODES;
-% keep PHI_NODES only at air nodes
-PHI_NODES = PHI_NODES(inv_mapping);
+PHI_NODES = out.yout(ns*Nc+Nd+1:end-2,k); % PHI_NODES contains the values of the full mesh
+EX_CELLS = phi2ExFull * PHI_NODES;
+EY_CELLS = phi2EyFull * PHI_NODES;
+PHI_NODES = PHI_NODES(inv_mapping); % keep PHI_NODES only at air nodes
 
 N_NODES = A*N_CELLS + B*BFVAL; 
 RHO_NODES = e*sum(reshape(N_NODES,Nn,ns).*qs,2);

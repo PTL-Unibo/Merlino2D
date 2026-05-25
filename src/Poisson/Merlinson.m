@@ -15,8 +15,7 @@ system("gmsh " + geo_file + cmd_arguments);
 
 full_msh = PreProcessing(MSH, COORDINATES, "remove_dielectric","no");
 
-[Kelet, rho2RHS, bc2RHS, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = ...
-    FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL, COORDINATES);
+[Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL, COORDINATES);
 
 dNdz = [1,0;0,1;-1,-1]; % 2D triangles 1st order shape functions
 [phi2Ex, phi2Ey] = CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);

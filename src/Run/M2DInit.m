@@ -1,4 +1,4 @@
-function [odefun,msh,A,B,inv_mapping,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,phi2ExFull,phi2EyFull,reactions,...
+function [odefun,msh,A,B,inv_mapping,ns,qs,species,phi2ExFull,phi2EyFull,reactions,...
     stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p,flag)
 
 global BentoCaraca %#ok<GVMIS>
@@ -91,7 +91,7 @@ fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
 full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
 
 % ELECTROSTATICS
-[Kelet, rho2RHS, bc2RHS, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = FullMeshEletStat(full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
+[Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
 dNdz = [1,0;0,1;-1,-1]; % 2D triangles 1st order shape functions
 [phi2ExFull, phi2EyFull] = CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);
 [phi2Ex, phi2Ey] = CreateEMatricesFEM(msh.ns_from_c, msh.xn, msh.yn, msh.Nc, msh.Nn, dNdz);
@@ -156,7 +156,6 @@ for anode_id = p.ANODE_IDS(:)'
     indices_el = [indices_el; msh.f_from_b(msh.bs_from_bID{anode_id})]; %#ok<AGROW>
 end
 indices_cells_el = msh.cs_from_f(indices_el,1);
-el_nodes = unique(msh.ns_from_f(indices_el,:));
 
 GetIp = CreateGetCurrent(msh.Nf,ns,qs,msh.areaf,indices_el,p.LENGTH);
 

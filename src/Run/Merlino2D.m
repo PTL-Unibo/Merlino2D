@@ -23,7 +23,7 @@ else
 end
 
 % Initialization-----------------------------------------------------------
-[odefun,msh,A,B,inv_mapping,ns,qs,Dirichlet_nodes_indices,non_Dirichlet_nodes_indices,species,Phi2Ex_c,Phi2Ey_c,reactions,...
+[odefun,msh,A,B,inv_mapping,ns,qs,species,phi2ExFull,phi2EyFull,reactions,...
     stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p,flag);
 
 % Creating Output Structure -----------------------------------------------
@@ -35,11 +35,9 @@ out.B = B;
 out.inv_mapping = inv_mapping;
 out.ns = ns;
 out.qs = qs;
-out.Dirichlet_nodes_indices = Dirichlet_nodes_indices;
-out.non_Dirichlet_nodes_indices = non_Dirichlet_nodes_indices;
 out.s_names = species;
-out.Phi2Ex_c = Phi2Ex_c(1:msh.Nc,:);
-out.Phi2Ey_c = Phi2Ey_c(1:msh.Nc,:);
+out.phi2ExFull = phi2ExFull(1:msh.Nc,:);
+out.phi2EyFull = phi2EyFull(1:msh.Nc,:);
 out.reactions = string(vertcat(reactions(:,1)));
 out.stoichiometric_matrix = stoichiometric_matrix;
     
