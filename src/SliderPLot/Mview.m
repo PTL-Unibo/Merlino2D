@@ -1,21 +1,27 @@
-function Mview(out,types_array)
+function Mview(out,types_char)
+arguments
+    out 
+    types_char char
+end
 
-num_figs = numel(types_array);
+num_figs = numel(types_char);
 
-axes_array = gobjects(1, sum(ismember(types_array,"2"),2));
-axes_array_sigma = gobjects(1, sum(ismember(types_array,"s"),2));
+axes_array = gobjects(1, sum(ismember(types_char,'x'),2));
+axes_array_sigma = gobjects(1, sum(ismember(types_char,'s'),2));
 sld_array = gobjects(1, num_figs);
 old_cb_cell = cell(1, num_figs);
 
-cont_2 = 1;
+cont_x = 1;
 cont_s = 1;
 for k = 1:num_figs    
-    if types_array(k) == "2"
-        [sld_array(k), axes_array(cont_2)] = SliderPlot2D(out);
-        cont_2 = cont_2 + 1;
-    elseif types_array(k) == "s"
+    if types_char(k) == 'x'
+        [sld_array(k), axes_array(cont_x)] = SliderPlot2D(out);
+        cont_x = cont_x + 1;
+    elseif types_char(k) == 's'
         [sld_array(k), axes_array_sigma(cont_s)] = SliderPlotSigma(out);
         cont_s = cont_s + 1;
+    elseif types_char(k) == 'i'
+        sld_array(k) = SliderPlotIV(out);
     end
     sld_array(k).UserData = k;
     old_cb_cell{k} = sld_array(k).Callback;
