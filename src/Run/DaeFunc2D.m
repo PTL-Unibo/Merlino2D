@@ -1,4 +1,4 @@
-function [dydt,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates,kr] = DaeFunc2D(t,y,Nf,Nc,Nd, ...
+function [dydt,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,Itot,reaction_rates,kr] = DaeFunc2D(t,y,Nf,Nc,Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
     Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,E2Faces,Ngas,T,qs,V_APPLIED,...
@@ -85,12 +85,13 @@ Gamma_y(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_y(indices_faces_Ge) +...    
 Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
 
 Ip = GetIp * Gamma_dot_n;
+Itot = (V_APPLIED(t)-v)/R;
 
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
 phi_dae = (Kelet * phi - NcSigma2RHS * [n_c;sigma] - dphidv * v);
 
-dydt = [dndt; dsdt; phi_dae; I-(V_APPLIED(t)-v)/R; (V_APPLIED(t) - R*Ip - v)/(R * C_s)];
+dydt = [dndt; dsdt; phi_dae; I-Itot; (V_APPLIED(t) - R*Ip - v)/(R * C_s)];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
 

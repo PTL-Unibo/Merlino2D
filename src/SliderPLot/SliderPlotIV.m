@@ -20,7 +20,11 @@ ylim([-1.1*Imax, 1.1*Imax])
 ylabel("current $(\mathrm{A})$", "Interpreter","latex")
 yyaxis right
 plot(ax, out.tout, V, "Color",v_color, "LineWidth",2)
-plot(ax, out.tout, out.p.V_APPLIED(out.tout), "Color","k", "LineWidth",1)
+Vext = zeros(1,nt);
+for k = 1:nt
+    Vext(k) = out.p.V_APPLIED(out.tout(k));
+end
+plot(ax, out.tout, Vext, "Color","k", "LineWidth",1)
 ylabel("voltage $(\mathrm{V})$", "Interpreter","latex")
 
 ax.YAxis(1).Color = i_color;

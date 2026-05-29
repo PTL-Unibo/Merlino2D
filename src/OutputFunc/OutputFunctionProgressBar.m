@@ -52,7 +52,7 @@ switch flag
         end
 end
 
+drawnow
 status = ~ishandle(95);
-drawnow;
 
 end
