@@ -1,11 +1,11 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   SWARM ANALYSIS HELIUM   %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   SWARM ANALYSIS ARGON   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- configuration of the working conditions ---
 workingConditions:
-  reducedField: linspace(1,301,101)           % in Td
-  gasPressure: 101325                         % in Pa
+  reducedField: logspace(-3,3,100)            % in Td
+  gasPressure: 133.32                         % in Pa
   gasTemperature: 300                         % in K   (average gas temperature)
   wallTemperature: 390                        % in K   (wall temperature)
   extTemperature: 300                         % in K   (external temperature)
@@ -20,14 +20,14 @@ electronKinetics:
   isOn: true                           % true or false (to activate or deactivate the electron kinetics)
   eedfType: boltzmann                  % boltzmann or prescribedEedf (generalized expression Maxwellian/Druyvesteyn)
   ionizationOperatorType: usingSDCS    % conservative, oneTakesAll, equalSharing or usingSDCS
-  growthModelType: spatial             % temporal or spatial
+  growthModelType: temporal            % temporal or spatial
   includeEECollisions: false           % true or false (to include / remove e-e collisions)
   LXCatFiles:                          % cross section files
-    - Helium/He_LXCat.txt
+    - Argon/Ar_LXCat.txt
   gasProperties:                       % properties of the gases (S.I. Units)
     mass: Databases/masses.txt
     fraction:
-      - He = 1
+      - Ar = 1
     harmonicFrequency: Databases/harmonicFrequencies.txt
     anharmonicFrequency: Databases/anharmonicFrequencies.txt
     rotationalConstant: Databases/rotationalConstants.txt
@@ -35,7 +35,7 @@ electronKinetics:
     OPBParameter: Databases/OPBParameter.txt
   stateProperties:                     % properties of the states (S.I. Units except for the energy [eV])
     population:
-      - He(1S1) = 1.0
+      - Ar(1S0) = 1.0
   numerics:                            % configuration of numerical details of the simulation
     energyGrid:                        % properties of the energy grid (in eV)
       maxEnergy: 1                     % (use 18-20 for time-dependent simulations)
@@ -54,18 +54,16 @@ electronKinetics:
 %         RelTol: 1e-6
 %         MaxStep: 1e-7
 
-
-
 % ---  configuration of the output files ---
 output: 
   isOn: true
   dataFormat: hdf5
-  folder: Hel
-  dataSets:  
-%     - inputs
+  folder: Ar
+  dataSets:
+%    - inputs
 %    - log
     - eedf
     - swarmParameters
     - rateCoefficients
 %    - powerBalance
-%    - lookUpTable
+%    - lookUpTables

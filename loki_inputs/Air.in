@@ -7,6 +7,9 @@ workingConditions:
   reducedField: linspace(1,1e3,200)           % in Td
   gasPressure: 101325                         % in Pa
   gasTemperature: 300                         % in K   (average gas temperature)
+  wallTemperature: 390                        % in K   (wall temperature)
+  extTemperature: 300                         % in K   (external temperature)
+  surfaceSiteDensity: 1e19                    % in m-2 (used for surface kinetics)
   excitationFrequency: 0                      % in Hz
   electronDensity: 1e19                       % in m-3
   chamberLength: 1.0                          % in m
@@ -17,7 +20,7 @@ electronKinetics:
   isOn: true                           % true or false (to activate or deactivate the electron kinetics)
   eedfType: boltzmann                  % boltzmann or prescribedEedf (generalized expression Maxwellian/Druyvesteyn)
   ionizationOperatorType: usingSDCS    % conservative, oneTakesAll, equalSharing or usingSDCS
-  growthModelType: temporal             % temporal or spatial
+  growthModelType: temporal            % temporal or spatial
   includeEECollisions: false           % true or false (to include / remove e-e collisions)
   LXCatFiles:                          % cross section files
     - Nitrogen/N2_LXCat.txt
