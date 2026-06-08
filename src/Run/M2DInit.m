@@ -44,19 +44,6 @@ else
     [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), msh.Nc); 
 end
 
-% Ordering input parameters to match the order of "species" ---------------
-Ordered_bc_flag = OrderVariable(p.BC_FLAG,species,ns,"BC_FLAG",2);
-temp_ordered_bc_val = OrderVariable(p.BC_VAL,species,ns,"BC_VAL",0);
-Ordered_bc_val = eval(GetBCvalFuncStr(temp_ordered_bc_val));
-Ordered_v_th_coeff = OrderVariable(p.V_TH_COEFF,species,ns,"V_TH_COEFF",0)';
-if isempty(p.CONST_OMEGA)
-    Ordered_const_omega = 0;
-else
-    Ordered_const_omega = OrderVariable(p.CONST_OMEGA,species,ns,"CONST_OMEGA",0)';
-end
-Ordered_mu = OrderVariable(p.MU,species,ns,"MU",1);
-Ordered_d = OrderVariable(p.D,species,ns,"D",1);
-
 % Getting species info ----------------------------------------------------
 species_info_table = readtable(GetPath("data")+"/species_database.csv");
 [~,indices_table] = ismember(species,table2array(species_info_table(:,1)));
@@ -83,11 +70,6 @@ else
     fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
 end
 
-[fMu,fD,fKr] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),msh.Nc,msh.Nf,Loki,species,flag);
-
-BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
-fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
-
 full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
 
 % ELECTROSTATICS
@@ -102,6 +84,10 @@ phi2Ey = phi2Ey * GetPhiSmall;
 E2Faces = CreateE2FacesFEM(msh.inv_vol_standard, msh.cs_from_f, msh.Nf, msh.Nc);
 dphidv = bc2RHS * p.BCEL_VAL;
 
+if p.COORDINATES == "cylindrical"
+    p.LENGTH = 1;
+end
+
 % Compute C_s
 phi_full_1 = Kelet \ (bc2RHS * p.BCEL_VAL);
 Ec_full_1_x = phi2ExFull * phi_full_1;
@@ -114,6 +100,24 @@ NcSigma2RHS = rho2RHS*Get_rho_sigma_eps;
 Flux2N = CreateMultiFlux2N(msh, ns);
 
 [Get_nL, Get_nR] = CreateMultiUpwind(msh,ns);
+
+% Ordering input parameters to match the order of "species" ---------------
+Ordered_bc_flag = OrderVariable(p.BC_FLAG,species,ns,"BC_FLAG",2);
+temp_ordered_bc_val = OrderVariable(p.BC_VAL,species,ns,"BC_VAL",0);
+Ordered_bc_val = eval(GetBCvalFuncStr(temp_ordered_bc_val));
+Ordered_v_th_coeff = OrderVariable(p.V_TH_COEFF,species,ns,"V_TH_COEFF",0)';
+if isempty(p.CONST_OMEGA)
+    Ordered_const_omega = 0;
+else
+    Ordered_const_omega = OrderVariable(p.CONST_OMEGA,species,ns,"CONST_OMEGA",0)';
+end
+Ordered_mu = OrderVariable(p.MU,species,ns,"MU",1);
+Ordered_d = OrderVariable(p.D,species,ns,"D",1);
+
+[fMu,fD,fKr] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),msh.Nc,msh.Nf,Loki,species,flag);
+
+BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
+fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
 
 indices = CreateIndicesBCspecies(msh, Ordered_bc_flag', ns);
 
