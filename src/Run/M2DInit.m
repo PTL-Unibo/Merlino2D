@@ -193,9 +193,7 @@ if flag == "run"
     else
         % array - setting uniform number density
         Ordered_initial_condition = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0)';
-        if isstring(Ordered_initial_condition)
-            Ordered_initial_condition = arrayfun(@eval,Ordered_initial_condition);
-        end
+        Ordered_initial_condition = arrayfun(@eval,Ordered_initial_condition);
         N0 = ones(msh.Nc,ns) .* Ordered_initial_condition;
         sigma0 = zeros(msh.Nd,1);
     end
@@ -309,10 +307,11 @@ if flag == "run"
 elseif flag == "init"
     if isa(p.ELECTRIC_FIELD_0D,"function_handle")
         % This is the 0D case
-        [~,~,fKr0D] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),1,1,Loki,species);
+        [~,~,fKr0D] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),1,1,Loki,species,"run");
         [M0D, Mindices0D, Nindices0D] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), 1); 
         odefun_mixed = @(t,n)OdeFunc0D(t,n,p.ELECTRIC_FIELD_0D,fTe,fKr0D,p.TEMPERATURE,Ngas,M0D,Mindices0D,Nindices0D,stoichiometric_matrix,Ordered_const_omega);
         y0 = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0);
+        y0 = arrayfun(@eval,y0);
     end
 end
 
