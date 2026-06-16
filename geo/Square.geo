@@ -1,4 +1,4 @@
-DIM = 1.1*1.2;
+DIM = 2;
 
 If (!Exists(k))
   k = 1;

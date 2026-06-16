@@ -202,18 +202,32 @@ if flag == "run"
         sigma0 = zeros(msh.Nd,1);
     end
 
+    if isempty(p.R)
+        error("You need to specify a value for the external circuit resistor (0 is also possible)")
+    end
+
     % Compute consistent initial condition ------------------------------------
-    v0 = p.V_APPLIED(p.TIME_INSTANTS(1));
+    t0 = p.TIME_INSTANTS(1);
+    v0 = p.V_APPLIED(t0);
     I0 = 0;
     phi0 = Kelet \ (NcSigma2RHS*[N0(:); sigma0] + dphidv * v0);
     y0 = [N0(:); sigma0; phi0; I0; v0]; % initial condition
 
     % Create Jacobian sparsity pattern ----------------------------------------
     JPattern = CreateJpattern(msh, qs, Kelet, NcSigma2RHS, dphidv, indices_cells_el, inv_mapping);
+    if p.R <= 0
+        JPattern(end-1,:) = JPattern(end,:);
+        JPattern(end-1,end-1) = 1;
+        JPattern(end-1,end) = 0;
+        JPattern(end,:) = 0;
+        JPattern(end,end) = 1;
+    end
     
     % Setting Mass Matrix -----------------------------------------------------
     Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), dim_Jac, dim_Jac);
-    Mass(end,end) = 1; % external circuit ode equation
+    if p.R > 0
+        Mass(end,end) = 1; % external circuit ode equation
+    end
     
     % Reordering --------------------------------------------------------------
     if p.REORDERING == 1
@@ -224,11 +238,6 @@ if flag == "run"
         ppp = (1:dim_Jac)';
         inv_ppp = (1:dim_Jac)';
     end
-    JPattern = JPattern(ppp,ppp);
-    Mass = Mass(ppp,ppp);
-    y0 = y0(ppp);
-
-    ode_options = odeset("MassSingular","yes", "Mass",Mass, "JPattern",JPattern);
     
     % Photoionization --------------------------------------------------------
     ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
@@ -270,7 +279,6 @@ if flag == "run"
 elseif flag == "init"
     odefun_mixed = 0;
     y0 = 0;
-    ode_options = 0;
     inv_ppp = 0;
     sporadic_save_is_on = 0;
     ph_is_on = 0;
@@ -278,19 +286,40 @@ elseif flag == "init"
     ph_coeff = 0;
 end
 
-InitializePhoto(y0,p.TIME_INSTANTS(1),input_photo,ph_is_on);
-
 % Creating Ode Function ---------------------------------------------------
-odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
-    multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
-    Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
-    phi2Ex,phi2Ey,E2Faces,Ngas,p.TEMPERATURE,qs,p.V_APPLIED,...
-    fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,Ordered_const_omega,ns,...
-    indices_faces_Absorbent,indices_cells_Absorbent,...
-    indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
-    surf_charge_accum_flux_coeff, perm, inv_perm,...
-    Gx, Gy, nx_matrix, ny_matrix, p.ELECTRON_REF_COEFF, ph_coeff, GetIp, p.R, C_s);
+if p.R > 0
+    odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
+        multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
+        Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
+        phi2Ex,phi2Ey,E2Faces,Ngas,p.TEMPERATURE,qs,p.V_APPLIED,...
+        fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,Ordered_const_omega,ns,...
+        indices_faces_Absorbent,indices_cells_Absorbent,...
+        indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
+        surf_charge_accum_flux_coeff, perm, inv_perm,...
+        Gx, Gy, nx_matrix, ny_matrix, p.ELECTRON_REF_COEFF, ph_coeff, GetIp, p.R, C_s);
+else
+    odefun_perm = @(t,y,perm,inv_perm) DaeFunc2DNoR(t,y,msh.Nf,msh.Nc,msh.Nd, ...
+        multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
+        Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
+        phi2Ex,phi2Ey,E2Faces,Ngas,p.TEMPERATURE,qs,p.V_APPLIED,...
+        fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,Ordered_const_omega,ns,...
+        indices_faces_Absorbent,indices_cells_Absorbent,...
+        indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
+        surf_charge_accum_flux_coeff, perm, inv_perm,...
+        Gx, Gy, nx_matrix, ny_matrix, p.ELECTRON_REF_COEFF, ph_coeff, GetIp, p.DV_APPLIED, C_s);
+end
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
+
+if flag == "run"
+    ode_options = odeset("MassSingular","yes", "Mass",Mass(ppp,ppp), "JPattern",JPattern(ppp,ppp));
+    dydt0 = odefun(t0,y0);
+    y0(end-1) = -dydt0(end-1);
+    y0 = y0(ppp);
+elseif flag == "init"
+    ode_options = 0;
+end
+
+InitializePhoto(y0,t0,input_photo,ph_is_on);
 
 if flag == "run"
     odefun_mixed = @(t,y) odefun_perm(t,y,ppp,inv_ppp); % this is the one considering reordering

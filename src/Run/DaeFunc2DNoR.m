@@ -1,4 +1,4 @@
-function [dydt,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,Itot,reaction_rates,kr] = DaeFunc2D(t,y,Nf,Nc,Nd, ...
+function [dydt,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,Itot,reaction_rates,kr] = DaeFunc2DNoR(t,y,Nf,Nc,Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
     Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
     phi2Ex,phi2Ey,E2Faces,Ngas,T,qs,V_APPLIED,...
@@ -6,7 +6,7 @@ function [dydt,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,Itot,reaction_rates,kr] = DaeFu
     indices_faces_A,indices_cells_A,...
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
-    Gx, Gy, nx_matrix, ny_matrix, re, ph_coeff, GetIp, R, C_s)
+    Gx, Gy, nx_matrix, ny_matrix, re, ph_coeff, GetIp, DV_APPLIED, C_s)
 
 global Sph %#ok<GVMIS>
 
@@ -43,6 +43,8 @@ Dmatrix = spdiags(reshape(D,[],1),0,ns*Nf,ns*Nf);
 
 ux = reshape(qs .* mu .* Ex, [], 1);
 uy = reshape(qs .* mu .* Ey, [], 1);
+% ux = ones(size(ux)) * 900*cos(2*pi*(1/6e-3)*t);
+% uy = ones(size(uy)) * 900*sin(2*pi*(1/6e-3)*t);
 u_dot_n = nx_matrix*ux + ny_matrix*uy;
 u_dot_n_max = u_dot_n>0;
 u_dot_n_min = ~u_dot_n_max;
@@ -83,13 +85,13 @@ Gamma_y(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_y(indices_faces_Ge) +...    
 Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
 
 Ip = GetIp * Gamma_dot_n;
-Itot = (V_APPLIED(t)-v)/R;
+Itot = Ip + C_s * DV_APPLIED(t);
 
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
 phi_dae = (Kelet * phi - NcSigma2RHS * [n_c;sigma] - dphidv * v);
 
-dydt = [dndt; dsdt; phi_dae; I-Itot; (V_APPLIED(t) - R*Ip - v)/(R * C_s)];
+dydt = [dndt; dsdt; phi_dae; I-Itot; V_APPLIED(t) - v];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
 
