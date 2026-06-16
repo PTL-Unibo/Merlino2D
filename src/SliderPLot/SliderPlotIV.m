@@ -1,0 +1,73 @@
+function [sld] = SliderPlotIV(out)
+
+fig = figure("WindowStyle","normal");
+ax = axes(fig,"Position",[0.13,0.15,0.775,0.8]);
+
+nt = numel(out.tout);
+
+I = out.yout(end-1,:);
+V = out.yout(end,:);
+
+v_color = [0.8660,0.3290,0];
+i_color = [0.0660,0.4430,0.7450];
+
+Imax = max(abs(I));
+
+plot(ax, out.tout, I, "Color",i_color, "LineWidth",2)
+hold on
+pl = plot(ax,[1,1]*out.tout(1),[-1e6,1e6],"Color",[60,176,60]/255);
+ylim([-1.1*Imax, 1.1*Imax])
+ylabel("current $(\mathrm{A})$", "Interpreter","latex")
+yyaxis right
+plot(ax, out.tout, V, "Color",v_color, "LineWidth",2)
+Vext = zeros(1,nt);
+for k = 1:nt
+    Vext(k) = out.p.V_APPLIED(out.tout(k));
+end
+plot(ax, out.tout, Vext, "Color","k", "LineWidth",1)
+ylabel("voltage $(\mathrm{V})$", "Interpreter","latex")
+
+ax.YAxis(1).Color = i_color;
+ax.YAxis(2).Color = v_color;
+
+xlim([out.tout(1), out.tout(end)])
+xlabel("time $(\mathrm{s})$", "Interpreter","latex")
+grid on
+ax.TickLabelInterpreter = "latex";
+ax.FontSize = 15;
+
+sld = uicontrol(fig, ...
+    'Style','slider', ...
+    'Min',1, 'Max',nt, 'Value',1, 'SliderStep',[1/(nt-1),max(0.05,1/(nt-1))],...
+    'Units','normalized', ...
+    'Visible','on',...
+    'Position',[0.2, 0.005, 0.6, 0.03], ...
+    'Callback', @(src,~) PlotInstant(round(src.Value)));
+
+lbl_indices = annotation(fig, 'textbox', ...
+    [0.005 0.005, 0.19, 0.03], ...   
+    'String','', ...
+    'FitBoxToText','on', ...
+    'EdgeColor','k', ...
+    'Interpreter','latex', ...
+    "HorizontalAlignment","right",...
+    "VerticalAlignment","middle",...
+    'FontSize',12);
+
+lbl_time_instant = annotation(fig, 'textbox', ...
+    [0.81 0.005, 0.19, 0.03], ...   
+    'String','', ...
+    'FitBoxToText','on', ...
+    'EdgeColor','none', ...
+    'Interpreter','latex', ...
+    "HorizontalAlignment","left",...
+    "VerticalAlignment","bottom",...
+    'FontSize',12);
+
+    function PlotInstant(k)
+        lbl_indices.String = num2str(k) + " / " + numel(out.tout);
+        lbl_time_instant.String = sprintf("t = %.5e s", out.tout(k));
+        pl.XData = [1,1]*out.tout(k);
+    end
+
+end

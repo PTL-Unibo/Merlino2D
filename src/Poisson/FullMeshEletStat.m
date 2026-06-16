@@ -1,21 +1,20 @@
-function [Kelet, rho2RHS, M_get_aux_BC_el, aux2RHS, Dirichlet_nodes_indices, non_Dirichlet_nodes_indices] = ...
-    FullMeshEletStat(msh, BCEL_FLAG, EPSR_VAL, coordinates)
+function [Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL, coordinates)
 
 Nnel = 3;
-Nc = msh.Nc; % number of elements
+Nc = full_msh.Nc; % number of elements
 
 [w,Z,dNdz, N] = get_fem_parameters();
 
-temp = sortrows([msh.ns_from_b(:), repmat(1:msh.Nb,1,2)']);
-link_node_to_bfaces = sparse(temp(:,1), repmat([1,2],1,msh.Nb), temp(:,2), msh.Nn, 2);
+select_nodes = sortrows([full_msh.ns_from_b(:), repmat(1:full_msh.Nb,1,2)']);
+link_node_to_bfaces = sparse(select_nodes(:,1), repmat([1,2],1,full_msh.Nb), select_nodes(:,2), full_msh.Nn, 2);
 
 II_Kelet = zeros(Nc*Nnel*Nnel,1);
 JJ_Kelet = zeros(Nc*Nnel*Nnel,1);
 SS_Kelet = zeros(Nc*Nnel*Nnel,1);
 
-II_rho_rhs = zeros(Nc*Nnel + msh.Nd*2,1);
-JJ_rho_rhs = zeros(Nc*Nnel + msh.Nd*2,1);
-SS_rho_rhs = zeros(Nc*Nnel + msh.Nd*2,1);
+II_rho_rhs = zeros(Nc*Nnel + full_msh.Nd*2,1);
+JJ_rho_rhs = zeros(Nc*Nnel + full_msh.Nd*2,1);
+SS_rho_rhs = zeros(Nc*Nnel + full_msh.Nd*2,1);
 
 if lower(coordinates) == "cartesian"
     f_fem_element = @(p,X,N,dNdz,Z,w) fem_element(p,X,N,dNdz,Z,w);
@@ -27,9 +26,9 @@ end
 
 t = @(x) 1;
 for i = 1:Nc
-    nodes = msh.ns_from_c(i,:);
-    X = [msh.xn(nodes), msh.yn(nodes)]';
-    p = @(x) EPSR_VAL(msh.cID_from_c(i));
+    nodes = full_msh.ns_from_c(i,:);
+    X = [full_msh.xn(nodes), full_msh.yn(nodes)]';
+    p = @(x) EPSR_VAL(full_msh.cID_from_c(i));
     Kel = f_fem_element(p,X,N,dNdz,Z,w);
     RHSel = f_fem_rhs(t,X,N,dNdz,Z,w);
     II_Kelet((i-1)*Nnel^2+1:(i-1)*Nnel^2+Nnel^2) = repmat(nodes,1,Nnel);
@@ -41,28 +40,30 @@ for i = 1:Nc
 end
 
 k = 0;
-for i_f = msh.f_from_d'
+for i_f = full_msh.f_from_d'
     k = k + 1;
-    nodes = msh.ns_from_f(i_f,:);
+    nodes = full_msh.ns_from_f(i_f,:);
     start = Nc*Nnel + 1 + (k-1)*2;
     II_rho_rhs(start:start+1) = nodes;
     JJ_rho_rhs(start:start+1) = Nc + [k, k];
-    SS_rho_rhs(start:start+1) = [msh.areaf(i_f), msh.areaf(i_f)] / 2;
+    SS_rho_rhs(start:start+1) = [full_msh.areaf(i_f), full_msh.areaf(i_f)] / 2;
 end
 
-Dirichlet_nodes_indices = unique(msh.ns_from_f(msh.f_from_b(vertcat(msh.bs_from_bID{BCEL_FLAG==0})),:));
-non_Dirichlet_nodes_indices = setdiff((1:msh.Nn)',Dirichlet_nodes_indices);
-M_get_aux_BC_el = CreateMgetDirNodes(link_node_to_bfaces, msh.bID_from_b, Dirichlet_nodes_indices, BCEL_FLAG);
+Dirichlet_nodes_indices = unique(full_msh.ns_from_f(full_msh.f_from_b(vertcat(full_msh.bs_from_bID{BCEL_FLAG==0})),:));
+non_Dirichlet_nodes_indices = setdiff((1:full_msh.Nn)',Dirichlet_nodes_indices);
 
-Kelet = sparse(II_Kelet, JJ_Kelet, SS_Kelet, msh.Nn, msh.Nn);
-rho2RHS = sparse(II_rho_rhs, JJ_rho_rhs, SS_rho_rhs, msh.Nn, Nc + msh.Nd);
+Kelet = sparse(II_Kelet, JJ_Kelet, SS_Kelet, full_msh.Nn, full_msh.Nn);
+rho2RHS = sparse(II_rho_rhs, JJ_rho_rhs, SS_rho_rhs, full_msh.Nn, Nc + full_msh.Nd);
+Kelet(Dirichlet_nodes_indices,:) = 0;
+Kelet(sub2ind(size(Kelet),Dirichlet_nodes_indices,Dirichlet_nodes_indices)) = 1;
+rho2RHS(Dirichlet_nodes_indices,:) = 0;
 
-aux2RHS = -Kelet(non_Dirichlet_nodes_indices,Dirichlet_nodes_indices);
-Kelet = Kelet(non_Dirichlet_nodes_indices, non_Dirichlet_nodes_indices);
-rho2RHS = rho2RHS(non_Dirichlet_nodes_indices,:);
+M_get_aux_BC_el = CreateMgetDirNodes(link_node_to_bfaces, full_msh.bID_from_b, Dirichlet_nodes_indices, BCEL_FLAG);
+select_nodes = sparse(Dirichlet_nodes_indices,1:numel(Dirichlet_nodes_indices),1,full_msh.Nn,numel(Dirichlet_nodes_indices));
+bc2RHS = select_nodes * M_get_aux_BC_el;
 
-if msh.dim_cID > 1
-    rho2RHS(:,vertcat(msh.cs_from_cID{2:msh.dim_cID})) = [];
+if full_msh.dim_cID > 1
+    rho2RHS(:,vertcat(full_msh.cs_from_cID{2:full_msh.dim_cID})) = [];
 end
 
 end

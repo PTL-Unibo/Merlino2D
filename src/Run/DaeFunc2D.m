@@ -1,38 +1,28 @@
-function [dydt,aux_BC_el,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,I,reaction_rates] = DaeFunc2D(t,y,Nf,Nc,Nd, ...
+function [dydt,Bfval,Ex,Ey,omega,Gamma_x,Gamma_y,Itot,reaction_rates,kr] = DaeFunc2D(t,y,Nf,Nc,Nd, ...
     multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
-    Kelet,rho2RHS,aux2RHS,Flux2N,M_get_aux_BC_el,fBfval,i_upwind,i_n_left,i_n_right,Xmu,XFx,XFy,...
-    phi2Ex,phi2Ey,aux2Ex,aux2Ey,Eint2Ec,Ngas,T,qs,BCEL_VAL,V_APPLIED,...
+    Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
+    phi2Ex,phi2Ey,E2Faces,Ngas,T,qs,V_APPLIED,...
     fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,const_omega,ns,...
     indices_faces_A,indices_cells_A,...
     indices_faces_G,indices_cells_G,v_th_x,v_th_y,indices_faces_Ge,indices_faces_Gp,gammaII, ...
     surf_charge_accum_flux_coeff, ppp, inv_ppp,...
-    Gx, Gy, nx_matrix, ny_matrix,...
-    Ex_1, Ey_1, g2Is, re, n_left, n_right,...
-    Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh)
+    Gx, Gy, nx_matrix, ny_matrix, re, ph_coeff, GetIp, R, C_s)
 
-persistent Sph
+global Sph %#ok<GVMIS>
 
 y = y(inv_ppp); % converts y into normal ordering
 
 n_c = y(1:ns*Nc);
 sigma = y(ns*Nc+1:ns*Nc+Nd);
-phi = y(ns*Nc+Nd+1:end);
-
-n_left(i_upwind) = n_c(i_n_left);
-n_right(i_upwind) = n_c(i_n_right);
-
-% Compute charge density
-n_matrix = reshape(n_c,[],ns);
-rho = e * sum(n_matrix.*qs, 2);
-rho_sigma_eps = [rho; sigma] / eps0;
+phi = y(ns*Nc+Nd+1:end-2);
+I = y(end-1);
+v = y(end);
 
 % Compute electric field
-aux_BC_el = M_get_aux_BC_el * BCEL_VAL * V_APPLIED(t);
-Ex = phi2Ex * phi + aux2Ex * aux_BC_el;
-Ey = phi2Ey * phi + aux2Ey * aux_BC_el;
-
-Ecx = Eint2Ec * Ex;
-Ecy = Eint2Ec * Ey;
+Ecx = phi2Ex * phi;
+Ecy = phi2Ey * phi;
+Ex = E2Faces * Ecx;
+Ey = E2Faces * Ecy;
 E_int = sqrt(Ex.^2 + Ey.^2);
 E_c = sqrt(Ecx.^2 + Ecy.^2);
 
@@ -65,15 +55,9 @@ Bfval = fBfval(t);
 M(1,:) = kr(:);
 M(Mindices) = n_c(Nindices);
 reaction_rates = reshape(prod(M),Nc,[]);
-if isempty(Sph)
-    E_c_Td(E_c_Td == 0) = 1e-3;
-    Si = (0.03 + 15.7./E_c_Td) .* sum(reaction_rates(:,indices_src_reactions_ph),2);
-    Sph = CellFromNodesPh * (Ks \ (Si2RHS*(Si+1e5)));
-    fprintf("Updated photoionization, maximum value = %e\n", max(Sph))
-end
 omega = reshape(reaction_rates*stoichiometric_matrix + Sph.*ph_coeff + const_omega,[],1);
 
-n_up = n_left .* u_dot_n_max + n_right .* u_dot_n_min + Xmu * Bfval;
+n_up = (Get_nL * n_c) .* u_dot_n_max + (Get_nR * n_c) .* u_dot_n_min + Xmu * Bfval;
 
 diffusion_x = -Dmatrix * (Gx * n_c);
 diffusion_y = -Dmatrix * (Gy * n_c);
@@ -88,26 +72,26 @@ Gamma_x(indices_faces_A) = n_c(indices_cells_A) .* ux(indices_faces_A);   % |
 Gamma_y(indices_faces_A) = n_c(indices_cells_A) .* uy(indices_faces_A);   % |
 % --------------------------------------------------------------------------|
 
-% -> Gorin BC -------------------------------------------------------------------------------------------------------------|
-Gamma_x(indices_faces_G) = n_c(indices_cells_G) .* (0.5*v_th_x + ux(indices_faces_G) .* u_dot_n_max(indices_faces_G));    %|
-Gamma_y(indices_faces_G) = n_c(indices_cells_G) .* (0.5*v_th_y + uy(indices_faces_G) .* u_dot_n_max(indices_faces_G));    %|
-                                                                                                                          %|
-Gamma_x(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_x(indices_faces_Ge) +...                                              %|
-                                - 2/(1+re) * gammaII * sum(Gamma_x(indices_faces_Gp),2);                                  %|
-Gamma_y(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_y(indices_faces_Ge) +...                                              %|
-                                - 2/(1+re) * gammaII * sum(Gamma_y(indices_faces_Gp),2);                                  %|
-% -------------------------------------------------------------------------------------------------------------------------|
-
-I = g2Is * (Ex_1 .* sum(reshape(surf_charge_accum_flux_coeff*Gamma_x,Nf,ns).*qs,2) +...
-            Ey_1 .* sum(reshape(surf_charge_accum_flux_coeff*Gamma_y,Nf,ns).*qs,2));
+% -> Gorin BC -------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+Gamma_x(indices_faces_G) = n_c(indices_cells_G) .* (0.5*v_th_x + 0 .* ux(indices_faces_G) .* u_dot_n_max(indices_faces_G) - 0 .* ux(indices_faces_G) .* u_dot_n_min(indices_faces_G));    %|
+Gamma_y(indices_faces_G) = n_c(indices_cells_G) .* (0.5*v_th_y + 0 .* uy(indices_faces_G) .* u_dot_n_max(indices_faces_G) - 0 .* uy(indices_faces_G) .* u_dot_n_min(indices_faces_G));    %|
+                                                                                                                                                                                %|
+Gamma_x(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_x(indices_faces_Ge) +...                                                                                                    %|
+                                - 2/(1+re) * gammaII * sum(Gamma_x(indices_faces_Gp),2);                                                                                        %|
+Gamma_y(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_y(indices_faces_Ge) +...                                                                                                    %|
+                                - 2/(1+re) * gammaII * sum(Gamma_y(indices_faces_Gp),2);                                                                                        %|
+% -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 Gamma_dot_n = nx_matrix*Gamma_x + ny_matrix*Gamma_y;
 
+Ip = GetIp * Gamma_dot_n;
+Itot = (V_APPLIED(t)-v)/R;
+
 dndt = -Flux2N*surf_charge_accum_flux_coeff*Gamma_dot_n + omega;
 dsdt = sum_diel_interfaces_fluxes_matrix*Gamma_dot_n(multi_indices_diel_interfaces);
-phi_dae = Kelet * phi - rho2RHS * rho_sigma_eps - aux2RHS * aux_BC_el;
+phi_dae = (Kelet * phi - NcSigma2RHS * [n_c;sigma] - dphidv * v);
 
-dydt = [dndt; dsdt; phi_dae];
+dydt = [dndt; dsdt; phi_dae; I-Itot; (V_APPLIED(t) - R*Ip - v)/(R * C_s)];
 
 dydt = dydt(ppp); % converts dydt into ordering to "diagonalize" the Jacobian 
 

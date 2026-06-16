@@ -1,0 +1,324 @@
+function [odefun,msh,A,B,inv_mapping,ns,qs,species,phi2ExFull,phi2EyFull,reactions,...
+    stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p,flag)
+
+global BentoCaraca %#ok<GVMIS>
+
+p.SPECIES_NO_CHEM = strtrim(string(p.SPECIES_NO_CHEM(:))); % convert to column string array
+
+% Generating Mesh ---------------------------------------------------------
+geo_file = GetPath("geo") + "/" + p.MSH + ".geo";
+cmd_arguments = CreateCmdMshParameters(p.MSH_PARAMETERS);
+if BentoCaraca
+   fprintf("%s\n",GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
+else
+    if flag == "run"
+        if p.OPEN_GMSH == 1
+            system(GetPath("gmsh") + " " + geo_file + cmd_arguments);
+        elseif p.OPEN_GMSH == 0
+            [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
+        end
+        fprintf("%s\n","Generated Mesh");
+    elseif flag == "init"
+        [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
+    end
+end
+msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","yes");
+
+% Compute Ngas ------------------------------------------------------------
+Ngas = p.PRESSURE/(p.TEMPERATURE*kB); % p V = m * R * T
+
+% Setting Chemical Model --------------------------------------------------
+if upper(p.CHEMICAL_MODEL) == "OFF"
+    M = zeros(2,msh.Nc);
+    Mindices = [];
+    Nindices = [];
+    reactions = {"","-1"};
+    species = string(p.SPECIES_NO_CHEM(:));
+    ns = numel(species);
+    stoichiometric_matrix = zeros(1,ns);
+else
+    const_species = GetConstSpecies(p.CONST_SPECIES, Ngas);
+    run(GetPath("kin")+"/"+p.CHEMICAL_MODEL+".m")
+    [species,reactants,products,indices_const_species] = GetReactantsProducts(string(vertcat(reactions(:,1))), string(vertcat(const_species(:,1)))); %#ok<NODEF>
+    ns = numel(species);
+    [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), msh.Nc); 
+end
+
+% Getting species info ----------------------------------------------------
+species_info_table = readtable(GetPath("data")+"/species_database.csv");
+[~,indices_table] = ismember(species,table2array(species_info_table(:,1)));
+ms = table2array(species_info_table(indices_table,2))';
+qs = table2array(species_info_table(indices_table,3))';
+
+Loki = GetLoki(p.LOKI_INPUT,reactions);
+
+% Setting Electron Temperature --------------------------------------------
+% ELECTRON_TEMPERATURE can be se to
+% a look up table
+% a uniform and costant value (in eV)
+if isstring(p.ELECTRON_TEMPERATURE) | ischar(p.ELECTRON_TEMPERATURE)
+    if upper(p.ELECTRON_TEMPERATURE) == "LOKI"
+        if isempty(Loki)
+            error("You need to provide a LOKI_INPUT if you set ELECTRON_TEMPERATURE to LoKI")
+        end
+        fTe = griddedInterpolant(Loki.E,2/3*Loki.swarmParam.meanEnergy,'pchip','nearest');
+    else
+        LUT_Te = load(GetPath("data")+"/"+p.ELECTRON_TEMPERATURE+".csv");
+        fTe = griddedInterpolant(LUT_Te(:,1),LUT_Te(:,2),"pchip","nearest");
+    end
+else
+    fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
+end
+
+full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
+
+% ELECTROSTATICS
+[Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
+dNdz = [1,0;0,1;-1,-1]; % 2D triangles 1st order shape functions
+[phi2ExFull, phi2EyFull] = CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);
+[phi2Ex, phi2Ey] = CreateEMatricesFEM(msh.ns_from_c, msh.xn, msh.yn, msh.Nc, msh.Nn, dNdz);
+inv_mapping = find(msh.nodes_mapping);
+GetPhiSmall = sparse(1:numel(inv_mapping),inv_mapping,1,msh.Nn,full_msh.Nn);
+phi2Ex = phi2Ex * GetPhiSmall;
+phi2Ey = phi2Ey * GetPhiSmall;
+E2Faces = CreateE2FacesFEM(msh.inv_vol_standard, msh.cs_from_f, msh.Nf, msh.Nc);
+dphidv = bc2RHS * p.BCEL_VAL;
+
+if p.COORDINATES == "cylindrical"
+    p.LENGTH = 1;
+end
+
+% Compute C_s
+phi_full_1 = Kelet \ (bc2RHS * p.BCEL_VAL);
+Ec_full_1_x = phi2ExFull * phi_full_1;
+Ec_full_1_y = phi2EyFull * phi_full_1;
+C_s = p.LENGTH * eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
+
+Get_rho_sigma_eps = CreateGetRhoSigmaEps(qs,msh.Nc,msh.Nd);
+NcSigma2RHS = rho2RHS*Get_rho_sigma_eps;
+
+Flux2N = CreateMultiFlux2N(msh, ns);
+
+[Get_nL, Get_nR] = CreateMultiUpwind(msh,ns);
+
+% Ordering input parameters to match the order of "species" ---------------
+Ordered_bc_flag = OrderVariable(p.BC_FLAG,species,ns,"BC_FLAG",2);
+temp_ordered_bc_val = OrderVariable(p.BC_VAL,species,ns,"BC_VAL",0);
+Ordered_bc_val = eval(GetBCvalFuncStr(temp_ordered_bc_val));
+Ordered_v_th_coeff = OrderVariable(p.V_TH_COEFF,species,ns,"V_TH_COEFF",0)';
+if isempty(p.CONST_OMEGA)
+    Ordered_const_omega = 0;
+else
+    Ordered_const_omega = OrderVariable(p.CONST_OMEGA,species,ns,"CONST_OMEGA",0)';
+end
+Ordered_mu = OrderVariable(p.MU,species,ns,"MU",1);
+Ordered_d = OrderVariable(p.D,species,ns,"D",1);
+
+[fMu,fD,fKr] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),msh.Nc,msh.Nf,Loki,species,flag);
+
+BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
+fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
+
+indices = CreateIndicesBCspecies(msh, Ordered_bc_flag', ns);
+
+[A,B] = CreateMultiInterpToNodes(msh, indices, ns);
+
+nx_matrix = spdiags(repmat(msh.sn(:,1),ns), 0, ns*msh.Nf, ns*msh.Nf);
+ny_matrix = spdiags(repmat(msh.sn(:,2),ns), 0, ns*msh.Nf, ns*msh.Nf);
+
+[Gx, Gy] = CreateGradNoTang(msh, ns);
+
+[Xmu] = CreateMultiXmu(msh, indices, ns); % for drift in Dirichlet BC
+[XF] = CreateMultiXF(msh, indices, ns); % for flux BC
+
+XFx = nx_matrix * XF;
+XFy = ny_matrix * XF;
+
+[multi_indices_diel_interfaces, multi_indices_diel_cells, sum_diel_interfaces_fluxes_matrix, surf_charge_accum_flux_coeff] ...
+    = BuildUpSurfaceCharge(msh, p.SURF_CHARGE_COEFF, ns, qs, e, p.GAMMA_II_DIEL);
+
+% Other BC ----------------------------------------------------------------
+v_th_single = sqrt(8*kB*p.TEMPERATURE./(pi*ms)); % single row, with as many elements as species
+v_th_single(1) = v_th_single(1) * sqrt(11600/p.TEMPERATURE);
+v_th_single = v_th_single .* Ordered_v_th_coeff;
+
+[GetBfaces, GetBcells] = CreateGetBfacesBcells(msh);
+
+[indices_faces_Gorin, indices_cells_Gorin,...
+    indices_faces_Gorin_electrons, indices_faces_Gorin_positive_ions,...
+    v_th_x, v_th_y] = GorinBC(GetBfaces, GetBcells, Ordered_bc_flag', qs, v_th_single, msh.sn);
+
+[indices_faces_Absorbent, indices_cells_Absorbent] = AbsorbentBC(GetBfaces, GetBcells, Ordered_bc_flag');
+
+Nphi = full_msh.Nn;
+ode_dim = ns*msh.Nc + msh.Nd;
+dim_Jac = ode_dim + Nphi + 2;
+
+% Find elements corresponding to anode
+indices_el = [];
+for anode_id = p.ANODE_IDS(:)'
+    indices_el = [indices_el; msh.f_from_b(msh.bs_from_bID{anode_id})]; %#ok<AGROW>
+end
+indices_cells_el = msh.cs_from_f(indices_el,1);
+
+GetIp = CreateGetCurrent(msh.Nf,ns,qs,msh.areaf,indices_el,p.LENGTH);
+
+if flag == "run"
+    % Setting Initial Condition -------------------------------------------
+    % InitialCondition can be a string, a struct or an array
+    if isstring(p.INITIAL_CONDITION)
+        load(p.INITIAL_CONDITION + "/results.mat", "y_end");
+        p_previous_initial_condition = ProcessInput(p.INITIAL_CONDITION + "/input_script.m");
+        old_msh = GetMesh(readlines(p.INITIAL_CONDITION + "/geo/" + p_previous_initial_condition.MSH + ".geo"), p_previous_initial_condition.COORDINATES, p_previous_initial_condition.MSH_PARAMETERS);
+        if old_msh.Nc ~= msh.Nc
+            % different mesh, interpolation needed
+            N0 = InterpInitialCondition(old_msh.xc,old_msh.yc,...
+                y_end(1:ns*old_msh.Nc),msh.xc,msh.yc,ns,msh.Nc);
+            sigma0 = zeros(0,1);
+            if old_msh.Nd ~= msh.Nd
+                sigma0 = InterpInitialConditionSigma(old_msh.xf(old_msh.f_from_d),old_msh.yf(old_msh.f_from_d),y_end(ns*old_msh.Nc+1:ns*old_msh.Nc+old_msh.Nd),msh.xf(msh.f_from_d),msh.yf(msh.f_from_d),msh.Nd);
+            end
+            fprintf("%s\n","Interpolated to new mesh");
+        else
+            N0 = y_end(1:ns*msh.Nc);
+            sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
+        end
+        fprintf("%s\n","Loaded from previous save: "+p.INITIAL_CONDITION);
+    elseif isstruct(p.INITIAL_CONDITION)
+        if upper(p.CHEMICAL_MODEL) == "OFF"
+            % struct - generating a Gaussian
+            N0 = p.INITIAL_CONDITION.A .* exp(-(...
+                ((msh.xc - p.INITIAL_CONDITION.x0).^2)/(p.INITIAL_CONDITION.sigma_x)^2 + ((msh.yc - p.INITIAL_CONDITION.y0).^2)/(p.INITIAL_CONDITION.sigma_y)^2 ...
+                )) + p.INITIAL_CONDITION.B;
+            sigma0 = zeros(msh.Nd,1);
+        else
+            error("INITIAL_CONDITION can not be a structure if CHEMICAL_MODEL is not set to ""Off""")
+        end
+    else
+        % array - setting uniform number density
+        Ordered_initial_condition = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0)';
+        Ordered_initial_condition = arrayfun(@eval,string(Ordered_initial_condition));
+        N0 = ones(msh.Nc,ns) .* Ordered_initial_condition;
+        sigma0 = zeros(msh.Nd,1);
+    end
+
+    % Compute consistent initial condition ------------------------------------
+    v0 = p.V_APPLIED(p.TIME_INSTANTS(1));
+    I0 = 0;
+    phi0 = Kelet \ (NcSigma2RHS*[N0(:); sigma0] + dphidv * v0);
+    y0 = [N0(:); sigma0; phi0; I0; v0]; % initial condition
+
+    % Create Jacobian sparsity pattern ----------------------------------------
+    JPattern = CreateJpattern(msh, qs, Kelet, NcSigma2RHS, dphidv, indices_cells_el, inv_mapping);
+    
+    % Setting Mass Matrix -----------------------------------------------------
+    Mass = sparse(1:ode_dim, 1:ode_dim, ones(1,ode_dim), dim_Jac, dim_Jac);
+    Mass(end,end) = 1; % external circuit ode equation
+    
+    % Reordering --------------------------------------------------------------
+    if p.REORDERING == 1
+        % create permutation to make Jacobian close to diagonal
+        ppp = symrcm(JPattern)';
+        inv_ppp = InversePermutation(ppp);
+    elseif p.REORDERING == 0
+        ppp = (1:dim_Jac)';
+        inv_ppp = (1:dim_Jac)';
+    end
+    JPattern = JPattern(ppp,ppp);
+    Mass = Mass(ppp,ppp);
+    y0 = y0(ppp);
+
+    ode_options = odeset("MassSingular","yes", "Mass",Mass, "JPattern",JPattern);
+    
+    % Photoionization --------------------------------------------------------
+    ph_is_on = (upper(p.CHEMICAL_MODEL)~="OFF") & (~isempty(fieldnames(p.PHOTOIONIZATION)));
+    offon = ["OFF", "ON"]; fprintf("Photoionization is %s\n",offon(ph_is_on+1)) % give feedback about photoionization
+    if ph_is_on
+        [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
+            CreatePh(3,p.PRESSURE,p.COORDINATES,msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
+            p.PHOTOIONIZATION.BC,p.PHOTOIONIZATION.SPECIES_COEFF,p.PHOTOIONIZATION.REACTIONS,species,reactions);
+        photo_update_frequency = p.PHOTOIONIZATION.UPDATE_FREQUENCY;
+        input_photo.inv_ppp = inv_ppp;      
+        input_photo.Nc = msh.Nc;
+        input_photo.Nn = msh.Nn;
+        input_photo.ns = ns;
+        input_photo.Nd = msh.Nd;
+        input_photo.M_get_aux_BC_el = M_get_aux_BC_el;
+        input_photo.BCEL_VAL = p.BCEL_VAL;
+        input_photo.V_APPLIED = p.V_APPLIED;
+        input_photo.Eint2Ec = Eint2Ec;
+        input_photo.phi2Ex = phi2Ex;
+        input_photo.aux2Ex = aux2Ex;
+        input_photo.phi2Ey = phi2Ey;
+        input_photo.aux2Ey = aux2Ey;
+        input_photo.Ngas = Ngas;
+        input_photo.fTe = fTe;       
+        input_photo.fKr = fKr;
+        input_photo.T = p.TEMPERATURE;
+        input_photo.M = M;
+        input_photo.Mindices = Mindices;
+        input_photo.Nindices = Nindices;
+        input_photo.indices_src_reactions_ph = indices_src_reactions_ph;
+        input_photo.CellFromNodesPh = CellFromNodesPh;
+        input_photo.Ks = Ks;
+        input_photo.Si2RHS = Si2RHS;
+    else
+        ph_coeff = 0;
+        photo_update_frequency = -1;
+        input_photo = -1;
+    end
+elseif flag == "init"
+    odefun_mixed = 0;
+    y0 = 0;
+    ode_options = 0;
+    inv_ppp = 0;
+    sporadic_save_is_on = 0;
+    ph_is_on = 0;
+    input_photo = 0;
+    ph_coeff = 0;
+end
+
+InitializePhoto(y0,p.TIME_INSTANTS(1),input_photo,ph_is_on);
+
+% Creating Ode Function ---------------------------------------------------
+odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
+    multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
+    Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
+    phi2Ex,phi2Ey,E2Faces,Ngas,p.TEMPERATURE,qs,p.V_APPLIED,...
+    fTe,fMu,fD,fKr,M,Mindices,Nindices,stoichiometric_matrix,Ordered_const_omega,ns,...
+    indices_faces_Absorbent,indices_cells_Absorbent,...
+    indices_faces_Gorin,indices_cells_Gorin,v_th_x,v_th_y,indices_faces_Gorin_electrons,indices_faces_Gorin_positive_ions,p.GAMMA_II,...
+    surf_charge_accum_flux_coeff, perm, inv_perm,...
+    Gx, Gy, nx_matrix, ny_matrix, p.ELECTRON_REF_COEFF, ph_coeff, GetIp, p.R, C_s);
+odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
+
+if flag == "run"
+    odefun_mixed = @(t,y) odefun_perm(t,y,ppp,inv_ppp); % this is the one considering reordering
+    
+    % Setting Output Function ---------------------------------------------
+    if p.OUTPUT_FUNCTION == "none"
+        % no output function
+    else
+        clear GeneralOutputFunction
+        sporadic_save_is_on = p.SAVE_EACH_K_TIMESTEPS < Inf;
+        ode_options.OutputFcn = @(t,y,flag)GeneralOutputFunction(t,y,flag,...
+            p.OUTPUT_FUNCTION,p.BAR_SCALE,...
+            ph_is_on,photo_update_frequency,input_photo,...
+            sporadic_save_is_on,p.SAVE_EACH_K_TIMESTEPS,odefun_mixed);
+    end
+    
+    fprintf("%s\n","Initialization finished");
+elseif flag == "init"
+    if isa(p.ELECTRIC_FIELD_0D,"function_handle")
+        % This is the 0D case
+        [~,~,fKr0D] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),1,1,Loki,species,"run");
+        [M0D, Mindices0D, Nindices0D] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), 1); 
+        odefun_mixed = @(t,n)OdeFunc0D(t,n,p.ELECTRIC_FIELD_0D,fTe,fKr0D,p.TEMPERATURE,Ngas,M0D,Mindices0D,Nindices0D,stoichiometric_matrix,Ordered_const_omega);
+        y0 = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0);
+        y0 = arrayfun(@eval,string(y0));
+    end
+end
+
+
+end
+

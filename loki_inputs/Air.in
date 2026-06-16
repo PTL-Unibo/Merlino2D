@@ -1,0 +1,99 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   SWARM ANALYSIS AIR   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% --- configuration of the working conditions ---
+workingConditions:
+  reducedField: linspace(1,1e3,200)           % in Td
+  gasPressure: 101325                         % in Pa
+  gasTemperature: 300                         % in K   (average gas temperature)
+  wallTemperature: 300                        % in K   (wall temperature)
+  extTemperature: 300                         % in K   (external temperature)
+  surfaceSiteDensity: 1e19                    % in m-2 (used for surface kinetics)
+  excitationFrequency: 0                      % in Hz
+  electronDensity: 1e19                       % in m-3
+  chamberLength: 1.0                          % in m
+  chamberRadius: 1.0                          % in m
+  
+% --- configuration of the electron kinetics ---
+electronKinetics:
+  isOn: true                           % true or false (to activate or deactivate the electron kinetics)
+  eedfType: boltzmann                  % boltzmann or prescribedEedf (generalized expression Maxwellian/Druyvesteyn)
+  ionizationOperatorType: usingSDCS    % conservative, oneTakesAll, equalSharing or usingSDCS
+  growthModelType: temporal            % temporal or spatial
+  includeEECollisions: false           % true or false (to include / remove e-e collisions)
+  LXCatFiles:                          % cross section files
+    - Nitrogen/N2_LXCat.txt
+    - Nitrogen/N2_rot_LXCat.txt
+    - Oxygen/O2_LXCat.txt               
+    - Oxygen/O2_rot_LXCat.txt
+%   LXCatFilesExtra: extra_LXCat.txt    % extra cross section files
+%   effectiveCrossSectionPopulations:   % see doc
+%     - Nitrogen/N2_effectivePop.txt
+%   CARgases:                           % gases for which CAR is activated
+%     - N2
+  gasProperties:                       % properties of the gases (S.I. Units)
+    mass: Databases/masses.txt
+    fraction:
+      - N2 = 0.79
+      - O2 = 0.21
+    harmonicFrequency: Databases/harmonicFrequencies.txt
+    anharmonicFrequency: Databases/anharmonicFrequencies.txt
+    rotationalConstant: Databases/rotationalConstants.txt
+    electricQuadrupoleMoment: Databases/quadrupoleMoment.txt
+    OPBParameter: Databases/OPBParameter.txt
+  stateProperties:                     % properties of the states (S.I. Units except for the energy [eV])
+    energy:
+      - N2(X,v=*) = harmonicOscillatorEnergy
+      - N2(X,v=0,J=*) = rigidRotorEnergy  
+      - O2(X,v=*) = harmonicOscillatorEnergy
+      - O2(X,v=0,J=*) = rigidRotorEnergy  
+    statisticalWeight:
+      - N2(X,v=*) = 1.0
+      - N2(X,v=0,J=*) = rotationalDegeneracy_N2  
+      - O2(X) = 3
+      - O2(a1Dg) = 2 
+      - O2(b1Sg+) = 1 
+      - O2(A3Su+_C3Du_c1Su-) = 10
+      - O2(9.97eV)= 3
+      - O2(14.7eV) = 1  %value assumed (state ambiguously defined)
+      - O2(X,v=*) = 3.0
+      - O2(X,v=0,J=*) = rotationalDegeneracy
+    population:
+      - N2(X) = 1.0
+      - Nitrogen/N2_vibpop.txt
+      - N2(X,v=0,J=*) = boltzmannPopulation@gasTemperature
+      - O2(X) = 1.0
+      - O2(X,v=0) = 1.0 
+      - O2(X,v=0,J=*) = boltzmannPopulation@gasTemperature
+  numerics:                            % configuration of numerical details of the simulation
+    energyGrid:                        % properties of the energy grid (in eV)
+      maxEnergy: 1                     % (use 18-20 for time-dependent simulations)
+      cellNumber: 1000                 % (use 1800-2000 for time-dependent simulations)
+      smartGrid:                       % configuration of the smart grid
+        minEedfDecay: 20               % minimum number of decade-fall for the EEDF
+        maxEedfDecay: 25               % maximum number of decade-fall for the EEDF
+        updateFactor: 0.05             % factor used to increase or decrease the maximum value of the energy grid
+    maxPowerBalanceRelError: 1e-9      % threshold for the relative power balance warning message (use at least 100 for time dependent simulations)
+    nonLinearRoutines:
+      algorithm: mixingDirectSolutions % mixingDirectSolutions or temporalIntegration
+      mixingParameter: 0.7             % mixingDirectSolutions mixing parameter from 0 to 1
+      maxEedfRelError: 1e-9            % maximum rel. variation for EEDF between two iterations (stop criterion)
+%       odeSetParameters:                % optional parameters for the ode solver of the "temporalIntegration" algorithm	           
+%         AbsTol: 1e-300
+%         RelTol: 1e-6
+%         MaxStep: 1e-7
+          
+% ---  configuration of the output files ---
+output: 
+  isOn: true
+  dataFormat: hdf5
+  folder: Air
+  dataSets:
+%    - inputs
+%    - log
+    - eedf
+    - swarmParameters
+    - rateCoefficients
+%    - powerBalance
+%    - lookUpTable

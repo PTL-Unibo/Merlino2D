@@ -1,6 +1,8 @@
 # Merlino2D
 Merlino2D is an open-source plasma simulation code designed to provide a fast and user-friendly platform for modeling a broad range of plasma devices and gas discharges. The code is based on a drift–diffusion fluid framework and can accommodate detailed kinetic reaction schemes, depending on the chosen mesh resolution. Merlino2D employs a fully implicit time-integration scheme with adaptive time stepping, enabling stable and computationally efficient simulations. The code is implemented in MATLAB and supports two-dimensional plasma simulations on unstructured triangular meshes generated using Gmsh.
 
+# IF YOU ARE A REVIEWER PLEASE REFER TO V1.0.0 TAG
+
 ## Structure
 The main folder contains the script **init.m**, that always needs to be run before using the code.
 

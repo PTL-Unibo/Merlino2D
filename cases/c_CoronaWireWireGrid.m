@@ -1,4 +1,5 @@
 clearvars, close, clc
+%<<<<<
 opts.MSH = 'WireWireGrid';
 opts.MSH_PARAMETERS.k = 1;
 opts.BCEL_FLAG = [0; 0; 0; 0; 0; 1; 1; 1; 1];
@@ -26,23 +27,23 @@ opts.MU = {
     'O2+', "(1/Ngas) * min(1.18e23 * (T)^(-0.5), 3.61e12 * (E/1e21)^(-0.5))";
     'O2-', "(1/Ngas) * min(0.97e23 * (T)^(-0.5), 3.56e19 * (E/1e21)^(-0.1))"};
 opts.D = {
-    "O2+", '(muO2+)*T/11600';
+    "O2+", '<<muO2+>>*T/11600';
     "e",   "Loki_D(E)/Ngas";
-    "N2+", '(muN2+)*T/11600';
-    "O2-", "(muO2-)*T/11600"};
+    "N2+", '<<muN2+>>*T/11600';
+    "O2-", "<<muO2->>*T/11600"};
 opts.V_TH_COEFF = {
     "N2+", 1;
     "e",   1;
     "O2+", 1;
     "O2-", 1};
-opts.PHOTOIONIZATION.REACTIONS = {
-    'e + N2 -> 2e + N2+';
-    "e + O2 -> 2e + O2+"};
-opts.PHOTOIONIZATION.SPECIES_COEFF = {
-    'N2+',0.8;
-    'O2+',0.2};
-opts.PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 1, 0, 1, 1];
-opts.PHOTOIONIZATION.UPDATE_FREQUENCY = 5;
+% opts.PHOTOIONIZATION.REACTIONS = {
+%     'e + N2 -> 2e + N2+';
+%     "e + O2 -> 2e + O2+"};
+% opts.PHOTOIONIZATION.SPECIES_COEFF = {
+%     'N2+',0.8;
+%     'O2+',0.2};
+% opts.PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 1, 0, 1, 1];
+% opts.PHOTOIONIZATION.UPDATE_FREQUENCY = 5;
 opts.CHEMICAL_MODEL = 's_Parent';
 opts.CONST_SPECIES = {
     "N2", 0.7884, "rel";
@@ -50,12 +51,11 @@ opts.CONST_SPECIES = {
 opts.LOKI_INPUT = "Air";
 opts.ELECTRON_TEMPERATURE = 'LoKI';
 opts.GAMMA_II = 1e-2;
+% opts.SAVE_EACH_K_TIMESTEPS = 10;
 
-out = Merlino2D(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0);
-out_pp = PostProcessing(out,'full');
-Save(out_pp,"CoronaWireWireGrid.mat")
+p = M2DInput(opts,"OUTPUT_FUNCTION",'bar',"BAR_SCALE","log","REORDERING",0);
+%>>>>>
 
-%%
-out_pp = Load('CoronaWireWireGrid.mat');
-Plot(out_pp,"type","nn","species_index",1,"flip_y",1);
-Plot(out_pp,"type","rhon_log","flip_y",1,"log10_zero_val",-4);
+out = Merlino2D(matlab.desktop.editor.getActiveFilename,"run");
+Save(out,"r_CoronaWireWireGrid")
+% out = Load("CoronaWireWireGrid");

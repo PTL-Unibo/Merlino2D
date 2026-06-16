@@ -1,33 +1,15 @@
 clearvars, close, clc
-opts.MSH = "Square";
-opts.BCEL_FLAG = [0;0;0;0];
-opts.BCEL_VAL = [0;0;0;0];
-opts.V_APPLIED = @(t) 0;
-opts.BC_FLAG = {'N',{"FreeDriftFlow",'FreeDriftFlow',"FreeDriftFlow","FreeDriftFlow"}};
-opts.BC_VAL = {"N", {0, 0, 0, 0}};
-opts.TIME_INSTANTS = linspace(0,6e-3,601);
-opts.INITIAL_CONDITION.A = 1e10;
-opts.INITIAL_CONDITION.B = 0;
-opts.INITIAL_CONDITION.x0 = 0;
-opts.INITIAL_CONDITION.y0 = -900*6e-3/(2*pi);
-opts.INITIAL_CONDITION.sigma_x = sqrt(5e-3);
-opts.INITIAL_CONDITION.sigma_y = sqrt(5e-3);
-opts.SPECIES_NO_CHEM = 'N';
-opts.MU = {'N',0};
-opts.D = {"N",0};
-opts.V_TH_COEFF = {"N",1};
-opts.CONST_OMEGA = {'N',0};
+out = Merlino2D("Drift_i","run");
 
-% Uncomment lines 56 and 57 in DaeFunc2D.m:
-% ux = ones(size(ux)) * 900*cos(2*pi*(1/6e-3)*t);
-% uy = ones(size(uy)) * 900*sin(2*pi*(1/6e-3)*t);
-% BE CAREFUL!! COMMENT THEM AGAIN AFTER!!
-out = Merlino2D(opts,"OUTPUT_FUNCTION","cmd");
-out_pp = PostProcessing(out,"full");
+N_NODES = 0;
+for k = 1:100:501
+    out_pp_k = ProcessInstant(out,k);
+    N_NODES = N_NODES + out_pp_k.N_NODES;
+end
 
 fig = figure();
 ax = axes(fig);
-trisurf(out_pp.link_cell_to_nodes, out_pp.x_nodes, out_pp.y_nodes, sum(out_pp.N_NODES(:,(1:100:501))/1e10,2), "EdgeColor","none");
+trisurf(out.msh.ns_from_c, out.msh.xn, out.msh.yn, N_NODES/1e10, "EdgeColor","none");
 shading interp
 colormap(jet);
 cb = colorbar("TickLabelInterpreter","latex","Location","northoutside");

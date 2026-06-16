@@ -1,4 +1,4 @@
-function [fComputeMu,fComputeD,fComputeKr] = GetFcomputeMuDKr(Mu,D,Kr,Nc,Nf,Loki,species)
+function [fComputeMu,fComputeD,fComputeKr] = GetFcomputeMuDKr(Mu,D,Kr,Nc,Nf,Loki,species,flag)
 
 flag_loki = 0;
 if ~isempty(Loki)
@@ -21,6 +21,12 @@ Mu_str = CellExpressionToStringArray(Mu,Nf);
 D_str = CellExpressionToStringArray(D,Nf);
 Kr_str = CellExpressionToStringArray(Kr,Nc);
 
+if flag == "run"
+    if isfolder(GetPath("data")+"/"+"func")
+        addpath(GetPath("data")+"/"+"func")
+    end
+end
+
 strMu = "@(E,Te,T,Ngas)[" + join(Mu_str,",") + "]";
 strD = "@(mu,E,Te,T,Ngas)[" + join(D_str,",") + "]";
 if flag_loki == 1
@@ -32,12 +38,12 @@ end
 strMu = AddDot(strMu);
 strD = AddDot(strD);
 for i = 1:numel(species)
-    strD = strrep(strD,"(mu"+species(i)+")","mu(:," + i + ")"); % replace, i.e., muO2+ with mu(:,7)
+    strD = strrep(strD,"<<mu"+species(i)+">>","mu(:," + i + ")"); % replace, i.e., muO2+ with mu(:,7)
 end
 strKr = AddDot(strKr);
 
 % creating griddedInterpolants --------------------------------------------
-file_names_str = GetCSVfilesInData();
+file_names_str = GetFilesInDir(".csv",GetPath("data"));
 num_files = numel(file_names_str);
 for i = 1:num_files
     if contains(strMu,file_names_str(i)) || contains(strD,file_names_str(i)) || contains(strKr,file_names_str(i))

@@ -1,38 +1,19 @@
 clearvars, close, clc
-opts.MSH = "SquareCenterRefined";
-opts.BCEL_FLAG = 0;
-opts.BCEL_VAL = 0;
-opts.V_APPLIED = @(t) 0;
-opts.BC_FLAG = {"N", {'Flux'}};
-opts.BC_VAL = {'N', {0}};
-opts.TIME_INSTANTS = linspace(0,2e-3,201);
-opts.INITIAL_CONDITION.A = 1;
-opts.INITIAL_CONDITION.B = 0;
-opts.INITIAL_CONDITION.x0 = 0;
-opts.INITIAL_CONDITION.y0 = 0;
-opts.INITIAL_CONDITION.sigma_x = 1e-1;
-opts.INITIAL_CONDITION.sigma_y = 1e-1;
-opts.SPECIES_NO_CHEM = 'N';
-opts.MU = {'N',0};
-opts.D = {'N',2};
-opts.V_TH_COEFF = {"N",1};
-opts.CONST_OMEGA = {"N",0};
+out = Merlino2D("Diffusion_i","run");
 
-out = Merlino2D(opts);
-out_pp = PostProcessing(out);
-
-cells = out_pp.msh.cs_from_f(out_pp.msh.xf == 0,:);
+%%
+cells = out.msh.cs_from_f(out.msh.xf == 0,:);
 cells = cells(:);
 
-cells = cells(out_pp.msh.xc(cells) < 0);
+cells = cells(out.msh.xc(cells) < 0);
 
-temp = sortrows([out_pp.msh.yc(cells), cells]);
+temp = sortrows([out.msh.yc(cells), cells]);
 
 ii = temp(:,2);
 ii = ii(1:7:end);
 
-x = out_pp.msh.xc(ii);
-y = out_pp.msh.yc(ii);
+x = out.msh.xc(ii);
+y = out.msh.yc(ii);
 
 s0 = 1e-1;
 A0 = 1;
@@ -49,8 +30,9 @@ figure
 colors = get(gca, 'ColorOrder');
 hold on
 for i = 1:numel(indices_time)
-    Nexact = n(out_pp.tout(indices_time(i)));
-    plot(y, out_pp.N_CELLS(ii,indices_time(i)), ".", "MarkerSize",12, "Color",colors(i,:), "HandleVisibility","off")
+    Nexact = n(out.tout(indices_time(i)));
+    out_pp_k = ProcessInstant(out,indices_time(i));
+    plot(y, out_pp_k.N_CELLS(ii), ".", "MarkerSize",12, "Color",colors(i,:), "HandleVisibility","off")
     plot(y_exact, Nexact, "-", "Color",colors(i,:), "HandleVisibility","off")
 end
 
