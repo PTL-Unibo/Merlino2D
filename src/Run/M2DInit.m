@@ -164,6 +164,8 @@ indices_cells_el = msh.cs_from_f(indices_el,1);
 GetIp = CreateGetCurrent(msh.Nf,ns,qs,msh.areaf,indices_el,p.LENGTH);
 
 if flag == "run"
+    t0 = p.TIME_INSTANTS(1);
+
     % Setting Initial Condition -------------------------------------------
     % InitialCondition can be a string, a struct or an array
     if isstring(p.INITIAL_CONDITION)
@@ -183,6 +185,7 @@ if flag == "run"
             N0 = y_end(1:ns*msh.Nc);
             sigma0 = y_end(ns*msh.Nc+1:ns*msh.Nc+msh.Nd);
         end
+        v0 = y_end(end);
         fprintf("%s\n","Loaded from previous save: "+p.INITIAL_CONDITION);
     elseif isstruct(p.INITIAL_CONDITION)
         if upper(p.CHEMICAL_MODEL) == "OFF"
@@ -191,6 +194,7 @@ if flag == "run"
                 ((msh.xc - p.INITIAL_CONDITION.x0).^2)/(p.INITIAL_CONDITION.sigma_x)^2 + ((msh.yc - p.INITIAL_CONDITION.y0).^2)/(p.INITIAL_CONDITION.sigma_y)^2 ...
                 )) + p.INITIAL_CONDITION.B;
             sigma0 = zeros(msh.Nd,1);
+            v0 = p.V_APPLIED(t0);
         else
             error("INITIAL_CONDITION can not be a structure if CHEMICAL_MODEL is not set to ""Off""")
         end
@@ -200,6 +204,7 @@ if flag == "run"
         Ordered_initial_condition = arrayfun(@eval,string(Ordered_initial_condition));
         N0 = ones(msh.Nc,ns) .* Ordered_initial_condition;
         sigma0 = zeros(msh.Nd,1);
+        v0 = p.V_APPLIED(t0);
     end
 
     if isempty(p.R)
@@ -207,8 +212,6 @@ if flag == "run"
     end
 
     % Compute consistent initial condition ------------------------------------
-    t0 = p.TIME_INSTANTS(1);
-    v0 = p.V_APPLIED(t0);
     I0 = 0;
     phi0 = Kelet \ (NcSigma2RHS*[N0(:); sigma0] + dphidv * v0);
     y0 = [N0(:); sigma0; phi0; I0; v0]; % initial condition
