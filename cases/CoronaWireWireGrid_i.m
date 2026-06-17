@@ -16,7 +16,7 @@ BC_VAL = {
     'O2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'O2-', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0};
     'N2+', {NaN, NaN, NaN, NaN, NaN, 0, 0, 0, 0}};
-TIME_INSTANTS = [1e-12, 1e-2];
+TIME_INSTANTS = logspace(-12,-2,200);
 INITIAL_CONDITION = {
     'N2+',0.8e13;
     'O2-',0.999e13;
@@ -37,14 +37,14 @@ V_TH_COEFF = {
     "e",   1;
     "O2+", 1;
     "O2-", 1};
-% PHOTOIONIZATION.REACTIONS = {
-%     'e + N2 -> 2e + N2+';
-%     "e + O2 -> 2e + O2+"};
-% PHOTOIONIZATION.SPECIES_COEFF = {
-%     'N2+',0.8;
-%     'O2+',0.2};
-% PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 1, 0, 1, 1];
-% PHOTOIONIZATION.UPDATE_FREQUENCY = 5;
+PHOTOIONIZATION.REACTIONS = {
+    'e + N2 -> 2e + N2+';
+    "e + O2 -> 2e + O2+"};
+PHOTOIONIZATION.SPECIES_COEFF = {
+    'N2+',0.8;
+    'O2+',0.2};
+PHOTOIONIZATION.BC = [1, 1, 1, 1, 1, 1, 0, 1, 1];
+PHOTOIONIZATION.UPDATE_FREQUENCY = 5;
 CHEMICAL_MODEL = 's_Parent';
 CONST_SPECIES = {
     "N2", 0.7884, "rel";
@@ -54,5 +54,5 @@ ELECTRON_TEMPERATURE = 'LoKI';
 GAMMA_II = 1e-2;
 % SAVE_EACH_K_TIMESTEPS = 10;
 
-OUTPUT_FUNCTION = "i";
+OUTPUT_FUNCTION = "bar";
 BAR_SCALE = "log";

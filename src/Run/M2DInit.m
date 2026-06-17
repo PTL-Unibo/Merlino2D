@@ -255,14 +255,8 @@ if flag == "run"
         input_photo.Nn = msh.Nn;
         input_photo.ns = ns;
         input_photo.Nd = msh.Nd;
-        input_photo.M_get_aux_BC_el = M_get_aux_BC_el;
-        input_photo.BCEL_VAL = p.BCEL_VAL;
-        input_photo.V_APPLIED = p.V_APPLIED;
-        input_photo.Eint2Ec = Eint2Ec;
         input_photo.phi2Ex = phi2Ex;
-        input_photo.aux2Ex = aux2Ex;
         input_photo.phi2Ey = phi2Ey;
-        input_photo.aux2Ey = aux2Ey;
         input_photo.Ngas = Ngas;
         input_photo.fTe = fTe;       
         input_photo.fKr = fKr;
@@ -313,6 +307,8 @@ else
 end
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
 
+InitializePhoto(y0,t0,input_photo,ph_is_on);
+
 if flag == "run"
     ode_options = odeset("MassSingular","yes", "Mass",Mass(ppp,ppp), "JPattern",JPattern(ppp,ppp));
     dydt0 = odefun(t0,y0);
@@ -321,8 +317,6 @@ if flag == "run"
 elseif flag == "init"
     ode_options = 0;
 end
-
-InitializePhoto(y0,t0,input_photo,ph_is_on);
 
 if flag == "run"
     odefun_mixed = @(t,y) odefun_perm(t,y,ppp,inv_ppp); % this is the one considering reordering
