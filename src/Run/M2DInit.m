@@ -163,9 +163,8 @@ indices_cells_el = msh.cs_from_f(indices_el,1);
 
 GetIp = CreateGetCurrent(msh.Nf,ns,qs,msh.areaf,indices_el,p.LENGTH);
 
+t0 = p.TIME_INSTANTS(1);
 if flag == "run"
-    t0 = p.TIME_INSTANTS(1);
-
     % Setting Initial Condition -------------------------------------------
     % InitialCondition can be a string, a struct or an array
     if isstring(p.INITIAL_CONDITION)
