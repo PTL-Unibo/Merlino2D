@@ -55,7 +55,7 @@ Loki = GetLoki(p.LOKI_INPUT,reactions);
 % Setting Electron Temperature --------------------------------------------
 % ELECTRON_TEMPERATURE can be se to
 % a look up table
-% a uniform and costant value (in eV)
+% a uniform and constant value (in eV)
 if isstring(p.ELECTRON_TEMPERATURE) | ischar(p.ELECTRON_TEMPERATURE)
     if upper(p.ELECTRON_TEMPERATURE) == "LOKI"
         if isempty(Loki)

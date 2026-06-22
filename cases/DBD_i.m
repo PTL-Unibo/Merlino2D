@@ -1,16 +1,17 @@
 MSH = "DBD";
-MSH_PARAMETERS.k = 1;
+MSH_PARAMETERS.k = 0.8;
 EPSR_VAL = [1; 3.2];
 BCEL_FLAG = [0; 0; 0; 1; 1; 1; 1];
 BCEL_VAL = [1; 1; 0; 0; 0; 0; 0];
 V_APPLIED = @(t) 15e3*sin(2*pi*100e3*t);
+DV_APPLIED = @(t) 2*pi*100e3*15e3*cos(2*pi*100e3*t);
 ANODE_IDS = [1, 2];
 R = 100;
 LENGTH = 0.12;
 BC_FLAG = {
-    'I-',{"GorinLike", "GorinLike", 'Flux', "Flux", "Flux"};
-    'e', {'GorinLike', 'GorinLike', "Flux", 'Flux', 'Flux'};
-    "I+",{"GorinLike", "GorinLike", "Flux", 'Flux', "Flux"}};
+    'I-',{"GorinLike",     "GorinLike", 'Flux', "Flux", "Flux"};
+    'e', {'FreeDriftFlow', 'GorinLike', "Flux", 'Flux', 'Flux'};
+    "I+",{"GorinLike",     "GorinLike", "Flux", 'Flux', "Flux"}};
 BC_VAL = {
     "I+",{NaN, NaN, 0, 0, 0};
     "e", {NaN, NaN, 0, 0, 0};
