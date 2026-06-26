@@ -1,9 +1,0 @@
-% ---  configuration of the output files ---
-output: 
-  isOn: true
-  dataFormat: hdf5
-  folder: my_loki_input
-  dataSets:
-    - eedf
-    - swarmParameters
-    - rateCoefficients

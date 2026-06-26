@@ -12,7 +12,6 @@ r_*/
 *.zip
 *.png
 *.pdf
-#!doc/*.pdf
 *.fig
 *.vtu
 *.pvd
@@ -26,7 +25,5 @@ r_*/
 
 /work
 
-# Ignore everything inside the folder
 doc/*
-# Do not ignore this specific file
 !doc/user_manual.pdf
