@@ -3,10 +3,12 @@ BCEL_FLAG = [0; 0; 1; 1; 1; 1];
 BCEL_VAL = [1; 0; 0; 0; 0; 0];
 [tx,vx,time_instants] = StairRamp(1e-3,1e-4,(7:2:21)*1e3);
 V_APPLIED = @(t) interp1(tx,vx,t);
-BC_FLAG = {"e",  {"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"};
-                "N2+",{"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"};
-                "O2+",{"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"};
-                "O2-",{"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"}};
+R = 1e-3;
+ANODE_IDS = 1;
+BC_FLAG = {"e",   {"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"};
+           "N2+", {"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"};
+           "O2+", {"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"};
+           "O2-", {"GorinLike", "GorinLike", "Flux", "Flux", "Flux", "Flux"}};
 BC_VAL = {
     "e",  {NaN, NaN, 0, 0, 0, 0};
     "N2+",{NaN, NaN, 0, 0, 0, 0};
