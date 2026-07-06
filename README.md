@@ -48,10 +48,15 @@ The **Drift_i.m** script corresponds to a simulation where a spatial Gaussian di
 
 The **CoronaWireWireGrid_i.m** script corresponds to a simulation of a corona discharge in a geometry consisting of a thin wire emitter ($r = 50 \mathrm{\mu m}$) and a grid of 7 wires as collectors ($r = 100 \mathrm{\mu m}$). Due to symmetry, only the top-half part of the domain is meshed. The discharge is in atmospheric pressure air, and the kinetic model from [Parent et al.](https://www.sciencedirect.com/science/article/pii/S0021999113007912?via%3Dihub) is used. A voltage ramp from $7 \mathrm{kV}$ to $20 \mathrm{kV}$ is applied at the emitter while the collectors are grounded. A ballast resistor of $1 \mathrm{k\Omega}$ is considered in the external circuit. The photoionization model from [Bourdon et al.](https://iopscience.iop.org/article/10.1088/0963-0252/16/3/026) is used. This simulation will use LoKI-B to compute the mobility and diffusion coefficient of electrons, and also the electron temperature as a function of the reduced electric field. Run the script **CoronaWireWireGrid_run.m** to run this simulation.
 
-### 4) DBD 
+### 4) Surface DBD 
 <img src="images/DBD.png" width="600">
 
 The **DBD_i.m** script corresponds to a simulation of a surface dielectric barrier discharge in air at atmospheric pressure in a geometry with an HV electrode of length $2 \mathrm{mm}$ and thickness $70 \mathrm{\mu m}$ on top of a dielectric layer ($\varepsilon_r = 3.2$) with thickness of $3 \mathrm{mm}$. The grounded electrode on the bottom part of the dielectric layer has a length of $5 \mathrm{mm}$. A sinusoidal voltage with amplitude $15 \mathrm{kV}$ and frequency $100 \mathrm{kHz}$ is applied at the HV electrode. The chemical model for air from [Morrow et al.](https://iopscience.iop.org/article/10.1088/0022-3727/30/4/017) is used. A ballast resistor of $100 \mathrm{\Omega}$ is considered in the external circuit. The secondary electron emission coefficient at the HV electrode is set to $0.05$, while it is $0.01$ at the dielectric interface. Run the script **DBD_run.m** to run this simulation.
+
+### 5) Corona (point - plane geometry) 
+<img src="images/PointPlane.png" width="600">
+
+The **PointPlane_i.m** script corresponds to a simulation of a corona discharge in atmospheric pressure air in a point-plane geometry. Cylindrical coordinates are used for this simulation. The needle point has a curvature radius of $200 \mathrm{\mu m}$ and its distance from the plane is $5 \mathrm{mm}$. The plane is grounded while the voltage applied to the needle goes from $4 \mathrm{kV}$ to $10 \mathrm{kV}$. The kinetic scheme employed is the one proposed in [Parent et al.](https://www.sciencedirect.com/science/article/pii/S0021999113007912?via%3Dihub). The secondary electron emission coefficient at the cathode is set to $0.01$. Run the script **PointPlane_run.m** to run this simulation.
 
 
 ## Workflow
