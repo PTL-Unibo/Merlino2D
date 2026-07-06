@@ -4,6 +4,7 @@
 
 Merlino2D is an open-source plasma simulation code designed to provide a fast and user-friendly platform for modeling a broad range of plasma devices and gas discharges. The code is based on a drift–diffusion fluid framework and can accommodate detailed kinetic reaction schemes, depending on the chosen mesh resolution. Merlino2D employs a fully implicit time-integration scheme with adaptive time stepping, enabling stable and computationally efficient simulations. The code is implemented in MATLAB and supports two-dimensional plasma simulations on unstructured triangular meshes generated using Gmsh.
 
+
 ## Installation
 To use Merlino2D you need MATLAB installed on your computer.
 You also need to install [Gmsh](https://gmsh.info/) for mesh generation.
@@ -33,13 +34,12 @@ The main folder also contains 8 sub-folders:
 ## Tests
 
 ### 1) Diffusion
-<img src="images/Diffusion.png" width="600">
+<img src="images/Diffusion.png" width="500">
 
 The **Diffusion_i.m** script corresponds to a simulation where a spatial Gaussian distribution of number density (with standard deviation $\sigma_x = 0.1 \, \mathrm{m}$, $\sigma_y = 0.1 \, \mathrm{m}$) is let free to evolve in time in a square domain. No external field is applied and zero-flux boundary conditions are applied at the boundaries. Running the script **Diffusion_run.m** will run the simulation and plot a 1D comparison of the results obtained with the analytical solution. 
 
-
 ### 2) Drift
-<img src="images/Drift.png" width="600">
+<img src="images/Drift.png" width="500">
 
 The **Drift_i.m** script corresponds to a simulation where a spatial Gaussian distribution of number density is forced to rotate in the domain. To achieve that you need to uncomment 2 lines in the function **DaeFunc2DNoR.m**. Remember to comment them again once you are done with this test. Running the script **Drift_run.m** will run the simulation and plot the results at six different time instants.
 
@@ -57,6 +57,14 @@ The **DBD_i.m** script corresponds to a simulation of a surface dielectric barri
 <img src="images/PointPlane.png" width="600">
 
 The **PointPlane_i.m** script corresponds to a simulation of a corona discharge in atmospheric pressure air in a point-plane geometry. Cylindrical coordinates are used for this simulation. The needle point has a curvature radius of $200 \mathrm{\mu m}$ and its distance from the plane is $5 \mathrm{mm}$. The plane is grounded while the voltage applied to the needle goes from $4 \mathrm{kV}$ to $10 \mathrm{kV}$. The kinetic scheme employed is the one proposed in [Parent et al.](https://www.sciencedirect.com/science/article/pii/S0021999113007912?via%3Dihub). The secondary electron emission coefficient at the cathode is set to $0.01$. Run the script **PointPlane_run.m** to run this simulation.
+
+### 6) Corona (wire - cylinder geometry) 
+<img src="images/IV.png" width="600">
+
+The **CoronaWireCylinder_i.m** script corresponds to a simulation of a corona discharge in atmospheric pressure air in a wire-cylinder geometry. 
+The emitter wire has a radius of $50 \mathrm{\mu m}$ and the collector has a radius of $5 \mathrm{m m}$. The distance between the two is $30 \mathrm{m m}$.
+The cylinder is grounded while the voltage applied to the emitter is gradually increased from $7 \mathrm{kV}$ to $21 \mathrm{kV}$ in order to generate the current-voltage characteristic.
+Running the script **CoronaWireCylinder_run.m** will run the simulation using the **idas** solver and compare the I-V characteristic obtained from Merlino2D with the experimentally measured one from [Kiousis et al.](https://iopscience.iop.org/article/10.1088/1009-0630/16/4/11).
 
 
 ## Workflow
