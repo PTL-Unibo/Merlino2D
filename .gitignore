@@ -11,6 +11,7 @@ r_*/
 *.mat
 *.zip
 *.png
+!images/*.png
 *.pdf
 *.fig
 *.vtu

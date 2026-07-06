@@ -1,70 +1,9 @@
 # Merlino2D
-Merlino2D is an open-source plasma simulation code designed to provide a fast and user-friendly platform for modeling a broad range of plasma devices and gas discharges. The code is based on a drift–diffusion fluid framework and can accommodate detailed kinetic reaction schemes, depending on the chosen mesh resolution. Merlino2D employs a fully implicit time-integration scheme with adaptive time stepping, enabling stable and computationally efficient simulations. The code is implemented in MATLAB and supports two-dimensional plasma simulations on unstructured triangular meshes generated using Gmsh.
 
-# IF YOU ARE A REVIEWER PLEASE REFER TO V1.0.0 TAG
+| | |
+|-------|-------------|
+| Merlino2D is an open-source plasma simulation code designed to provide a fast and user-friendly platform for modeling a broad range of plasma devices and gas discharges. The code is based on a drift–diffusion fluid framework and can accommodate detailed kinetic reaction schemes, depending on the chosen mesh resolution. Merlino2D employs a fully implicit time-integration scheme with adaptive time stepping, enabling stable and computationally efficient simulations. The code is implemented in MATLAB and supports two-dimensional plasma simulations on unstructured triangular meshes generated using Gmsh. | <img src="images/Merlino_logo.png" width="950"> |
 
-## Structure
-The main folder contains the script **init.m**, that always needs to be run before using the code.
-
-The main folder also contains 6 sub-folders:
-
-### cases/ 
-Contains the scripts for running some tests, with the aim of illustrating the capabilities of the code:
-- **c_CoronaWireCylinder.m**
-- **c_CoronaWireWireGrid.m**
-- **c_DBD.m**
-- **c_Diffusion.m**
-- **c_Drift.m**
-
-In the examples provided, accuracy has been sacrificed to reduce the computational time.
-
----
-### data/ 
-Contains the csv variables (described in chapter 6.11 of the user manual) created by the user. Some files of this type are already present inside this folder:
-- **alpha_Air.csv**
-- **eta_Air.csv**
-- **D_Air.csv**
-- **mu_Air.csv**
-- **Te_Air.csv**
-- **k1_Koz.csv**
-- **k2_Koz.csv**
-
-New csv variables must be placed inside the **data/** folder.
-
-The folder also contains the file **species_database.csv**, where information about the mass and charge of species should be stored.
-
-In addition, the folder contains experimental results obtained by [Kiousis et al.](https://iopscience.iop.org/article/10.1088/1009-0630/16/4/11) for an I-V characteristic of a corona discharge in a wire-cylinder configuration (**Experimental_Results_50u_5m_30m.csv**), used for comparison with the results obtained from the code when running the test **c_CoronaWireCylinder.m**.
-
----
-### doc/
-Contains the user manual of the code. 
-
----
-### geo/
-Contains the **.geo** mesh files that are generated with the Gmsh program. Some files are already present inside this folder and are used to run the example cases:
-- **DBD.geo**
-- **Square.geo**
-- **SquareCenterRefined.geo**
-- **WireCyl_50u_5m_30m.geo**
-- **WireWireGrid.geo**
-
-New mesh files created by the user must be placed inside this directory.
-
----
-### kinetic/
-Contains the definition of the kinetic schemes. Some kinetic schemes for air have already been provided and can be used as reference for the creation of custom ones.
-The provided kinetic schemes are:
-- **s_Kozhevnikov.m**
-- **s_Parent.m**
-- **s_ParentLoki.m**
-- **s_Townsend.m**
-- **s_TownsendLoki.m**
-
-New kinetic schemes defined by the user must be placed inside this folder. Note that the kinetic scheme can refer to any gas mixture.
-
----
-### src/ 
-Contains all the functions that compose **Merlino2D**, organized in sub-folders. It also contains the script **Merlino2D_startup.m**, that needs to be run only the first time the code is used.
 
 ## Installation
 To use Merlino2D you need MATLAB installed on your computer.
@@ -78,6 +17,42 @@ After, you will be asked to select the **Code/** folder of the [LoKI-B](https://
 If the folder containing the project is moved to another location, you need to run **Merlino2D_startup.m** again.
 
 
+## Structure
+The main folder contains the script **init.m**, that always needs to be run before using the code.
+
+The main folder also contains 8 sub-folders:
+- **cases/** contains the scripts for running some tests, with the aim of illustrating the capabilities of the code.
+- **data/** contains the csv variables (described in chapter 6.11 of the user manual) created by the user. Some files of this type are already present inside this folder.
+- **doc/** contains the user manual of the code. 
+- **geo/** contains the **.geo** mesh files that are generated with the Gmsh program.
+- **images/** contains some results pictures. 
+- **kinetic/** contains the definition of the kinetic schemes. Some kinetic schemes have already been provided and can be used as reference for the creation of custom ones.
+- **loki_inputs/** contains examples of input files for the LoKI-B Boltzmann solver.
+- **src/** contains all the functions that compose **Merlino2D**, organized in sub-folders. It also contains the script **Merlino2D_startup.m**, that needs to be run only the first time the code is used.
+
+
+## Tests
+
+### 1) Diffusion
+| | |
+|-------|-------------|
+| The **Diffusion_i.m** script corresponds to a simulation where a spatial Gaussian distribution of number density (with standard deviation $\sigma_x = 0.1 \, \mathrm{m}$, $\sigma_y = 0.1 \, \mathrm{m}$) is let free to evolve in time in a square domain. No external field is applied and zero-flux boundary conditions are applied at the boundaries. Running the script **Diffusion_run.m** will run the simulation and plot a 1D comparison of the results obtained with the analytical solution. | <img src="images/Diffusion.png" width="4950"> |
+
+### 2) Drift
+| | |
+|-------|-------------|
+| The **Drift_i.m** script corresponds to a simulation where a spatial Gaussian distribution of number density is forced to rotate in the domain. To achieve that you need to uncomment 2 lines in the function **DaeFunc2DNoR.m**. Remember to comment them again once you are done with this test. Running the script **Drift_run.m** will run the simulation and plot the results at six different time instants. | <img src="images/Drift.png" width="4950"> |
+
+### 3) Corona (wire - wire grid geometry)
+| | |
+|-------|-------------|
+| The **CoronaWireWireGrid_i.m** script corresponds to a simulation of a corona discharge in a geometry consisting of a thin wire emitter ($r = 50 \mathrm{\mu m}$) and a grid of 7 wires as collectors ($r = 100 \mathrm{\mu m}$). Due to symmetry, only the top-half part of the domain is meshed. The discharge is in atmospheric pressure air, and the kinetic model from [Parent et al.](https://www.sciencedirect.com/science/article/pii/S0021999113007912?via%3Dihub) is used. A voltage ramp from $7 \mathrm{kV}$ to $20 \mathrm{kV}$ is applied at the emitter while the collectors are grounded. A ballast resistor of $1 \mathrm{k\Omega}$ is considered in the external circuit. The photoionization model from [Bourdon et al.](https://iopscience.iop.org/article/10.1088/0963-0252/16/3/026) is used. This simulation will use LoKI-B to compute the mobility and diffusion coefficient of electrons, and also the electron temperature as a function of the reduced electric field. Run the script **CoronaWireWireGrid_run.m** to run this simulation. | <img src="images/CoronaWireWireGrid.png" width="14950"> |
+
+### 4) DBD 
+| | |
+|-------|-------------|
+| The **DBD_i.m** script corresponds to a simulation of a surface dielectric barrier discharge in air at atmospheric pressure in a geometry with an HV electrode of length $2 \mathrm{mm}$ and thickness $70 \mathrm{\mu m}$ on top of a dielectric layer ($\varepsilon_r = 3.2$) with thickness of $3 \mathrm{mm}$. The grounded electrode on the bottom part of the dielectric layer has a length of $5 \mathrm{mm}$. A sinusoidal voltage with amplitude $15 \mathrm{kV}$ and frequency $100 \mathrm{kHz}$ is applied at the HV electrode. The chemical model for air from [Morrow et al.](https://iopscience.iop.org/article/10.1088/0022-3727/30/4/017) is used. A ballast resistor of $100 \mathrm{\Omega}$ is considered in the external circuit. The secondary electron emission coefficient at the HV electrode is set to $0.05$, while it is $0.01$ at the dielectric interface. Run the script **DBD_run.m** to run this simulation. | <img src="images/DBD.png" width="7550"> |
+
 
 ## Workflow
 Every time you open MATLAB, to use the code you have to run the script **init.m** 
@@ -88,41 +63,20 @@ init
 This will add to the MATLAB path the folder **src/** that contains the code.
 
 
-The core of the code is the function `Merlino2D`, the syntax is
-
+The core of the code is the function `Merlino2D`. After you have crated the input file for the simulation, for example **my_input.m**, you can run it with the command
 ```
-out = Merlino2D(opts,"key1",value1,"key2",value2,...);
+out = Merlino2D("my_input","run");
 ```
-`opts` is a structure that contains the input parameters for the simulation. 
-Some parameters have default values that can be found inside **DefaultMerlino2Dinput.m**.
-
-The key-value arguments are optional and can be used to overwrite the parameters passed though `opts`.
-
-`out` is the unprocessed output structure that is given in input to the `PostProcessing` function to obtain the post-processed output structure `out_pp`. 
+`out` is the output structure that will contain all the relevant results from the simulation.
+You can visualize the 2D domain results with the command `Mview(out,'x')`. To visualize the voltage and current results use `Mview(out,'i')` and to visualize the results relative to the surface charge (where appropriate) use `Mview(out,'s')`. You can also combine together the visualizations, for example using 
 ```
-out_pp = PostProcessing(out);
+Mview(out,'xi')
 ```
-`out_pp` can be used to plot the results using the `Plot` function. 
+To save the results of a simulation (contained in the `out` structure) inside the folder **my_results/**, use the `Save` function.
 ```
-Plot(out_pp,"type",type_value);
-```
-To save the results of a simulation, use the `Save` function.
-```
-Save(out_pp,"my_result.mat");
+Save(out,"my_result");
 ```
 To retrieve the results of a simulation that was previously saved, use the `Load` function.
 ```
-out_pp = Load("my_result.mat");
+out = Load("my_result");
 ```
-It is also possible to export the results for visualization with Paraview using the `ExportVTU` function. 
-```
-ExportVTU(out_pp,"my_results")
-```
-
-
-
-## Test
-To perform a comprehensive test, you can run the script **c_CoronaWireWireGrid.m** that is inside the folder **cases/**.
-This simulation will use LoKI-B to compute the mobility and diffusion coefficient of electrons, and also the electron temperature as a function of the reduced electric field.
-
-It will also use the [three-exponential Helmholtz model of photoionization](https://iopscience.iop.org/article/10.1088/0963-0252/16/3/026) during the simulation.

@@ -1,6 +1,8 @@
 clearvars, close, clc
 out = Merlino2D("Drift_i","run");
 
+%%
+my_font_size = 25;
 N_NODES = 0;
 for k = 1:100:501
     out_pp_k = ProcessInstant(out,k);
@@ -14,7 +16,7 @@ shading interp
 colormap(jet);
 cb = colorbar("TickLabelInterpreter","latex","Location","northoutside");
 cb.Label.String = "normalized number density $()$";
-cb.Label.FontSize = 15;
+cb.Label.FontSize = my_font_size;
 cb.Label.Interpreter = "latex";
 cb.TickLabels = {"$10^{-1}$","$1$"};
 cb.TickLength = cb.TickLength * 4; 
@@ -25,7 +27,7 @@ ax.PlotBoxAspectRatio = [(ax.XLim(2)-ax.XLim(1))/(ax.YLim(2)-ax.YLim(1)), 1, 1];
 xlabel("x $(\mathrm{m})$", "Interpreter","latex")
 ylabel("y $(\mathrm{m})$", "Interpreter","latex")
 set(ax, 'TickLabelInterpreter', 'latex');
-set(ax, "FontSize", 15)
+set(ax, "FontSize", my_font_size)
 xlim([-1.1,1.1])
 ylim([-1.1,1.1])
 hold on
@@ -59,8 +61,10 @@ end
 bottomleft = [0.2810    0.1397];
 topright = [0.7548    0.7683];
 
-x = [0.04, 0.7, 0.68, 0.1, -0.55, -0.58] * 6/5;
-y = [-0.68, -0.25, 0.5, 0.78, 0.4, -0.3] * 6/5;
+% x = [0.04, 0.7, 0.68, 0.1, -0.55, -0.58] * 6/5;
+% y = [-0.68, -0.25, 0.5, 0.78, 0.4, -0.3] * 6/5;
+x = [0.04, 0.5, 0.5, 0.1, -0.55, -0.60] * 6/5;
+y = [-0.68, -0.25, 0.6, 0.72, 0.6, -0.3] * 6/5;
 for k = 1:numel(x)
     [norm_x, norm_y] = CoordToNormal(ax, bottomleft, topright, x(k), y(k));
     annotation('textbox', [norm_x, norm_y, 0.05, 0.05], ...
@@ -70,7 +74,7 @@ for k = 1:numel(x)
                'EdgeColor', "none", ...
                "Color","white",...
                "VerticalAlignment","middle",...
-               'FontSize', 15);
+               'FontSize', my_font_size);
 end
 
 function [norm_x, norm_y] = CoordToNormal(axes_in, bottomleft, topright, x, y)
