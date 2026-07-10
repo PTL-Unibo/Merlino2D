@@ -71,8 +71,8 @@ Gamma_y(indices_faces_A) = n_c(indices_cells_A) .* uy(indices_faces_A);   % |
 % --------------------------------------------------------------------------|
 
 % -> Gorin BC -------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-Gamma_x(indices_faces_G) = n_c(indices_cells_G) .* (0.5*v_th_x + 0 .* ux(indices_faces_G) .* u_dot_n_max(indices_faces_G) - 0 .* ux(indices_faces_G) .* u_dot_n_min(indices_faces_G));    %|
-Gamma_y(indices_faces_G) = n_c(indices_cells_G) .* (0.5*v_th_y + 0 .* uy(indices_faces_G) .* u_dot_n_max(indices_faces_G) - 0 .* uy(indices_faces_G) .* u_dot_n_min(indices_faces_G));    %|
+Gamma_x(indices_faces_G) = n_c(indices_cells_G) .* (0.5*v_th_x + 1 .* ux(indices_faces_G) .* u_dot_n_max(indices_faces_G) - 0 .* ux(indices_faces_G) .* u_dot_n_min(indices_faces_G));    %|
+Gamma_y(indices_faces_G) = n_c(indices_cells_G) .* (0.5*v_th_y + 1 .* uy(indices_faces_G) .* u_dot_n_max(indices_faces_G) - 0 .* uy(indices_faces_G) .* u_dot_n_min(indices_faces_G));    %|
                                                                                                                                                                                 %|
 Gamma_x(indices_faces_Ge) = ((1-re)/(1+re)) * Gamma_x(indices_faces_Ge) +...                                                                                                    %|
                                 - 2/(1+re) * gammaII * sum(Gamma_x(indices_faces_Gp),2);                                                                                        %|

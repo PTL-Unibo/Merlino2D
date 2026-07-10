@@ -24,6 +24,8 @@ r_*/
 *.out
 *.tex
 
+untitled*
+
 /work
 
 doc/*

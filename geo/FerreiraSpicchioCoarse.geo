@@ -5,10 +5,10 @@ If (!Exists(r))
 EndIf
 
 alpha = 0.2;
-Nradial1 = 40;
+Nradial1 = 25;
 Prog1 = 0.97;
-Nradial2 = 20;
-Nazimut2 = 25;
+Nradial2 = 10;
+Nazimut2 = 15;
 Prog2 = 0.95;
 k_struct1 = 1.2;
 k_struct2 = 0.95;
@@ -91,4 +91,4 @@ Physical Surface(1) = {S_1, S_2, S_3};
 
 Mesh 2;
 Mesh.MshFileVersion = 2;
-Save "FerreiraSpicchio.m";
+Save "FerreiraSpicchioCoarse.m";
