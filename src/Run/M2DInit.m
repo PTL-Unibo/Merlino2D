@@ -282,6 +282,12 @@ elseif flag == "init"
     ph_coeff = 0;
 end
 
+% Improve condition number of Kelet (to avoid "DAE index greater than 1")
+scf = 1 ./ max(Kelet, [], 2);
+Kelet = Kelet .* scf;
+NcSigma2RHS = NcSigma2RHS .* scf;
+dphidv = dphidv .* scf;
+
 % Creating Ode Function ---------------------------------------------------
 if p.R > 0
     odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
