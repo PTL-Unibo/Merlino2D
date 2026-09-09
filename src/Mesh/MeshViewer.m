@@ -2,6 +2,7 @@ function [] = MeshViewer(msh)
 
 fig = figure();
 ax = axes(fig);
+grid off
 
 addlistener(ax, 'XLim', 'PostSet', @(src, event) AxisEqual3D(ax));
 addlistener(ax, 'YLim', 'PostSet', @(src, event) AxisEqual3D(ax));
@@ -30,7 +31,7 @@ uicontrol(fig, ...
             saved_lims_x = ax.XLim;
             saved_lims_y = ax.YLim;
         end
-        trisurf(msh.ns_from_c, msh.xn, msh.yn, zeros(size(msh.xn)),'FaceColor','w')
+        trisurf(msh.ns_from_c, msh.xn, msh.yn, zeros(size(msh.xn)),'FaceColor','w',"EdgeColor",0.9*[1,1,1])
         view([0,90])
         AxisEqual3D(ax)
         if ~flag_first
@@ -38,6 +39,7 @@ uicontrol(fig, ...
             ylim(saved_lims_y)
         end
         flag_first = 0;
+        grid off
     end
 
     function draw_mesh()
@@ -52,23 +54,22 @@ uicontrol(fig, ...
         
         % nodes
         li_n = (msh.xn<=xlimits(2) & msh.xn>=xlimits(1)) & (msh.yn<=ylimits(2) & msh.yn>=ylimits(1));
-        plot(msh.xn(li_n),msh.yn(li_n),'MarkerSize',15,'Marker','.','LineStyle','none','Color',[0,0,1])
+        plot(msh.xn(li_n),msh.yn(li_n),'MarkerSize',15,'Marker','o','LineStyle','none','Color',[0,0,1])
         
         % print numbers cells
         for ic = find(li_c)'
-            text(msh.xc(ic), msh.yc(ic), num2str(ic))
+            text(msh.xc(ic), msh.yc(ic), num2str(ic), "HorizontalAlignment","center")
         end
         
-        d = min(diff(xlimits),diff(ylimits)) / 1e5;
         % print numbers nodes
         for in = find(li_n)'
-            text(msh.xn(in)+d, msh.yn(in)+d, num2str(in))
+            text(msh.xn(in), msh.yn(in), num2str(in), "HorizontalAlignment","center")
         end
         
         % print numbers faces
         li_f = (msh.xf<=xlimits(2) & msh.xf>=xlimits(1)) & (msh.yf<=ylimits(2) & msh.yf>=ylimits(1));
         for i_f = setdiff(find(li_f)',[find(msh.cs_from_f(:,2) == 0); msh.f_from_d])'
-            text(msh.xf(i_f)+d, msh.yf(i_f)+d, num2str(i_f))
+            text(msh.xf(i_f), msh.yf(i_f), num2str(i_f), "HorizontalAlignment","center")
         end
         
         % print numbers b
@@ -76,7 +77,7 @@ uicontrol(fig, ...
         for i_f = msh.f_from_b'
             k = k + 1;
             if li_f(i_f)
-                text(msh.xf(i_f)+d, msh.yf(i_f)+d, num2str(i_f)+"("+num2str(k)+")")
+                text(msh.xf(i_f), msh.yf(i_f), num2str(i_f)+"("+num2str(k)+")", "HorizontalAlignment","center")
             end
         end
         
@@ -85,13 +86,14 @@ uicontrol(fig, ...
         for i_f = msh.f_from_d'
             k = k + 1;
             if li_f(i_f)
-                text(msh.xf(i_f)+d, msh.yf(i_f)+d, num2str(i_f)+"["+num2str(k)+"]")
+                text(msh.xf(i_f), msh.yf(i_f), num2str(i_f)+"["+num2str(k)+"]")
             end
         end
         
         % disp normal to surfaces
         scale = min(diff(xlimits),diff(ylimits)) / 100;
-        quiver(msh.xf(li_f), msh.yf(li_f), msh.sn(li_f,1)*scale, msh.sn(li_f,2)*scale, 0)
+        quiver(msh.xf(li_f), msh.yf(li_f), msh.sn(li_f,1)*scale, msh.sn(li_f,2)*scale, 0, "Color",[1,0,1])
+        grid off
     
     end
 
