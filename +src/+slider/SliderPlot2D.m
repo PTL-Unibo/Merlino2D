@@ -19,7 +19,7 @@ AxCbProperties()
 
 global_m_value = 0;
 global_max_Uk_val = 0;
-Ngas = out.p.PRESSURE/(out.p.TEMPERATURE*kB);
+Ngas = out.p.PRESSURE/(out.p.TEMPERATURE*src.const.kB);
 i_specific_cell = -1;
 out_pp_k = struct;
 patch_handle = gobjects(1,1);

@@ -25,7 +25,7 @@ end
 msh = src.run.PreProcessing(src.gen.GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","yes");
 
 % Compute Ngas ------------------------------------------------------------
-Ngas = p.PRESSURE/(p.TEMPERATURE*kB); % p V = m * R * T
+Ngas = p.PRESSURE/(p.TEMPERATURE*src.const.kB); % p V = m * R * T
 
 % Setting Chemical Model --------------------------------------------------
 if upper(p.CHEMICAL_MODEL) == "OFF"
@@ -92,7 +92,7 @@ end
 phi_full_1 = Kelet \ (bc2RHS * p.BCEL_VAL);
 Ec_full_1_x = phi2ExFull * phi_full_1;
 Ec_full_1_y = phi2EyFull * phi_full_1;
-C_s = p.LENGTH * eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
+C_s = p.LENGTH * src.const.eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
 
 Get_rho_sigma_eps = CreateGetRhoSigmaEps(qs,msh.Nc,msh.Nd);
 NcSigma2RHS = rho2RHS*Get_rho_sigma_eps;
@@ -138,7 +138,7 @@ XFy = ny_matrix * XF;
     = BuildUpSurfaceCharge(msh, p.SURF_CHARGE_COEFF, ns, qs, p.GAMMA_II_DIEL);
 
 % Other BC ----------------------------------------------------------------
-v_th_single = sqrt(8*kB*p.TEMPERATURE./(pi*ms)); % single row, with as many elements as species
+v_th_single = sqrt(8*src.const.kB*p.TEMPERATURE./(pi*ms)); % single row, with as many elements as species
 v_th_single(1) = v_th_single(1) * sqrt(11600/p.TEMPERATURE);
 v_th_single = v_th_single .* Ordered_v_th_coeff;
 

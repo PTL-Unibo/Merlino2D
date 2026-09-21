@@ -9,7 +9,7 @@ phi_full_1(non_Dirichlet_nodes_indices,:) = phi1;
 Ec_full_1_x = Phi2Ex_c * phi_full_1;
 Ec_full_1_y = Phi2Ey_c * phi_full_1;
 
-C_s = eps0 * sum(full_vol .* EPSR_VAL(cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
+C_s = src.const.eps0 * sum(full_vol .* EPSR_VAL(cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
 
 if isa(DV_APPLIED, 'function_handle')
     I_s = @(t) C_s * DV_APPLIED(t);
