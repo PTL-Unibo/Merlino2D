@@ -21,11 +21,11 @@ Mu_str = src.chem.CellExpressionToStringArray(Mu,Nf);
 D_str = src.chem.CellExpressionToStringArray(D,Nf);
 Kr_str = src.chem.CellExpressionToStringArray(Kr,Nc);
 
-if flag == "run"
-    if isfolder(src.gen.GetPath("data")+"/"+"func")
-        addpath(src.gen.GetPath("data")+"/"+"func")
-    end
-end
+% if flag == "run"
+%     if isfolder(src.gen.GetPath("data")+"/"+"func")
+%         addpath(src.gen.GetPath("data")+"/"+"func")
+%     end
+% end
 
 strMu = "@(E,Te,T,Ngas)[" + join(Mu_str,",") + "]";
 strD = "@(mu,E,Te,T,Ngas)[" + join(D_str,",") + "]";

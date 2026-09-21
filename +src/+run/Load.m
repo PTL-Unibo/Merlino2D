@@ -1,19 +1,20 @@
-function [out] = Load(input_name)
+function [out] = Load()
 
-arguments
-    input_name (1,:) char = ""
+try
+    % Load save -----------------------------------------------------------
+    out = src.run.Merlino2D("input_script.m","init");
+    out2 = load("results.mat");
+
+    % merge the 2 struct -------------------------------------------------              
+    fn = fieldnames(out2);              
+    fn(fn=="y_end") = []; % remove y_end
+    for k = 1:numel(fn)                 
+        out.(fn{k}) = out2.(fn{k});     
+    end                                 
+    % ---------------------------------------------------------------------
+catch ME
+    fprintf("%s\n", "Load failed due to: " + ME.message)
+    out = 0;
 end
-
-if input_name == ""
-    folder_name = uigetdir("",'Select the folder');
-    folder_name = strrep(folder_name,filesep,"/");
-else
-    folder_name = input_name;
-end
-
-previous_path = pwd;
-cd(folder_name)
-out = SpecificLoader();
-cd(previous_path)
 
 end

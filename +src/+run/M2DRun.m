@@ -62,9 +62,9 @@ yout = yout(inv_ppp,:);
 
 fprintf("%s\n","Simulation finished");
 
-if isfolder(src.gen.GetPath("data")+"/"+"func")
-    rmpath(src.gen.GetPath("data")+"/"+"func")
-end
+% if isfolder(src.gen.GetPath("data")+"/"+"func")
+%     rmpath(src.gen.GetPath("data")+"/"+"func")
+% end
 
 if BentoCaraca
     % do nothing

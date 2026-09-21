@@ -1,6 +1,6 @@
 function [p] = GetPath(id)
 arguments
-    id (1,:) char {mustBeMember(id,{'gmsh','geo','data','kin','loki','src'})}
+    id (1,:) char {mustBeMember(id,{'gmsh','geo','data','kin','loki','src','func'})}
 end
 
 switch id
@@ -18,6 +18,8 @@ switch id
         p = "kinetic";
     case 'src'
         p = "+src";
+    case 'func'
+        p = "+func";
 end
 
 end

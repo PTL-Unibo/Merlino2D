@@ -1,7 +1,7 @@
 function [] = Save(out,folder_name)
 
 if ~exist("folder_name","var")
-    folder_name = GetTimeString(datetime);
+    folder_name = src.gen.GetTimeString(datetime);
 end
 
 if isfolder(folder_name)
@@ -10,14 +10,16 @@ end
 
 % input
 mkdir(folder_name)
-writelines(out.temp_input,folder_name + "/input_script.m")
-
-% loader
-copyfile(src.gen.GetPath('src')+"/draftSpecificLoader.m",folder_name + "/SpecificLoader.m")
+mkdir(folder_name+"/inputs")
+writelines(out.temp_input,folder_name + "/inputs/input_script.m")
 
 % data
 mkdir(folder_name+"/data")
 copyfile(src.gen.GetPath('data'), folder_name+"/data")
+
+% func
+mkdir(folder_name+"/+func")
+copyfile(src.gen.GetPath('func'), folder_name+"/+func")
 
 % src
 mkdir(folder_name+"/+src")
@@ -39,6 +41,6 @@ save_struct.stats = out.stats;
 save_struct.Sph = out.Sph;
 save_struct.y_end = out.yout(:,end);
 
-SaveStruct(folder_name+"/results.mat",save_struct)
+src.gen.SaveStruct(folder_name+"/results.mat",save_struct)
 
 end

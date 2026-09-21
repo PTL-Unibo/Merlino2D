@@ -9,6 +9,6 @@ save_struct.tout = [results1.tout(1:end-1), results2.tout];
 save_struct.yout = [results1.yout(:,1:end-1), results2.yout];
 save_struct.y_end = save_struct.yout(:,end);
 
-SaveStruct(res_folder_1 + filesep + "results.mat", save_struct)
+src.gen.SaveStruct(res_folder_1 + filesep + "results.mat", save_struct)
 
 end
