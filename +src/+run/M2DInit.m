@@ -169,7 +169,7 @@ if flag == "run"
     % InitialCondition can be a string, a struct or an array
     if isstring(p.INITIAL_CONDITION)
         load(p.INITIAL_CONDITION + "/results.mat", "y_end");
-        p_previous_initial_condition = ProcessInput(p.INITIAL_CONDITION + "/input_script.m");
+        p_previous_initial_condition = src.run.ProcessInput(p.INITIAL_CONDITION + "/input_script.m");
         old_msh = GetMesh(readlines(p.INITIAL_CONDITION + "/geo/" + p_previous_initial_condition.MSH + ".geo"), p_previous_initial_condition.COORDINATES, p_previous_initial_condition.MSH_PARAMETERS);
         if old_msh.Nc ~= msh.Nc
             % different mesh, interpolation needed
