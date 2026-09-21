@@ -4,7 +4,7 @@ global BentoCaraca %#ok<GVMIS>
 
 statsout = [-1,-1,-1,-1,-1,-1];
 % Solving with DAE --------------------------------------------------------
-clear DaeFunc2D % clear persistent variables (Sph)
+clear src.run.DaeFunc2D % clear persistent variables (Sph)
 if p.ODE_TYPE == "idas"
     F = ode;
     F.InitialValue = y0;
@@ -52,7 +52,7 @@ elseif p.ODE_TYPE == "ode15s"
 end
 
 if ph_is_on
-    Sph_nodes = UpdatePhoto(yout(:,end),tout(end),input_photo);
+    Sph_nodes = src.photo.UpdatePhoto(yout(:,end),tout(end),input_photo);
 else
     Sph_nodes = 0;
 end

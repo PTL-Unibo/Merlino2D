@@ -216,7 +216,7 @@ if flag == "run"
     y0 = [N0(:); sigma0; phi0; I0; v0]; % initial condition
 
     % Create Jacobian sparsity pattern ----------------------------------------
-    JPattern = CreateJpattern(msh, qs, Kelet, NcSigma2RHS, dphidv, indices_cells_el, inv_mapping);
+    JPattern = src.gen.CreateJpattern(msh, qs, Kelet, NcSigma2RHS, dphidv, indices_cells_el, inv_mapping);
     if p.R <= 0
         JPattern(end-1,:) = JPattern(end,:);
         JPattern(end-1,end-1) = 1;
@@ -235,7 +235,7 @@ if flag == "run"
     if p.REORDERING == 1
         % create permutation to make Jacobian close to diagonal
         ppp = symrcm(JPattern)';
-        inv_ppp = InversePermutation(ppp);
+        inv_ppp = src.gen.InversePermutation(ppp);
     elseif p.REORDERING == 0
         ppp = (1:dim_Jac)';
         inv_ppp = (1:dim_Jac)';
@@ -246,7 +246,7 @@ if flag == "run"
     offon = ["OFF", "ON"]; fprintf("Photoionization is %s\n",offon(ph_is_on+1)) % give feedback about photoionization
     if ph_is_on
         [Ks,Si2RHS,ph_coeff,indices_src_reactions_ph,CellFromNodesPh] = ...
-            CreatePh(3,p.PRESSURE,p.COORDINATES,msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
+            src.photo.CreatePh(3,p.PRESSURE,p.COORDINATES,msh.Nc,msh.Nn,msh.xn,msh.yn,msh.ns_from_c,msh.ns_from_b,msh.bs_from_bID,...
             p.PHOTOIONIZATION.BC,p.PHOTOIONIZATION.SPECIES_COEFF,p.PHOTOIONIZATION.REACTIONS,species,reactions);
         photo_update_frequency = p.PHOTOIONIZATION.UPDATE_FREQUENCY;
         input_photo.inv_ppp = inv_ppp;      
@@ -290,7 +290,7 @@ dphidv = dphidv .* scf;
 
 % Creating Ode Function ---------------------------------------------------
 if p.R > 0
-    odefun_perm = @(t,y,perm,inv_perm) DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
+    odefun_perm = @(t,y,perm,inv_perm) src.run.DaeFunc2D(t,y,msh.Nf,msh.Nc,msh.Nd, ...
         multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
         Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
         phi2Ex,phi2Ey,E2Faces,Ngas,p.TEMPERATURE,qs,p.V_APPLIED,...
@@ -300,7 +300,7 @@ if p.R > 0
         surf_charge_accum_flux_coeff, perm, inv_perm,...
         Gx, Gy, nx_matrix, ny_matrix, p.ELECTRON_REF_COEFF, ph_coeff, GetIp, p.R, C_s);
 else
-    odefun_perm = @(t,y,perm,inv_perm) DaeFunc2DNoR(t,y,msh.Nf,msh.Nc,msh.Nd, ...
+    odefun_perm = @(t,y,perm,inv_perm) src.run.DaeFunc2DNoR(t,y,msh.Nf,msh.Nc,msh.Nd, ...
         multi_indices_diel_interfaces,multi_indices_diel_cells,sum_diel_interfaces_fluxes_matrix, ...
         Kelet,NcSigma2RHS,dphidv,Flux2N,fBfval,Get_nL,Get_nR,Xmu,XFx,XFy,...
         phi2Ex,phi2Ey,E2Faces,Ngas,p.TEMPERATURE,qs,p.V_APPLIED,...
@@ -312,7 +312,7 @@ else
 end
 odefun = @(t,y) odefun_perm(t,y,(1:dim_Jac)',(1:dim_Jac)'); % this is the one using "normal" ordering, to give as output
 
-InitializePhoto(y0,t0,input_photo,ph_is_on);
+src.photo.InitializePhoto(y0,t0,input_photo,ph_is_on);
 
 if flag == "run"
     ode_options = odeset("MassSingular","yes", "Mass",Mass(ppp,ppp), "JPattern",JPattern(ppp,ppp));
@@ -330,9 +330,9 @@ if flag == "run"
     if p.OUTPUT_FUNCTION == "none"
         % no output function
     else
-        clear GeneralOutputFunction
+        clear src.out.GeneralOutputFunction
         sporadic_save_is_on = p.SAVE_EACH_K_TIMESTEPS < Inf;
-        ode_options.OutputFcn = @(t,y,flag)GeneralOutputFunction(t,y,flag,...
+        ode_options.OutputFcn = @(t,y,flag)src.out.GeneralOutputFunction(t,y,flag,...
             p.OUTPUT_FUNCTION,p.BAR_SCALE,...
             ph_is_on,photo_update_frequency,input_photo,...
             sporadic_save_is_on,p.SAVE_EACH_K_TIMESTEPS,odefun_mixed);
@@ -344,7 +344,7 @@ elseif flag == "init"
         % This is the 0D case
         [~,~,fKr0D] = src.chem.GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),1,1,Loki,species,"run");
         [M0D, Mindices0D, Nindices0D] = src.chem.MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), 1); 
-        odefun_mixed = @(t,n)OdeFunc0D(t,n,p.ELECTRIC_FIELD_0D,fTe,fKr0D,p.TEMPERATURE,Ngas,M0D,Mindices0D,Nindices0D,stoichiometric_matrix,Ordered_const_omega);
+        odefun_mixed = @(t,n)src.run.OdeFunc0D(t,n,p.ELECTRIC_FIELD_0D,fTe,fKr0D,p.TEMPERATURE,Ngas,M0D,Mindices0D,Nindices0D,stoichiometric_matrix,Ordered_const_omega);
         y0 = src.gen.OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0);
         y0 = arrayfun(@eval,string(y0));
     end

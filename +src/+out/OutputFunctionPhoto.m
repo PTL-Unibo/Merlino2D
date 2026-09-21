@@ -11,7 +11,7 @@ switch flag
     case ''
         counter = counter + 1;
         if (mod(counter,photo_update_frequency) == 0) || (t(end) == final_time)
-            UpdatePhoto(y(:,end),t(end),p);
+            src.photo.UpdatePhoto(y(:,end),t(end),p);
             fprintf(repmat('\b',1,num_char_printed+extra_num_char));
             num_char_printed = fprintf("%d: Updated photoionization, maximum value = %e\n", counter, max(Sph));
             fprintf(repmat(' ',1,extra_num_char));
