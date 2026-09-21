@@ -1,7 +1,7 @@
 function [Loki] = ReadLokiHdf5(path)
-Loki.E = h5read("Output/"+path+".h5", "/electronKinetics/reducedField")';
-Loki.swarmParam = h5read("Output/"+path+".h5", "/electronKinetics/swarmParameters");
-rates = h5read("Output/"+path+".h5", "/electronKinetics/rateCoefficients");
+Loki.E = h5read(path+".h5", "/electronKinetics/reducedField")';
+Loki.swarmParam = h5read(path+".h5", "/electronKinetics/swarmParameters");
+rates = h5read(path+".h5", "/electronKinetics/rateCoefficients");
 Loki.ratecoeff = reshape(reshape([reshape(rates.ine_coeff,[],1),reshape(rates.sup_coeff,[],1)]',[],1),[],numel(Loki.E))';
 
 Loki.collDescription = rates.description(:,:,end)';

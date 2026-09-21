@@ -8,7 +8,7 @@ str_unrolled = arrayfun(@(x)UnRoll(x), str_standard);
 members = split(str_unrolled,"->");
 molecules = arrayfun(@(x) split(x,"++"), members, 'UniformOutput', false);
 
-species_with_space = OrderSpecies(unique(vertcat(molecules{:})));
+species_with_space = src.chem.OrderSpecies(unique(vertcat(molecules{:})));
 
 mol = cellfun(@(x)Cell2SpeciesArray(x,species_with_space), molecules, 'UniformOutput', false);
 

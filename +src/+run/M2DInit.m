@@ -37,11 +37,11 @@ if upper(p.CHEMICAL_MODEL) == "OFF"
     ns = numel(species);
     stoichiometric_matrix = zeros(1,ns);
 else
-    const_species = GetConstSpecies(p.CONST_SPECIES, Ngas);
+    const_species = src.chem.GetConstSpecies(p.CONST_SPECIES, Ngas);
     run(src.gen.GetPath("kin")+"/"+p.CHEMICAL_MODEL+".m")
-    [species,reactants,products,indices_const_species] = GetReactantsProducts(string(vertcat(reactions(:,1))), string(vertcat(const_species(:,1)))); %#ok<NODEF>
+    [species,reactants,products,indices_const_species] = src.chem.GetReactantsProducts(string(vertcat(reactions(:,1))), string(vertcat(const_species(:,1)))); %#ok<NODEF>
     ns = numel(species);
-    [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), msh.Nc); 
+    [M, Mindices, Nindices, stoichiometric_matrix] = src.chem.MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), msh.Nc); 
 end
 
 % Getting species info ----------------------------------------------------
@@ -50,7 +50,7 @@ species_info_table = readtable(src.gen.GetPath("data")+"/species_database.csv");
 ms = table2array(species_info_table(indices_table,2))';
 qs = table2array(species_info_table(indices_table,3))';
 
-Loki = GetLoki(p.LOKI_INPUT,reactions);
+Loki = src.chem.GetLoki(p.LOKI_INPUT,reactions);
 
 % Setting Electron Temperature --------------------------------------------
 % ELECTRON_TEMPERATURE can be se to
@@ -343,7 +343,7 @@ elseif flag == "init"
     if isa(p.ELECTRIC_FIELD_0D,"function_handle")
         % This is the 0D case
         [~,~,fKr0D] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),1,1,Loki,species,"run");
-        [M0D, Mindices0D, Nindices0D] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), 1); 
+        [M0D, Mindices0D, Nindices0D] = src.chem.MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), 1); 
         odefun_mixed = @(t,n)OdeFunc0D(t,n,p.ELECTRIC_FIELD_0D,fTe,fKr0D,p.TEMPERATURE,Ngas,M0D,Mindices0D,Nindices0D,stoichiometric_matrix,Ordered_const_omega);
         y0 = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0);
         y0 = arrayfun(@eval,string(y0));

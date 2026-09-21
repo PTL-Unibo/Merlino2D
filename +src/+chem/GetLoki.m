@@ -11,8 +11,10 @@ else
     if ~isfolder("Output/"+Loki_input)
         lokibcl([Loki_input,'.in']); % Run if there is not already a saving
     end
+
+    cd(present_directory)
     
-    Loki = ReadLokiHdf5(Loki_input+"/"+Loki_input); % read .hdf5
+    Loki = src.chem.ReadLokiHdf5(src.gen.GetPath("loki") + "/Output/" + Loki_input + "/" + Loki_input); % read .hdf5
 
     eq = cellfun(@(x)char(x),reactions(:,1),'UniformOutput',false);
     k_input = cellfun(@(x)char(x),reactions(:,2),'UniformOutput',false);
@@ -43,8 +45,6 @@ else
     end
     
     Loki.map_MKin_Loki = map_MKin_Loki;
-    
-    cd(present_directory)
 end
 
 end
