@@ -7,7 +7,7 @@ p.SPECIES_NO_CHEM = strtrim(string(p.SPECIES_NO_CHEM(:))); % convert to column s
 
 % Generating Mesh ---------------------------------------------------------
 geo_file = src.gen.GetPath("geo") + "/" + p.MSH + ".geo";
-cmd_arguments = CreateCmdMshParameters(p.MSH_PARAMETERS);
+cmd_arguments = src.gen.CreateCmdMshParameters(p.MSH_PARAMETERS);
 if BentoCaraca
    fprintf("%s\n",src.gen.GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
 else
@@ -22,7 +22,7 @@ else
         [~,~] = system(src.gen.GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
     end
 end
-msh = PreProcessing(src.gen.GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","yes");
+msh = src.run.PreProcessing(src.gen.GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","yes");
 
 % Compute Ngas ------------------------------------------------------------
 Ngas = p.PRESSURE/(p.TEMPERATURE*kB); % p V = m * R * T
@@ -70,7 +70,7 @@ else
     fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
 end
 
-full_msh = PreProcessing(src.gen.GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
+full_msh = src.run.PreProcessing(src.gen.GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
 
 % ELECTROSTATICS
 [Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
@@ -135,7 +135,7 @@ XFx = nx_matrix * XF;
 XFy = ny_matrix * XF;
 
 [multi_indices_diel_interfaces, multi_indices_diel_cells, sum_diel_interfaces_fluxes_matrix, surf_charge_accum_flux_coeff] ...
-    = BuildUpSurfaceCharge(msh, p.SURF_CHARGE_COEFF, ns, qs, e, p.GAMMA_II_DIEL);
+    = BuildUpSurfaceCharge(msh, p.SURF_CHARGE_COEFF, ns, qs, p.GAMMA_II_DIEL);
 
 % Other BC ----------------------------------------------------------------
 v_th_single = sqrt(8*kB*p.TEMPERATURE./(pi*ms)); % single row, with as many elements as species

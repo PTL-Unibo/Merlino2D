@@ -24,7 +24,7 @@ end
 
 % Initialization-----------------------------------------------------------
 [odefun,msh,A,B,inv_mapping,ns,qs,species,phi2ExFull,phi2EyFull,reactions,...
-    stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = M2DInit(p,flag);
+    stoichiometric_matrix,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo] = src.run.M2DInit(p,flag);
 
 % Creating Output Structure -----------------------------------------------
 out.p = p;

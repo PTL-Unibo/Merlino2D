@@ -26,6 +26,6 @@ end
 Ex_1 = phi2Ex * phi1 + aux2Ex * dirichlet_nodes_1;
 Ey_1 = phi2Ey * phi1 + aux2Ey * dirichlet_nodes_1;
 
-g2Is = e * vol' * Eint2Ec;
+g2Is = src.const.e * vol' * Eint2Ec;
 
 end

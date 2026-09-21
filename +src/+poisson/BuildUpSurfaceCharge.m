@@ -1,5 +1,5 @@
 function [multi_indices_diel_interfaces, multi_indices_diel_cells, sum_diel_interfaces_fluxes_matrix, surf_charge_accum_flux_coeff] ...
-    = BuildUpSurfaceCharge(msh, Surf_charge_coeff, ns, qs, e, gammaIIdiel)
+    = BuildUpSurfaceCharge(msh, Surf_charge_coeff, ns, qs, gammaIIdiel)
 
 coeff = zeros(size(qs));
 coeff(qs>0) = Surf_charge_coeff(2); % positive ions
@@ -15,7 +15,7 @@ multi_indices_diel_interfaces = reshape(msh.f_from_d+(0:msh.Nf:(ns-1)*msh.Nf),[]
 multi_indices_diel_cells = reshape(msh.cs_from_f(msh.f_from_d,1)+(0:msh.Nc:(ns-1)*msh.Nc),[],1);
 I = repmat(1:msh.Nd, 1, ns);
 J = 1:msh.Nd*ns;
-S = e * (repelem(qs.*coeff_copy,msh.Nd));
+S = src.const.e * (repelem(qs.*coeff_copy,msh.Nd));
 sum_diel_interfaces_fluxes_matrix = sparse(I,J,S,msh.Nd,msh.Nd*ns);
 
 vals = ones(msh.Nf*ns,1);

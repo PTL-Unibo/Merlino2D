@@ -8,9 +8,11 @@ if ~strcmp(input_script_name(end-1:end),'.m')
     input_script_name = [input_script_name, '.m'];
 end
 
+input_script_name = "inputs" + filesep + input_script_name;
+
 p = struct;
 run(input_script_name)
-p_default = DefaultMerlino2Dinput;
+p_default = src.run.DefaultMerlino2Dinput;
 field_names_cell = fieldnames(p_default);
 for i = 1:numel(field_names_cell)
     field_name = field_names_cell{i};
@@ -21,6 +23,6 @@ for i = 1:numel(field_names_cell)
     end
 end
 
-input_file_content = RemoveUselessLines(readlines(input_script_name));
+input_file_content = src.gen.RemoveUselessLines(readlines(input_script_name));
 
 end

@@ -64,7 +64,7 @@ elseif type == "light"
 end
 
 % Rho at cells
-RHO_CELLS = reshape(e*sum(reshape(N_CELLS,Nc,ns,nt).*qs,2),Nc,nt);
+RHO_CELLS = reshape(src.const.e*sum(reshape(N_CELLS,Nc,ns,nt).*qs,2),Nc,nt);
 
 % Electric potential at nodes
 PHI_NODES(Dirichlet_nodes_indices,:) = DIRICHLET_NODES_MATRIX;
@@ -101,7 +101,7 @@ if type == "full"
     
     % Number density and rho at nodes
     N_NODES = A*N_CELLS + B*BFVAL_MATRIX; 
-    NN_2_RHO_N = e * sparse(repmat(1:Nn,1,ns), 1:Nn*ns, repelem(qs,Nn), Nn, Nn*ns);
+    NN_2_RHO_N = src.const.e * sparse(repmat(1:Nn,1,ns), 1:Nn*ns, repelem(qs,Nn), Nn, Nn*ns);
     RHO_NODES = NN_2_RHO_N * N_NODES;
     
     % Electric field at nodes
@@ -111,7 +111,7 @@ if type == "full"
     % compute current (ID, time, species)
     J_faces = zeros(Nf,nt,ns);
     I_bID = zeros(msh.dim_bID,nt,ns);
-    J_faces_temp = e * reshape(GAMMA_DOT_N_MATRIX, Nf, ns, nt) .* qs;
+    J_faces_temp = src.const.e * reshape(GAMMA_DOT_N_MATRIX, Nf, ns, nt) .* qs;
     for i_s = 1:ns
         J_faces(:,:,i_s) = reshape(J_faces_temp(:,i_s,:), Nf, nt);
     end

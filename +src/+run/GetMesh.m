@@ -17,9 +17,9 @@ lines = [lines; 'Save "mesh.m";'];
 user_directory = strrep(userpath,"\","/");
 writelines(lines, user_directory+"/msh.geo");
 
-cmd_argumets = CreateCmdMshParameters(MSHparameters);
+cmd_argumets = src.gen.CreateCmdMshParameters(MSHparameters);
 [~,~] = system(src.gen.GetPath("gmsh") + " " + user_directory + "/msh.geo" + cmd_argumets + " -parse_and_exit");
-msh = PreProcessing(user_directory+"/mesh", coordinates, "remove_dielectric","yes");
+msh = src.run.PreProcessing(user_directory+"/mesh", coordinates, "remove_dielectric","yes");
 
 delete(user_directory+"/msh.geo")
 delete(user_directory+"/mesh.m")

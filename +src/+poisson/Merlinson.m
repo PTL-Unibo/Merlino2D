@@ -10,10 +10,10 @@ COORDINATES = "cartesian";
 V = 100;
 
 geo_file = MSH + ".geo";
-cmd_arguments = CreateCmdMshParameters(MSH_PARAMETERS);
+cmd_arguments = src.gen.CreateCmdMshParameters(MSH_PARAMETERS);
 system("gmsh " + geo_file + cmd_arguments);
 
-full_msh = PreProcessing(MSH, COORDINATES, "remove_dielectric","no");
+full_msh = src.run.PreProcessing(MSH, COORDINATES, "remove_dielectric","no");
 
 [Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL, COORDINATES);
 

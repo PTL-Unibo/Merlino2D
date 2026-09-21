@@ -4,7 +4,7 @@ M = [];
 for i = 1:ns
     M = [M, speye(Nf)*qs(i)]; %#ok<AGROW>
 end
-M = e*M;
+M = src.const.e*M;
 
 row = zeros(1,Nf);
 row(indices) = -areaf(indices);
