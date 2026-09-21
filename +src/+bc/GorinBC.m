@@ -18,7 +18,7 @@ for k = 1:numel(species)
     v_th_y = [v_th_y; v_th_single(species(k))*sn(GetBfaces(ids(k),1),2)]; %#ok<AGROW>
 end
 
-BCflag = AddGorin_e(BCflag);
+BCflag = src.bc.AddGorin_e(BCflag);
 
 [ids,~] = find(BCflag == "GorinLike_electrons");
 

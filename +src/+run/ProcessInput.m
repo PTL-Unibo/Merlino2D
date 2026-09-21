@@ -1,5 +1,6 @@
-function [p,input_file_content] = ProcessInput(input_script_name)
+function [p,input_file_content] = ProcessInput(input_folder,input_script_name)
 arguments
+    input_folder (1,:) char
     input_script_name (1,:) char
 end
 
@@ -8,7 +9,7 @@ if ~strcmp(input_script_name(end-1:end),'.m')
     input_script_name = [input_script_name, '.m'];
 end
 
-input_script_name = "inputs" + filesep + input_script_name;
+input_script_name = string(input_folder) + filesep + input_script_name;
 
 p = struct;
 run(input_script_name)

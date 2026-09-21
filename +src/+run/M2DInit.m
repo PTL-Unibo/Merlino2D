@@ -142,13 +142,13 @@ v_th_single = sqrt(8*src.const.kB*p.TEMPERATURE./(pi*ms)); % single row, with as
 v_th_single(1) = v_th_single(1) * sqrt(11600/p.TEMPERATURE);
 v_th_single = v_th_single .* Ordered_v_th_coeff;
 
-[GetBfaces, GetBcells] = CreateGetBfacesBcells(msh);
+[GetBfaces, GetBcells] = src.bc.CreateGetBfacesBcells(msh);
 
 [indices_faces_Gorin, indices_cells_Gorin,...
     indices_faces_Gorin_electrons, indices_faces_Gorin_positive_ions,...
-    v_th_x, v_th_y] = GorinBC(GetBfaces, GetBcells, Ordered_bc_flag', qs, v_th_single, msh.sn);
+    v_th_x, v_th_y] = src.bc.GorinBC(GetBfaces, GetBcells, Ordered_bc_flag', qs, v_th_single, msh.sn);
 
-[indices_faces_Absorbent, indices_cells_Absorbent] = AbsorbentBC(GetBfaces, GetBcells, Ordered_bc_flag');
+[indices_faces_Absorbent, indices_cells_Absorbent] = src.bc.AbsorbentBC(GetBfaces, GetBcells, Ordered_bc_flag');
 
 Nphi = full_msh.Nn;
 ode_dim = ns*msh.Nc + msh.Nd;
@@ -161,7 +161,7 @@ for anode_id = p.ANODE_IDS(:)'
 end
 indices_cells_el = msh.cs_from_f(indices_el,1);
 
-GetIp = CreateGetCurrent(msh.Nf,ns,qs,msh.areaf,indices_el,p.LENGTH);
+GetIp = src.gen.CreateGetCurrent(msh.Nf,ns,qs,msh.areaf,indices_el,p.LENGTH);
 
 t0 = p.TIME_INSTANTS(1);
 if flag == "run"
@@ -169,15 +169,15 @@ if flag == "run"
     % InitialCondition can be a string, a struct or an array
     if isstring(p.INITIAL_CONDITION)
         load(p.INITIAL_CONDITION + "/results.mat", "y_end");
-        p_previous_initial_condition = src.run.ProcessInput(p.INITIAL_CONDITION + "/input_script.m");
-        old_msh = GetMesh(readlines(p.INITIAL_CONDITION + "/geo/" + p_previous_initial_condition.MSH + ".geo"), p_previous_initial_condition.COORDINATES, p_previous_initial_condition.MSH_PARAMETERS);
+        p_previous_initial_condition = src.run.ProcessInput(p.INITIAL_CONDITION, "input_script.m");
+        old_msh = src.run.GetMesh(readlines(p.INITIAL_CONDITION + "/geo/" + p_previous_initial_condition.MSH + ".geo"), p_previous_initial_condition.COORDINATES, p_previous_initial_condition.MSH_PARAMETERS);
         if old_msh.Nc ~= msh.Nc
             % different mesh, interpolation needed
-            N0 = InterpInitialCondition(old_msh.xc,old_msh.yc,...
+            N0 = src.gen.InterpInitialCondition(old_msh.xc,old_msh.yc,...
                 y_end(1:ns*old_msh.Nc),msh.xc,msh.yc,ns,msh.Nc);
             sigma0 = zeros(0,1);
             if old_msh.Nd ~= msh.Nd
-                sigma0 = InterpInitialConditionSigma(old_msh.xf(old_msh.f_from_d),old_msh.yf(old_msh.f_from_d),y_end(ns*old_msh.Nc+1:ns*old_msh.Nc+old_msh.Nd),msh.xf(msh.f_from_d),msh.yf(msh.f_from_d),msh.Nd);
+                sigma0 = src.gen.InterpInitialConditionSigma(old_msh.xf(old_msh.f_from_d),old_msh.yf(old_msh.f_from_d),y_end(ns*old_msh.Nc+1:ns*old_msh.Nc+old_msh.Nd),msh.xf(msh.f_from_d),msh.yf(msh.f_from_d),msh.Nd);
             end
             fprintf("%s\n","Interpolated to new mesh");
         else

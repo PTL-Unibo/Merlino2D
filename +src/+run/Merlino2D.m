@@ -7,7 +7,7 @@ arguments
     flag (1,:) char {mustBeMember(flag,{'run','init'})}
 end
 
-[p,processed_input] = src.run.ProcessInput(input_script);
+[p,processed_input] = src.run.ProcessInput('inputs',input_script);
 geo_file_content = readlines(src.gen.GetPath("geo") + "/" + p.MSH + ".geo");
 
 if isa(p.ELECTRIC_FIELD_0D,"function_handle")
