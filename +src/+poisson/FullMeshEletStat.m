@@ -58,7 +58,7 @@ Kelet(Dirichlet_nodes_indices,:) = 0;
 Kelet(sub2ind(size(Kelet),Dirichlet_nodes_indices,Dirichlet_nodes_indices)) = 1;
 rho2RHS(Dirichlet_nodes_indices,:) = 0;
 
-M_get_aux_BC_el = CreateMgetDirNodes(link_node_to_bfaces, full_msh.bID_from_b, Dirichlet_nodes_indices, BCEL_FLAG);
+M_get_aux_BC_el = src.poisson.CreateMgetDirNodes(link_node_to_bfaces, full_msh.bID_from_b, Dirichlet_nodes_indices, BCEL_FLAG);
 select_nodes = sparse(Dirichlet_nodes_indices,1:numel(Dirichlet_nodes_indices),1,full_msh.Nn,numel(Dirichlet_nodes_indices));
 bc2RHS = select_nodes * M_get_aux_BC_el;
 

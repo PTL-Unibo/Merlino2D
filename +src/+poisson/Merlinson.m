@@ -15,10 +15,10 @@ system("gmsh " + geo_file + cmd_arguments);
 
 full_msh = src.run.PreProcessing(MSH, COORDINATES, "remove_dielectric","no");
 
-[Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL, COORDINATES);
+[Kelet, rho2RHS, bc2RHS] = src.poisson.FullMeshEletStat(full_msh, BCEL_FLAG, EPSR_VAL, COORDINATES);
 
 dNdz = [1,0;0,1;-1,-1]; % 2D triangles 1st order shape functions
-[phi2Ex, phi2Ey] = CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);
+[phi2Ex, phi2Ey] = src.poisson.CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);
 
 phi = Kelet \ (rho2RHS * zeros(size(rho2RHS,2),1) + bc2RHS * BCEL_VAL * V);
 

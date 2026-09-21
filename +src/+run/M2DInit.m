@@ -73,15 +73,15 @@ end
 full_msh = src.run.PreProcessing(src.gen.GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
 
 % ELECTROSTATICS
-[Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
+[Kelet, rho2RHS, bc2RHS] = src.poisson.FullMeshEletStat(full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);
 dNdz = [1,0;0,1;-1,-1]; % 2D triangles 1st order shape functions
-[phi2ExFull, phi2EyFull] = CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);
-[phi2Ex, phi2Ey] = CreateEMatricesFEM(msh.ns_from_c, msh.xn, msh.yn, msh.Nc, msh.Nn, dNdz);
+[phi2ExFull, phi2EyFull] = src.poisson.CreateEMatricesFEM(full_msh.ns_from_c, full_msh.xn, full_msh.yn, full_msh.Nc, full_msh.Nn, dNdz);
+[phi2Ex, phi2Ey] = src.poisson.CreateEMatricesFEM(msh.ns_from_c, msh.xn, msh.yn, msh.Nc, msh.Nn, dNdz);
 inv_mapping = find(msh.nodes_mapping);
 GetPhiSmall = sparse(1:numel(inv_mapping),inv_mapping,1,msh.Nn,full_msh.Nn);
 phi2Ex = phi2Ex * GetPhiSmall;
 phi2Ey = phi2Ey * GetPhiSmall;
-E2Faces = CreateE2FacesFEM(msh.inv_vol_standard, msh.cs_from_f, msh.Nf, msh.Nc);
+E2Faces = src.poisson.CreateE2FacesFEM(msh.inv_vol_standard, msh.cs_from_f, msh.Nf, msh.Nc);
 dphidv = bc2RHS * p.BCEL_VAL;
 
 if p.COORDINATES == "cylindrical"
@@ -94,7 +94,7 @@ Ec_full_1_x = phi2ExFull * phi_full_1;
 Ec_full_1_y = phi2EyFull * phi_full_1;
 C_s = p.LENGTH * src.const.eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_from_c) .* (Ec_full_1_x.^2 + Ec_full_1_y.^2));
 
-Get_rho_sigma_eps = CreateGetRhoSigmaEps(qs,msh.Nc,msh.Nd);
+Get_rho_sigma_eps = src.poisson.CreateGetRhoSigmaEps(qs,msh.Nc,msh.Nd);
 NcSigma2RHS = rho2RHS*Get_rho_sigma_eps;
 
 Flux2N = CreateMultiFlux2N(msh, ns);
