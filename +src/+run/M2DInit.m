@@ -97,45 +97,45 @@ C_s = p.LENGTH * src.const.eps0 * sum(full_msh.vol .* p.EPSR_VAL(full_msh.cID_fr
 Get_rho_sigma_eps = src.poisson.CreateGetRhoSigmaEps(qs,msh.Nc,msh.Nd);
 NcSigma2RHS = rho2RHS*Get_rho_sigma_eps;
 
-Flux2N = CreateMultiFlux2N(msh, ns);
+Flux2N = src.dd.CreateMultiFlux2N(msh, ns);
 
-[Get_nL, Get_nR] = CreateMultiUpwind(msh,ns);
+[Get_nL, Get_nR] = src.dd.CreateMultiUpwind(msh,ns);
 
 % Ordering input parameters to match the order of "species" ---------------
-Ordered_bc_flag = OrderVariable(p.BC_FLAG,species,ns,"BC_FLAG",2);
-temp_ordered_bc_val = OrderVariable(p.BC_VAL,species,ns,"BC_VAL",0);
-Ordered_bc_val = eval(GetBCvalFuncStr(temp_ordered_bc_val));
-Ordered_v_th_coeff = OrderVariable(p.V_TH_COEFF,species,ns,"V_TH_COEFF",0)';
+Ordered_bc_flag = src.gen.OrderVariable(p.BC_FLAG,species,ns,"BC_FLAG",2);
+temp_ordered_bc_val = src.gen.OrderVariable(p.BC_VAL,species,ns,"BC_VAL",0);
+Ordered_bc_val = eval(src.gen.GetBCvalFuncStr(temp_ordered_bc_val));
+Ordered_v_th_coeff = src.gen.OrderVariable(p.V_TH_COEFF,species,ns,"V_TH_COEFF",0)';
 if isempty(p.CONST_OMEGA)
     Ordered_const_omega = 0;
 else
-    Ordered_const_omega = OrderVariable(p.CONST_OMEGA,species,ns,"CONST_OMEGA",0)';
+    Ordered_const_omega = src.gen.OrderVariable(p.CONST_OMEGA,species,ns,"CONST_OMEGA",0)';
 end
-Ordered_mu = OrderVariable(p.MU,species,ns,"MU",1);
-Ordered_d = OrderVariable(p.D,species,ns,"D",1);
+Ordered_mu = src.gen.OrderVariable(p.MU,species,ns,"MU",1);
+Ordered_d = src.gen.OrderVariable(p.D,species,ns,"D",1);
 
-[fMu,fD,fKr] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),msh.Nc,msh.Nf,Loki,species,flag);
+[fMu,fD,fKr] = src.chem.GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),msh.Nc,msh.Nf,Loki,species,flag);
 
 BCval2Bfval = sparse(1:msh.Nb, msh.bID_from_b, ones(1,msh.Nb), msh.Nb, msh.dim_bID);
 fBfval = @(t) reshape(BCval2Bfval * Ordered_bc_val(t)',[],1);
 
-indices = CreateIndicesBCspecies(msh, Ordered_bc_flag', ns);
+indices = src.dd.CreateIndicesBCspecies(msh, Ordered_bc_flag', ns);
 
-[A,B] = CreateMultiInterpToNodes(msh, indices, ns);
+[A,B] = src.dd.CreateMultiInterpToNodes(msh, indices, ns);
 
 nx_matrix = spdiags(repmat(msh.sn(:,1),ns), 0, ns*msh.Nf, ns*msh.Nf);
 ny_matrix = spdiags(repmat(msh.sn(:,2),ns), 0, ns*msh.Nf, ns*msh.Nf);
 
-[Gx, Gy] = CreateGradNoTang(msh, ns);
+[Gx, Gy] = src.dd.CreateGradNoTang(msh, ns);
 
-[Xmu] = CreateMultiXmu(msh, indices, ns); % for drift in Dirichlet BC
-[XF] = CreateMultiXF(msh, indices, ns); % for flux BC
+[Xmu] = src.dd.CreateMultiXmu(msh, indices, ns); % for drift in Dirichlet BC
+[XF] = src.dd.CreateMultiXF(msh, indices, ns); % for flux BC
 
 XFx = nx_matrix * XF;
 XFy = ny_matrix * XF;
 
 [multi_indices_diel_interfaces, multi_indices_diel_cells, sum_diel_interfaces_fluxes_matrix, surf_charge_accum_flux_coeff] ...
-    = BuildUpSurfaceCharge(msh, p.SURF_CHARGE_COEFF, ns, qs, p.GAMMA_II_DIEL);
+    = src.poisson.BuildUpSurfaceCharge(msh, p.SURF_CHARGE_COEFF, ns, qs, p.GAMMA_II_DIEL);
 
 % Other BC ----------------------------------------------------------------
 v_th_single = sqrt(8*src.const.kB*p.TEMPERATURE./(pi*ms)); % single row, with as many elements as species
@@ -199,7 +199,7 @@ if flag == "run"
         end
     else
         % array - setting uniform number density
-        Ordered_initial_condition = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0)';
+        Ordered_initial_condition = src.gen.OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0)';
         Ordered_initial_condition = arrayfun(@eval,string(Ordered_initial_condition));
         N0 = ones(msh.Nc,ns) .* Ordered_initial_condition;
         sigma0 = zeros(msh.Nd,1);
@@ -342,10 +342,10 @@ if flag == "run"
 elseif flag == "init"
     if isa(p.ELECTRIC_FIELD_0D,"function_handle")
         % This is the 0D case
-        [~,~,fKr0D] = GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),1,1,Loki,species,"run");
+        [~,~,fKr0D] = src.chem.GetFcomputeMuDKr(Ordered_mu,Ordered_d,reactions(:,2),1,1,Loki,species,"run");
         [M0D, Mindices0D, Nindices0D] = src.chem.MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), 1); 
         odefun_mixed = @(t,n)OdeFunc0D(t,n,p.ELECTRIC_FIELD_0D,fTe,fKr0D,p.TEMPERATURE,Ngas,M0D,Mindices0D,Nindices0D,stoichiometric_matrix,Ordered_const_omega);
-        y0 = OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0);
+        y0 = src.gen.OrderVariable(p.INITIAL_CONDITION,species,ns,"INITIAL_CONDITION",0);
         y0 = arrayfun(@eval,string(y0));
     end
 end

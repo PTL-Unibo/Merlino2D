@@ -17,9 +17,9 @@ if ~isempty(Loki)
     end
 end
 
-Mu_str = CellExpressionToStringArray(Mu,Nf);
-D_str = CellExpressionToStringArray(D,Nf);
-Kr_str = CellExpressionToStringArray(Kr,Nc);
+Mu_str = src.chem.CellExpressionToStringArray(Mu,Nf);
+D_str = src.chem.CellExpressionToStringArray(D,Nf);
+Kr_str = src.chem.CellExpressionToStringArray(Kr,Nc);
 
 if flag == "run"
     if isfolder(src.gen.GetPath("data")+"/"+"func")
@@ -35,15 +35,15 @@ else
     strKr = "@(E,Te,T,Ngas)[" + join(Kr_str,",") + "]";
 end
 
-strMu = AddDot(strMu);
-strD = AddDot(strD);
+strMu = src.chem.AddDot(strMu);
+strD = src.chem.AddDot(strD);
 for i = 1:numel(species)
     strD = strrep(strD,"<<mu"+species(i)+">>","mu(:," + i + ")"); % replace, i.e., muO2+ with mu(:,7)
 end
-strKr = AddDot(strKr);
+strKr = src.chem.AddDot(strKr);
 
 % creating griddedInterpolants --------------------------------------------
-file_names_str = GetFilesInDir(".csv",src.gen.GetPath("data"));
+file_names_str = src.chem.GetFilesInDir(".csv",src.gen.GetPath("data"));
 num_files = numel(file_names_str);
 for i = 1:num_files
     if contains(strMu,file_names_str(i)) || contains(strD,file_names_str(i)) || contains(strKr,file_names_str(i))
