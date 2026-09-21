@@ -122,7 +122,7 @@ if type == "full"
 end
 
 % Creating a struct with solver statistics
-stats.wall_clock_time = SecondsToString(out.wall_clock_time);
+stats.wall_clock_time = src.gen.SecondsToString(out.wall_clock_time);
 stats.successful_steps = out.statsout(1);
 stats.failed_attempts = out.statsout(2);
 stats.function_evaluations = out.statsout(3);

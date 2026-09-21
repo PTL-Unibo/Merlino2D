@@ -5,6 +5,7 @@ global BentoCaraca %#ok<GVMIS>
 statsout = [-1,-1,-1,-1,-1,-1];
 % Solving with DAE --------------------------------------------------------
 clear src.run.DaeFunc2D % clear persistent variables (Sph)
+clear src.run.DaeFunc2DNoR
 if p.ODE_TYPE == "idas"
     F = ode;
     F.InitialValue = y0;

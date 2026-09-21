@@ -15,13 +15,13 @@ cont_x = 1;
 cont_s = 1;
 for k = 1:num_figs    
     if types_char(k) == 'x'
-        [sld_array(k), axes_array(cont_x)] = SliderPlot2D(out);
+        [sld_array(k), axes_array(cont_x)] = src.slider.SliderPlot2D(out);
         cont_x = cont_x + 1;
     elseif types_char(k) == 's'
-        [sld_array(k), axes_array_sigma(cont_s)] = SliderPlotSigma(out);
+        [sld_array(k), axes_array_sigma(cont_s)] = src.slider.SliderPlotSigma(out);
         cont_s = cont_s + 1;
     elseif types_char(k) == 'i'
-        sld_array(k) = SliderPlotIV(out);
+        sld_array(k) = src.slider.SliderPlotIV(out);
     end
     sld_array(k).UserData = k;
     old_cb_cell{k} = sld_array(k).Callback;

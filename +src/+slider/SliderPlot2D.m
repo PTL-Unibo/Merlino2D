@@ -1,6 +1,6 @@
 function [sld, ax] = SliderPlot2D(out)
 
-A = CreateAmatrixInterpCell2Nodes(out.msh);
+A = src.slider.CreateAmatrixInterpCell2Nodes(out.msh);
 
 fig = figure("WindowStyle","normal");
 ax = axes(fig);
@@ -12,8 +12,8 @@ fig.WindowKeyPressFcn  = @(~,event)KeyPressed(event);
 
 ax.XLim = [min(out.msh.xn),max(out.msh.xn)];
 ax.YLim = [min(out.msh.yn),max(out.msh.yn)];
-addlistener(ax, 'XLim', 'PostSet', @(src, event) AxisEqual3D(ax));
-addlistener(ax, 'YLim', 'PostSet', @(src, event) AxisEqual3D(ax));
+addlistener(ax, 'XLim', 'PostSet', @(source, event) src.gen.AxisEqual3D(ax));
+addlistener(ax, 'YLim', 'PostSet', @(source, event) src.gen.AxisEqual3D(ax));
 
 AxCbProperties()
 
@@ -54,20 +54,20 @@ end
 
 popmen = uicontrol(fig, ...
     'Style','popupmenu', ...
-    'String',InitializeCmbboxList(out), ...
+    'String',src.slider.InitializeCmbboxList(out), ...
     'Units','normalized', ...
     'Position',[0.3 0.95 0.4 0.04], ...
     'Value',1,...
-    'Callback',@(src,~)UpdatedMainCmbbox(src));
+    'Callback',@(source,~)UpdatedMainCmbbox(source));
 
-[init_visible,init_list] = InitializeSpecificCmbboxList(popmen.Value,out.ns);
+[init_visible,init_list] = src.slider.InitializeSpecificCmbboxList(popmen.Value,out.ns);
 popmen_specific = uicontrol(fig, ...
     'Style','popupmenu', ...
     'String',init_list, ...
     'Units','normalized', ...
     'Position',[0.705 0.95 0.15 0.04], ...
     'Visible',init_visible,...
-    'Callback',@(src,~)UpdatedSpecificCmbbox);
+    'Callback',@(source,~)UpdatedSpecificCmbbox);
 
 sld = uicontrol(fig, ...
     'Style','slider', ...
@@ -75,7 +75,7 @@ sld = uicontrol(fig, ...
     'Units','normalized', ...
     'Visible','on',...
     'Position',[0.2, 0.005, 0.6, 0.03], ...
-    'Callback', @(src,~)UpdateTimeInstant(round(src.Value)));
+    'Callback', @(source,~)UpdateTimeInstant(round(source.Value)));
 
 lbl_indices = annotation(fig, 'textbox', ...
     [0.005 0.005, 0.19, 0.03], ...   
@@ -103,21 +103,21 @@ tgl_btn_scale = uicontrol(fig, ...
     'Units','normalized', ... 
     'Value',0,...
     'Position',[0.01 0.95 0.03 0.04], ...
-    'Callback',@(src,~)tgl_btn_pressed(src));
+    'Callback',@(source,~)tgl_btn_pressed(source));
 
 uicontrol(fig, ...
     'Style','pushbutton', ...
     'String','<|>', ...
     'Units','normalized', ... 
     'Position',[0.01 0.905 0.03 0.04], ...
-    'Callback',@(src,~)restore_full_view);
+    'Callback',@(source,~)restore_full_view);
 
 m_edit = uicontrol(fig, ...
     'Style','edit', ...
     'String',0,...
     'Units','normalized', ... 
     'Position',[0.05 0.95 0.04 0.04],...
-    'Callback',@(src,~)UpdatedMvalue(src));
+    'Callback',@(source,~)UpdatedMvalue(source));
 
 tgl_btn_mesh = uicontrol(fig,'Style','togglebutton', ...
     'String','off', ...
@@ -125,7 +125,7 @@ tgl_btn_mesh = uicontrol(fig,'Style','togglebutton', ...
     'Value',0,...
     'UserData','none',...
     'Position',[0.96 0.9 0.03 0.04], ...
-    'Callback',@(src,~)tgl_btn_mesh_pressed(src));
+    'Callback',@(source,~)tgl_btn_mesh_pressed(source));
 
 tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
     'String','auto', ...
@@ -133,7 +133,7 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
     'Value',0,...
     'UserData','none',...
     'Position',[0.95 0.95 0.04 0.04], ...
-    'Callback',@(src,~)tgl_btn_limits_pressed(src));
+    'Callback',@(source,~)tgl_btn_limits_pressed(source));
 
     function UkCutLine = GetUkForCutLine(id)
         if id <= out.ns %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SPECIES
@@ -170,7 +170,7 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
         sld.Value = k;
         lbl_indices.String = num2str(k) + " / " + numel(out.tout);
         lbl_time_instant.String = sprintf("t = %.5e s", out.tout(k));
-        out_pp_k = ProcessInstant(out,k);
+        out_pp_k = src.run.ProcessInstant(out,k);
         PlotCell()
         if ishandle(fig2) && i_specific_cell > 0
             UpdateSpecificCell()
@@ -187,31 +187,31 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
         end
     end
 
-    function tgl_btn_pressed(src)
-        if src.Value == 1
-            src.String = "log";
+    function tgl_btn_pressed(source)
+        if source.Value == 1
+            source.String = "log";
         else
-            src.String = "lin";
+            source.String = "lin";
         end
         PlotCell()
     end
 
-    function tgl_btn_limits_pressed(src)
-        if src.Value == 1
-            src.String = "global";
+    function tgl_btn_limits_pressed(source)
+        if source.Value == 1
+            source.String = "global";
         else
-            src.String = "auto";
+            source.String = "auto";
         end
         PlotCell()
     end
 
-    function tgl_btn_mesh_pressed(src)
-        if src.Value == 1
-            src.String = "on";
-            src.UserData = 'k';
+    function tgl_btn_mesh_pressed(source)
+        if source.Value == 1
+            source.String = "on";
+            source.UserData = 'k';
         else
-            src.String = "off";
-            src.UserData = 'none';
+            source.String = "off";
+            source.UserData = 'none';
         end
         PlotCell()
     end
@@ -227,9 +227,9 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
             [~,i_specific_cell] = min((out.msh.xc - pt(1,1)).^2 + (out.msh.yc - pt(1,2)).^2);
             DrawSelectedCell()
             if ~ishandle(fig2)
-                [fig2,cell_txt,E_txt,Rho_txt,N_txt,O_txt,K_txt,R_txt,popmen_species,popmen_reactions] = InitializeCellInspector(out.s_names, out.reactions);
-                popmen_species.Callback = @(src,~)UpdateSpecificCell;
-                popmen_reactions.Callback = @(src,~)UpdateSpecificCell;
+                [fig2,cell_txt,E_txt,Rho_txt,N_txt,O_txt,K_txt,R_txt,popmen_species,popmen_reactions] = src.slider.InitializeCellInspector(out.s_names, out.reactions);
+                popmen_species.Callback = @(source,~)UpdateSpecificCell;
+                popmen_reactions.Callback = @(source,~)UpdateSpecificCell;
             end
             UpdateSpecificCell()
         elseif event.Key == "a"
@@ -239,8 +239,8 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
             pt = ax.CurrentPoint;
             B_point = [pt(1,1), pt(1,2)];
             DrawCutLine()
-            [A_point,B_point] = SetAB(A_point,B_point);
-            MatrixInterpCutLine = CreateMatrixInterpCutLine(A_point,B_point,out.msh);
+            [A_point,B_point] = src.slider.SetAB(A_point,B_point);
+            MatrixInterpCutLine = src.slider.CreateMatrixInterpCutLine(A_point,B_point,out.msh);
             if ~ishandle(fig3)
                 fig3 = figure;
                 ax3 = axes(fig3);
@@ -249,8 +249,8 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
             DrawCutLine()
         elseif event.Key == "e"
             if ishandle(fig3)
-                [A_point,B_point] = SetAB(A_point,B_point);
-                MatrixInterpCutLine = CreateMatrixInterpCutLine(A_point,B_point,out.msh);
+                [A_point,B_point] = src.slider.SetAB(A_point,B_point);
+                MatrixInterpCutLine = src.slider.CreateMatrixInterpCutLine(A_point,B_point,out.msh);
                 PlotSelected(popmen.Value)
                 DrawCutLine()
             end
@@ -296,18 +296,18 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
         R_txt.String = sprintf("%.3e",out_pp_k.RATES(i_specific_cell,ir));
     end
 
-    function UpdatedMvalue(src)
-        m = round(str2double(src.String));
+    function UpdatedMvalue(source)
+        m = round(str2double(source.String));
         if m >= 0
             global_m_value = m;
             PlotCell
         end
     end
 
-    function UpdatedMainCmbbox(src)
+    function UpdatedMainCmbbox(source)
         global_m_value = 0;
         m_edit.String = "0";
-        [visible,list] = InitializeSpecificCmbboxList(src.Value, out.ns);
+        [visible,list] = src.slider.InitializeSpecificCmbboxList(source.Value, out.ns);
         popmen_specific.Visible = visible;
         popmen_specific.String = list;
         popmen_specific.Value = 1;
@@ -336,9 +336,9 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
         end
         if nargin > 3
             if map_name == "CBKRY"
-                colormap(mapCBKRY(global_colormap_resolution))
+                colormap(src.color.mapCBKRY(global_colormap_resolution))
             else
-                colormap(mapAddK(map_name,global_colormap_resolution))
+                colormap(src.color.mapAddK(map_name,global_colormap_resolution))
             end
         else
             colormap(parula(global_colormap_resolution*20))
@@ -426,9 +426,9 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
                 is_uniform = CheckIsUniform(Uk);
                 if ~is_uniform && tgl_btn_scale.String == "log"
                     if tgl_btn_limits.String == "global"
-                        [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value,species_global_max(is),species_global_min(is));
+                        [Uk,ticks,ticklabels,ax_clim] = src.slider.CreateLogPlot(Uk,global_m_value,species_global_max(is),species_global_min(is));
                     elseif tgl_btn_limits.String == "auto"
-                        [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
+                        [Uk,ticks,ticklabels,ax_clim] = src.slider.CreateLogPlot(Uk,global_m_value);
                     end
                 end
                 if popmen_specific.Value == 1 
@@ -442,7 +442,7 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
                 Uk = out_pp_k.OMEGA((is-1)*out.msh.Nc+1:is*out.msh.Nc);
                 is_uniform = CheckIsUniform(Uk);
                 if ~is_uniform && tgl_btn_scale.String == "log"
-                    [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
+                    [Uk,ticks,ticklabels,ax_clim] = src.slider.CreateNegativeLogPlot(Uk,global_m_value);
                 end
                 MainPlot(Uk,"patch")
                 cb.Label.String = out.s_names(is) + " source term $(\mathrm{m^{-3}s^{-1}})$";
@@ -456,7 +456,7 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
             end
             is_uniform = CheckIsUniform(Uk);
             if ~is_uniform && tgl_btn_scale.String == "log"
-                [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
+                [Uk,ticks,ticklabels,ax_clim] = src.slider.CreateNegativeLogPlot(Uk,global_m_value);
             end
             if popmen_specific.Value == 1 
                 MainPlot(Uk,"patch")
@@ -512,7 +512,7 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
             end
             is_uniform = CheckIsUniform(Uk);
             if ~is_uniform && tgl_btn_scale.String == "log"
-                [Uk,ticks,ticklabels,ax_clim] = CreateNegativeLogPlot(Uk,global_m_value);
+                [Uk,ticks,ticklabels,ax_clim] = src.slider.CreateNegativeLogPlot(Uk,global_m_value);
             end
             if popmen_specific.Value == 1 
                 MainPlot(Uk,"patch")
@@ -530,13 +530,13 @@ tgl_btn_limits = uicontrol(fig,'Style','togglebutton', ...
             end
             is_uniform = CheckIsUniform(Uk);
             if ~is_uniform && tgl_btn_scale.String == "log"
-                [Uk,ticks,ticklabels,ax_clim] = CreateLogPlot(Uk,global_m_value);
+                [Uk,ticks,ticklabels,ax_clim] = src.slider.CreateLogPlot(Uk,global_m_value);
             end
             MainPlot(Uk,"patch")
             if popmen_specific.Value == 1
                 cb.Label.String = "reaction rate $(\mathrm{m}^{-3}\mathrm{s}^{-1})$";
             elseif popmen_specific.Value == 2
-                cb.Label.String = "rate coefficient $("+GetUnitRateCoeff(popmen.String{id})+")$";
+                cb.Label.String = "rate coefficient $("+src.slider.GetUnitRateCoeff(popmen.String{id})+")$";
             end
             LinLog(is_uniform,ax_clim,ticks,ticklabels,"turbo")
             if is_uniform

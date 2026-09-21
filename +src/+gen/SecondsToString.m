@@ -1,6 +1,6 @@
 function [time_string] = SecondsToString(time_in_seconds)
 % SecondsToString Converts "time_in_seconds" to a string indicating the time
-[d, h, m, s] = SecondsToDhms(time_in_seconds);
+[d, h, m, s] = src.gen.SecondsToDhms(time_in_seconds);
 time_string = "";
 first_char = "";
 zero_flag = true;

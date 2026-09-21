@@ -41,8 +41,8 @@ switch flag
             elapsed_time_seconds = seconds(datetime("now")-start_wct);
             fill([1;1;2;2],[t0;t_end;t_end;t0],bg,[1;1;2;2],[t0;t(end);t(end);t0],fg)
             set(findobj('Tag','perc'),'String',num2str(perc*100) + " %");
-            set(findobj('Tag','eltime'),'String',SecondsToString(elapsed_time_seconds));
-            set(findobj('Tag','esttime'),'String',SecondsToString(elapsed_time_seconds*((1-perc)/perc)));
+            set(findobj('Tag','eltime'),'String',src.gen.SecondsToString(elapsed_time_seconds));
+            set(findobj('Tag','esttime'),'String',src.gen.SecondsToString(elapsed_time_seconds*((1-perc)/perc)));
             wct_last=datetime("now");
         end
             

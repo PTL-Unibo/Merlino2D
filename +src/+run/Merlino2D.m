@@ -43,9 +43,9 @@ out.stoichiometric_matrix = stoichiometric_matrix;
     
 % Run----------------------------------------------------------------------
 if flag == "run"
-    [tout,yout,wall_clock_time,statsout,Sph_nodes] = M2DRun(p,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo);
+    [tout,yout,wall_clock_time,statsout,Sph_nodes] = src.run.M2DRun(p,odefun_mixed,y0,ode_options,inv_ppp,sporadic_save_is_on,ph_is_on,input_photo);
     % Creating a struct with solver statistics
-    stats.wall_clock_time = SecondsToString(wall_clock_time);
+    stats.wall_clock_time = src.gen.SecondsToString(wall_clock_time);
     stats.successful_steps = statsout(1);
     stats.failed_attempts = statsout(2);
     stats.function_evaluations = statsout(3);

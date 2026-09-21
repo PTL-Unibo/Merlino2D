@@ -421,7 +421,7 @@ switch opts.type
         ax.TickLabelInterpreter = "latex";
         ax.FontSize = 15;
         cb = colorbar("TickLabelInterpreter","latex");
-        colormap(mapCBKRY)
+        colormap(src.color.mapCBKRY)
         clim([opts.log10_zero_val+(opts.log10_zero_val-lim), lim]);
         cb.Label.Interpreter = "latex";
         cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
@@ -494,7 +494,7 @@ switch opts.type
         ax.TickLabelInterpreter = "latex";
         ax.FontSize = 15;
         cb = colorbar("TickLabelInterpreter","latex");
-        colormap(mapCBKRY)
+        colormap(src.color.mapCBKRY)
         clim([opts.log10_zero_val+(opts.log10_zero_val-lim), lim]);
         cb.Label.Interpreter = "latex";
         cb.Label.String = "$x$-axis force density $(\mathrm{N}\mathrm{m}^{-3})$";
@@ -539,7 +539,7 @@ switch opts.type
         ax.TickLabelInterpreter = "latex";
         ax.FontSize = 15;
         cb = colorbar("TickLabelInterpreter","latex");
-        colormap(mapCBKRY)
+        colormap(src.color.mapCBKRY)
         clim([opts.log10_zero_val+(opts.log10_zero_val-lim), lim]);
         cb.Label.Interpreter = "latex";
         cb.Label.String = "charge density $(\mathrm{C}\mathrm{m}^{-3})$";
