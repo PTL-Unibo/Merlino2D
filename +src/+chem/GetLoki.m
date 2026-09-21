@@ -6,7 +6,7 @@ if isempty(Loki_input)
 else
 % Loki_input is provided --------------------------------------------------
     present_directory = pwd;
-    cd(GetPath("loki")) % Go to LoKI path
+    cd(src.gen.GetPath("loki")) % Go to LoKI path
 
     if ~isfolder("Output/"+Loki_input)
         lokibcl([Loki_input,'.in']); % Run if there is not already a saving

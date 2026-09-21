@@ -6,23 +6,23 @@ global BentoCaraca %#ok<GVMIS>
 p.SPECIES_NO_CHEM = strtrim(string(p.SPECIES_NO_CHEM(:))); % convert to column string array
 
 % Generating Mesh ---------------------------------------------------------
-geo_file = GetPath("geo") + "/" + p.MSH + ".geo";
+geo_file = src.gen.GetPath("geo") + "/" + p.MSH + ".geo";
 cmd_arguments = CreateCmdMshParameters(p.MSH_PARAMETERS);
 if BentoCaraca
-   fprintf("%s\n",GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
+   fprintf("%s\n",src.gen.GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
 else
     if flag == "run"
         if p.OPEN_GMSH == 1
-            system(GetPath("gmsh") + " " + geo_file + cmd_arguments);
+            system(src.gen.GetPath("gmsh") + " " + geo_file + cmd_arguments);
         elseif p.OPEN_GMSH == 0
-            [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
+            [~,~] = system(src.gen.GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
         end
         fprintf("%s\n","Generated Mesh");
     elseif flag == "init"
-        [~,~] = system(GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
+        [~,~] = system(src.gen.GetPath("gmsh") + " " + geo_file + cmd_arguments + " -parse_and_exit");
     end
 end
-msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","yes");
+msh = PreProcessing(src.gen.GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","yes");
 
 % Compute Ngas ------------------------------------------------------------
 Ngas = p.PRESSURE/(p.TEMPERATURE*kB); % p V = m * R * T
@@ -38,14 +38,14 @@ if upper(p.CHEMICAL_MODEL) == "OFF"
     stoichiometric_matrix = zeros(1,ns);
 else
     const_species = GetConstSpecies(p.CONST_SPECIES, Ngas);
-    run(GetPath("kin")+"/"+p.CHEMICAL_MODEL+".m")
+    run(src.gen.GetPath("kin")+"/"+p.CHEMICAL_MODEL+".m")
     [species,reactants,products,indices_const_species] = GetReactantsProducts(string(vertcat(reactions(:,1))), string(vertcat(const_species(:,1)))); %#ok<NODEF>
     ns = numel(species);
     [M, Mindices, Nindices, stoichiometric_matrix] = MatrixChemistry(reactants, products, indices_const_species, vertcat(const_species{:,2}), msh.Nc); 
 end
 
 % Getting species info ----------------------------------------------------
-species_info_table = readtable(GetPath("data")+"/species_database.csv");
+species_info_table = readtable(src.gen.GetPath("data")+"/species_database.csv");
 [~,indices_table] = ismember(species,table2array(species_info_table(:,1)));
 ms = table2array(species_info_table(indices_table,2))';
 qs = table2array(species_info_table(indices_table,3))';
@@ -63,14 +63,14 @@ if isstring(p.ELECTRON_TEMPERATURE) | ischar(p.ELECTRON_TEMPERATURE)
         end
         fTe = griddedInterpolant(Loki.E,2/3*Loki.swarmParam.meanEnergy,'pchip','nearest');
     else
-        LUT_Te = load(GetPath("data")+"/"+p.ELECTRON_TEMPERATURE+".csv");
+        LUT_Te = load(src.gen.GetPath("data")+"/"+p.ELECTRON_TEMPERATURE+".csv");
         fTe = griddedInterpolant(LUT_Te(:,1),LUT_Te(:,2),"pchip","nearest");
     end
 else
     fTe = @(E_Td) ones(size(E_Td)) * p.ELECTRON_TEMPERATURE;
 end
 
-full_msh = PreProcessing(GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
+full_msh = PreProcessing(src.gen.GetPath("geo") + "/" + p.MSH, p.COORDINATES, "remove_dielectric","no");
 
 % ELECTROSTATICS
 [Kelet, rho2RHS, bc2RHS] = FullMeshEletStat(full_msh, p.BCEL_FLAG, p.EPSR_VAL, p.COORDINATES);

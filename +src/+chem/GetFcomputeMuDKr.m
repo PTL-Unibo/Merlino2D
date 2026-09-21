@@ -22,8 +22,8 @@ D_str = CellExpressionToStringArray(D,Nf);
 Kr_str = CellExpressionToStringArray(Kr,Nc);
 
 if flag == "run"
-    if isfolder(GetPath("data")+"/"+"func")
-        addpath(GetPath("data")+"/"+"func")
+    if isfolder(src.gen.GetPath("data")+"/"+"func")
+        addpath(src.gen.GetPath("data")+"/"+"func")
     end
 end
 
@@ -43,11 +43,11 @@ end
 strKr = AddDot(strKr);
 
 % creating griddedInterpolants --------------------------------------------
-file_names_str = GetFilesInDir(".csv",GetPath("data"));
+file_names_str = GetFilesInDir(".csv",src.gen.GetPath("data"));
 num_files = numel(file_names_str);
 for i = 1:num_files
     if contains(strMu,file_names_str(i)) || contains(strD,file_names_str(i)) || contains(strKr,file_names_str(i))
-        LUT = load(GetPath("data") + "/"+file_names_str(i)+".csv"); %#ok<NASGU>
+        LUT = load(src.gen.GetPath("data") + "/"+file_names_str(i)+".csv"); %#ok<NASGU>
         eval(file_names_str(i) + " = griddedInterpolant(LUT(:,1),LUT(:,2),""pchip"",""nearest"");");
     end
 end

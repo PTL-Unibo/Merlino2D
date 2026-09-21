@@ -1,9 +1,7 @@
 function [p] = GetPath(id)
 arguments
-    id (1,:) char {mustBeMember(id,{'gmsh','geo','data','kin','src','loki'})}
+    id (1,:) char {mustBeMember(id,{'gmsh','geo','data','kin','loki','src'})}
 end
-
-Merlino2Dpath = "C:/Users/fabio/Documents/GitHub/Merlino2D/";
 
 switch id
     case 'gmsh'
@@ -13,13 +11,13 @@ switch id
         path_loki = "C:/Users/fabio/Documents/LoKI-B/Code";
         p = path_loki;
     case 'geo'
-        p = Merlino2Dpath + "geo";
+        p = "geo";
     case 'data'
-        p = Merlino2Dpath + "data";
+        p = "data";
     case 'kin'
-        p = Merlino2Dpath + "kinetic";
+        p = "kinetic";
     case 'src'
-        p = Merlino2Dpath + "src";
+        p = "+src";
 end
 
 end

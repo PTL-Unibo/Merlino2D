@@ -189,7 +189,7 @@ if BentoCaraca
     % do nothing
 else
     % removing the .m mesh file
-    mat_mesh_file = GetPath("geo") + "/" + out.p.MSH + ".m";
+    mat_mesh_file = src.gen.GetPath("geo") + "/" + out.p.MSH + ".m";
     if isfile(mat_mesh_file)
         delete(mat_mesh_file)
         fprintf("%s\n","Deleted " + out.p.MSH + ".m");

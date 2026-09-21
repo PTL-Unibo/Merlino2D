@@ -61,15 +61,15 @@ yout = yout(inv_ppp,:);
 
 fprintf("%s\n","Simulation finished");
 
-if isfolder(GetPath("data")+"/"+"func")
-    rmpath(GetPath("data")+"/"+"func")
+if isfolder(src.gen.GetPath("data")+"/"+"func")
+    rmpath(src.gen.GetPath("data")+"/"+"func")
 end
 
 if BentoCaraca
     % do nothing
 else
     % removing the .m mesh file
-    mat_mesh_file = GetPath("geo") + "/" + p.MSH + ".m";
+    mat_mesh_file = src.gen.GetPath("geo") + "/" + p.MSH + ".m";
     if isfile(mat_mesh_file)
         delete(mat_mesh_file)
         fprintf("%s\n","Deleted " + p.MSH + ".m");

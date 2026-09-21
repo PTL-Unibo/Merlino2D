@@ -8,7 +8,7 @@ arguments
 end
 
 [p,processed_input] = src.run.ProcessInput(input_script);
-geo_file_content = readlines(GetPath("geo") + "/" + p.MSH + ".geo");
+geo_file_content = readlines(src.gen.GetPath("geo") + "/" + p.MSH + ".geo");
 
 if isa(p.ELECTRIC_FIELD_0D,"function_handle")
     flag = "init";
