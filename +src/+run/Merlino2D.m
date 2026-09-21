@@ -1,13 +1,14 @@
-function [out] = Merlino2D(input_script,flag)
+function [out] = Merlino2D(input_folder,input_script,flag)
 %Merlino2D solves time-dependent drift-diffusion-reaction equations
 %   on a 2D unstructured triangular mesh
 
 arguments
+    input_folder (1,:) char
     input_script (1,:) char
     flag (1,:) char {mustBeMember(flag,{'run','init'})}
 end
 
-[p,processed_input] = src.run.ProcessInput('inputs',input_script);
+[p,processed_input] = src.run.ProcessInput(input_folder,input_script);
 geo_file_content = readlines(src.gen.GetPath("geo") + "/" + p.MSH + ".geo");
 
 if isa(p.ELECTRIC_FIELD_0D,"function_handle")

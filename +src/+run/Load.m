@@ -2,7 +2,7 @@ function [out] = Load()
 
 try
     % Load save -----------------------------------------------------------
-    out = src.run.Merlino2D("input_script.m","init");
+    out = src.run.Merlino2D("","input_script.m","init");
     out2 = load("results.mat");
 
     % merge the 2 struct -------------------------------------------------              

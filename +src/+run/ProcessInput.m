@@ -9,7 +9,9 @@ if ~strcmp(input_script_name(end-1:end),'.m')
     input_script_name = [input_script_name, '.m'];
 end
 
-input_script_name = string(input_folder) + filesep + input_script_name;
+if ~isempty(input_folder)
+    input_script_name = string(input_folder) + filesep + input_script_name;
+end
 
 p = struct;
 run(input_script_name)

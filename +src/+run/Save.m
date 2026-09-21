@@ -10,8 +10,7 @@ end
 
 % input
 mkdir(folder_name)
-mkdir(folder_name+"/inputs")
-writelines(out.temp_input,folder_name + "/inputs/input_script.m")
+writelines(out.temp_input,folder_name+"/input_script.m")
 
 % data
 mkdir(folder_name+"/data")
