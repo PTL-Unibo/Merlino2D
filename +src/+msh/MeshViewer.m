@@ -4,8 +4,8 @@ fig = figure();
 ax = axes(fig);
 grid off
 
-addlistener(ax, 'XLim', 'PostSet', @(src, event) AxisEqual3D(ax));
-addlistener(ax, 'YLim', 'PostSet', @(src, event) AxisEqual3D(ax));
+addlistener(ax, 'XLim', 'PostSet', @(source, event) src.gen.AxisEqual3D(ax));
+addlistener(ax, 'YLim', 'PostSet', @(source, event) src.gen.AxisEqual3D(ax));
 
 flag_first = 1;
 
@@ -33,7 +33,7 @@ uicontrol(fig, ...
         end
         trisurf(msh.ns_from_c, msh.xn, msh.yn, zeros(size(msh.xn)),'FaceColor','w',"EdgeColor",0.9*[1,1,1])
         view([0,90])
-        AxisEqual3D(ax)
+        src.gen.AxisEqual3D(ax)
         if ~flag_first
             xlim(saved_lims_x)
             ylim(saved_lims_y)
