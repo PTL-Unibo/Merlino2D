@@ -1,7 +1,7 @@
 MSH = 'WireCyl_50u_5m_30m';
 BCEL_FLAG = [0; 0; 1; 1; 1; 1];
 BCEL_VAL = [1; 0; 0; 0; 0; 0];
-[tx,vx,time_instants] = StairRamp(1e-3,1e-4,(7:2:21)*1e3);
+[tx,vx,time_instants] = src.wave.StairRamp(1e-3,1e-4,(7:2:21)*1e3);
 V_APPLIED = @(t) interp1(tx,vx,t);
 R = 1e-3;
 ANODE_IDS = 1;
@@ -49,3 +49,10 @@ CONST_SPECIES = {
 ELECTRON_TEMPERATURE = "Te_Air";
 GAMMA_II = 1e-2;
 ODE_TYPE = "idas";
+
+% !! From the Merlino2D/ folder !!
+% Run simulation:
+% >> out = src.run.Merlino2D("cases","CoronaWireCylinder_i.m","run");
+% View results:
+% >> src.slider.Mview(out,"x")
+% Create plot: run the script CoronaWireCylinder_plot.m with Ctrl + Enter

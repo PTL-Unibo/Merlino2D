@@ -24,3 +24,10 @@ OUTPUT_FUNCTION = "cmd";
 % ux = ones(size(ux)) * 900*cos(2*pi*(1/6e-3)*t);
 % uy = ones(size(uy)) * 900*sin(2*pi*(1/6e-3)*t);
 % BE CAREFUL!! COMMENT THEM AGAIN AFTER!!
+
+% !! From the Merlino2D/ folder !!
+% Run simulation:
+% >> out = src.run.Merlino2D("cases","Drift_i.m","run");
+% View results:
+% >> src.slider.Mview(out,"x")
+% Create plot: run the script Drift_plot.m with Ctrl + Enter

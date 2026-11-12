@@ -2,7 +2,7 @@ MSH = 'WireWireGrid';
 MSH_PARAMETERS.k = 1;
 BCEL_FLAG = [0; 0; 0; 0; 0; 1; 1; 1; 1];
 BCEL_VAL = [1; 0; 0; 0; 0; 0; 0; 0; 0];
-V_APPLIED = @(t) LinRamp(t,1e-4,7e3,20e3);
+V_APPLIED = @(t) src.wave.LinRamp(t,1e-4,7e3,20e3);
 ANODE_IDS = 1;
 R = 1e3;
 LENGTH = 0.2;
@@ -55,3 +55,9 @@ GAMMA_II = 1e-2;
 
 OUTPUT_FUNCTION = "bar";
 BAR_SCALE = "log";
+
+% !! From the Merlino2D/ folder !!
+% Run simulation:
+% >> out = src.run.Merlino2D("cases","CoronaWireWireGrid_i.m","run");
+% View results:
+% >> src.slider.Mview(out,"x")

@@ -47,3 +47,9 @@ GAMMA_II_DIEL = 1e-2;
 ODE_TYPE = "ode15s";
 OUTPUT_FUNCTION = "i";
 SAVE_EACH_K_TIMESTEPS = 20;
+
+% !! From the Merlino2D/ folder !!
+% Run simulation:
+% >> out = src.run.Merlino2D("cases","DBD_i.m","run");
+% View results:
+% >> src.slider.Mview(out,"x")

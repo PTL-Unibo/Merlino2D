@@ -1,7 +1,3 @@
-clearvars, close, clc
-out = Merlino2D("Diffusion_i","run");
-
-%%
 my_font_size = 25;
 cells = out.msh.cs_from_f(out.msh.xf == 0,:);
 cells = cells(:);
@@ -32,7 +28,7 @@ colors = get(gca, 'ColorOrder');
 hold on
 for i = 1:numel(indices_time)
     Nexact = n(out.tout(indices_time(i)));
-    out_pp_k = ProcessInstant(out,indices_time(i));
+    out_pp_k = src.run.ProcessInstant(out,indices_time(i));
     plot(y, out_pp_k.N_CELLS(ii), ".", "MarkerSize",12, "Color",colors(i,:), "HandleVisibility","off")
     plot(y_exact, Nexact, "-", "Color",colors(i,:), "HandleVisibility","off")
 end

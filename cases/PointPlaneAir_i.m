@@ -1,8 +1,8 @@
 MSH = 'PointPlaneExp';
 BCEL_FLAG = [0; 0; 1; 1; 1];
 BCEL_VAL = [1; 0; 0; 0; 0];
-V_APPLIED = @(t) TanhRamp(t,4e3,10e3,2);
-DV_APPLIED = @(t) DTanhRamp(t,4e3,10e3,2);
+V_APPLIED = @(t) src.wave.TanhRamp(t,4e3,10e3,2);
+DV_APPLIED = @(t) src.wave.DTanhRamp(t,4e3,10e3,2);
 R = 0;
 ANODE_IDS = 1;
 BC_FLAG = {
@@ -50,3 +50,9 @@ ELECTRON_TEMPERATURE = 'LoKI';
 GAMMA_II = 1e-2;
 COORDINATES = "cylindrical";
 SAVE_EACH_K_TIMESTEPS = 5;
+
+% !! From the Merlino2D/ folder !!
+% Run simulation:
+% >> out = src.run.Merlino2D("cases","PointPlaneAir_i.m","run");
+% View results:
+% >> src.slider.Mview(out,"x")

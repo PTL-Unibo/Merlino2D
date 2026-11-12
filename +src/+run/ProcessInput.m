@@ -14,7 +14,7 @@ if ~isempty(input_folder)
 end
 
 p = struct;
-run(input_script_name)
+eval(fileread(input_script_name))
 p_default = src.run.DefaultMerlino2Dinput;
 field_names_cell = fieldnames(p_default);
 for i = 1:numel(field_names_cell)

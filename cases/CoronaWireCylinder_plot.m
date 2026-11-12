@@ -1,16 +1,14 @@
-clearvars, close, clc
-out = Merlino2D("CoronaWireCylinder_i","run");
-
-%%
 fig = figure();
 ax = axes(fig);
 my_font_size = 30;
 
-VIexp = load(GetPath("data")+"/Experimental_Results_50u_5m_30m.csv");
+VIexp = load(src.gen.GetPath("data")+"/Experimental_Results_50u_5m_30m.csv");
 Vexperiment = VIexp(:,1)*1e3; % from kilovolt to volt 
 Iexperiment = VIexp(:,2)/1e3; % from mA to Ampere
 
-[I,V] = GetAllTimeInstants(out);
+% [I,V] = GetAllTimeInstants(out);
+I = out.yout(end-1,:);
+V = out.yout(end,:);
 
 plot(V*1e-3,I*2*1e6,"LineWidth",2,"DisplayName","Merlino2D")
 hold on

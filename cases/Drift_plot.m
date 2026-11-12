@@ -1,11 +1,7 @@
-clearvars, close, clc
-out = Merlino2D("Drift_i","run");
-
-%%
 my_font_size = 25;
 N_NODES = 0;
 for k = 1:100:501
-    out_pp_k = ProcessInstant(out,k);
+    out_pp_k = src.run.ProcessInstant(out,k);
     N_NODES = N_NODES + out_pp_k.N_NODES;
 end
 

@@ -11,7 +11,7 @@ If you use this software in your work, please cite https://doi.org/10.1016/j.cpc
 F. Ragazzi, A. Popoli, L. L. Alves, and A. Cristofolini, “Merlino2D: An open-source code for non-thermal gas discharge simulations”, Computer Physics Communications, vol. 330, p. 110463, 2027.
 
 ```
-@article{ragazziMerlinoOpenSource2026,
+@article{ragazziMerlinoOpenSource2027,
 title = {{Merlino2D}: An open-source code for non-thermal gas discharge simulations},
 author = {Fabio Ragazzi and Arturo Popoli and Luís Lemos Alves and Andrea Cristofolini},
 year = {2027},

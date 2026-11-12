@@ -19,3 +19,10 @@ MU = {'N',0};
 D = {'N',2};
 V_TH_COEFF = {"N",1};
 CONST_OMEGA = {"N",0};
+
+% !! From the Merlino2D/ folder !!
+% Run simulation:
+% >> out = src.run.Merlino2D("cases","Diffusion_i.m","run");
+% View results:
+% >> src.slider.Mview(out,"x")
+% Create plot: run the script Diffusion_plot.m with Ctrl + Enter
